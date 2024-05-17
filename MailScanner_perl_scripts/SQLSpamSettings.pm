@@ -44,6 +44,7 @@ use vars qw($VERSION);
 $VERSION = substr q$Revision: 1.5 $, 10;
 
 use DBI;
+use DBD::MariaDB;
 my ($dbh);
 my ($sth);
 my ($SQLversion);
@@ -64,20 +65,22 @@ my ($db_pass) = mailwatch_get_db_password();
 # Get refresh time from from 00MailWatchConf.pm
 my ($ss_refresh_time) =  mailwatch_get_SS_refresh_time();
 
-# Check MySQL version
+# Check MySQL/MariaDB version
 sub CheckSQLVersion {
+    # Prevent dying from failed db connection
     eval {
-        $dbh = DBI->connect("DBI:mysql:database=$db_name;host=$db_host",
+        $dbh = DBI->connect("DBI:MariaDB:database=$db_name;host=$db_host",
             $db_user, $db_pass,
-            { PrintError => 0, AutoCommit => 1, RaiseError => 1, mysql_enable_utf8 => 1 }
+            { PrintError => 0, AutoCommit => 1, RaiseError => 1 }
         );
     };
     if ($@ || !$dbh) {
         MailScanner::Log::WarnLog("MailWatch: SQLSpamSettings:: Unable to initialise database connection: %s", $DBI::errstr);
         return 1;
     }
-    $SQLversion = $dbh->{mysql_serverversion};
+    $SQLversion = $dbh->{mariadb_serverversion};
     $dbh->disconnect;
+
     return $SQLversion;
 }
 
@@ -169,7 +172,7 @@ sub CreateScoreList
     my ($type, $UserList) = @_;
     my ($sql, $username, $count);
 
-    # Check if MySQL is >= 5.3.3
+    # Check if MySQL/MariaDB is >= 5.3.3
     my $version = CheckSQLVersion();
 
     # Cannot get SQL version, bail out with count of 0
@@ -177,31 +180,17 @@ sub CreateScoreList
         return 0;
     }
 
-    if ($version >= 50503 ) {
-        eval {
-            $dbh = DBI->connect("DBI:mysql:database=$db_name;host=$db_host",
-                $db_user, $db_pass,
-                { PrintError => 0, AutoCommit => 1, RaiseError => 1, mysql_enable_utf8mb4 => 1 }
-            );
-        };
-        if ($@ || !$dbh) {
-            MailScanner::Log::WarnLog("MailWatch: SQLSpamSettings:: CreateScoreList::: Unable to initialise database connection: %s", $DBI::errstr);
-            return 0;
-        }
-        $dbh->do('SET NAMES utf8mb4');
-    } else {
-        eval {
-            $dbh = DBI->connect("DBI:mysql:database=$db_name;host=$db_host",
-                $db_user, $db_pass,
-                { PrintError => 0, AutoCommit => 1, RaiseError => 1, mysql_enable_utf8 => 1 }
-            );
-        };
-        if ($@ || !$dbh) {
-            MailScanner::Log::WarnLog("MailWatch: SQLSpamSettings::CreateScoreList::: Unable to initialise database connection: %s", $DBI::errstr);
-            return 0;
-        }
-        $dbh->do('SET NAMES utf8');
+    eval {
+        $dbh = DBI->connect("DBI:MariaDB:database=$db_name;host=$db_host",
+            $db_user, $db_pass,
+            { PrintError => 0, AutoCommit => 1, RaiseError => 1 }
+        );
+    };
+    if ($@ || !$dbh) {
+        MailScanner::Log::WarnLog("MailWatch: SQLSpamSettings:: CreateScoreList::: Unable to initialise database connection: %s", $DBI::errstr);
+        return 0;
     }
+    $dbh->do('SET NAMES utf8mb4');
 
     $sql = "SELECT username, $type FROM users WHERE $type > 0";
     $sth = $dbh->prepare($sql);
@@ -228,32 +217,17 @@ sub CreateNoScanList
     my ($type, $NoScanList) = @_;
     my ($sql, $username, $count);
 
-    # Check if MySQL is >= 5.3.3
-    if (CheckSQLVersion() >= 50503 ) {
-        eval {
-            $dbh = DBI->connect("DBI:mysql:database=$db_name;host=$db_host",
-                $db_user, $db_pass,
-                { PrintError => 0, AutoCommit => 1, RaiseError => 1, mysql_enable_utf8mb4 => 1 }
-            );
-        };
-        if ($@ || !$dbh) {
-            MailScanner::Log::WarnLog("MailWatch: SQLSpamSettings::CreateNoScanList::: Unable to initialise database connection: %s", $DBI::errstr);
-            return 0;
-        }
-        $dbh->do('SET NAMES utf8mb4');
-    } else {
-        eval {
-            $dbh = DBI->connect("DBI:mysql:database=$db_name;host=$db_host",
-                $db_user, $db_pass,
-                { PrintError => 0, AutoCommit => 1, RaiseError => 1, mysql_enable_utf8 => 1 }
-            );
-        };
-        if ($@ || !$dbh) {
-            MailScanner::Log::WarnLog("MailWatch: SQLSpamSettings::CreateNoScanList::: Unable to initialise database connection: %s", $DBI::errstr);
-            return 0;
-        }
-        $dbh->do('SET NAMES utf8');
+    eval {
+        $dbh = DBI->connect("DBI:MariaDB:database=$db_name;host=$db_host",
+            $db_user, $db_pass,
+            { PrintError => 0, AutoCommit => 1, RaiseError => 1 }
+        );
+    };
+    if ($@ || !$dbh) {
+        MailScanner::Log::WarnLog("MailWatch: SQLSpamSettings::CreateNoScanList::: Unable to initialise database connection: %s", $DBI::errstr);
+        return 0;
     }
+    $dbh->do('SET NAMES utf8mb4');
 
     $sql = "SELECT username, $type FROM users WHERE $type > 0";
     $sth = $dbh->prepare($sql);

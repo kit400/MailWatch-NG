@@ -42,6 +42,7 @@ use vars qw($VERSION);
 $VERSION = substr q$Revision: 1.5 $, 10;
 
 use DBI;
+use DBD::MariaDB;
 my (%Whitelist, %Blacklist);
 my ($wtime, $btime);
 my ($dbh);
@@ -61,23 +62,23 @@ my ($db_pass) = mailwatch_get_db_password();
 # Get refresh time from from 00MailWatchConf.pm
 my ($bwl_refresh_time) =  mailwatch_get_BWL_refresh_time();
 
-# Check MySQL version
+# Check MySQL/MariaDB version
 sub CheckSQLVersion {
     # Prevent dying from failed db connection
     eval { 
-        $dbh = DBI->connect("DBI:mysql:database=$db_name;host=$db_host",
+        $dbh = DBI->connect("DBI:MariaDB:database=$db_name;host=$db_host",
             $db_user, $db_pass,
-            { PrintError => 0, AutoCommit => 1, RaiseError => 1, mysql_enable_utf8 => 1 }
+            { PrintError => 0, AutoCommit => 1, RaiseError => 1 }
         );
     };
     if ($@ || !$dbh) {
         MailScanner::Log::WarnLog("MailWatch: SQLBlackWhiteList:: Unable to initialise database connection: %s", $DBI::errstr);
         return 1;
     }
-    $SQLversion = $dbh->{mysql_serverversion};
+    $SQLversion = $dbh->{mariadb_serverversion};
     $dbh->disconnect;
-    return $SQLversion;
 
+    return $SQLversion;
 }
 
 #
@@ -135,7 +136,7 @@ sub CreateList {
     my ($type, $BlackWhite) = @_;
     my ($sql, $to_address, $from_address, $count, $filter);
 
-    # Check if MySQL is >= 5.3.3
+    # Check if MySQL/MariaDB is >= 5.3.3
     my $version = CheckSQLVersion();
 
     # Database connection failed, so return 0 (count) and exit early
@@ -143,31 +144,17 @@ sub CreateList {
         return 0;
     }
 
-    if ($version >= 50503 ) {
-        eval {
-            $dbh = DBI->connect("DBI:mysql:database=$db_name;host=$db_host",
-                $db_user, $db_pass,
-                { PrintError => 0, AutoCommit => 1, RaiseError => 1, mysql_enable_utf8mb4 => 1 }
-            );
-        };
-        if ($@ || !$dbh) {
-            MailScanner::Log::WarnLog("MailWatch: SQLBlackWhiteList::CreateList::: Unable to initialise database connection: %s", $DBI::errstr);
-            return 0;
-        }
-        $dbh->do('SET NAMES utf8mb4');
-    } else {
-        eval {
-            $dbh = DBI->connect("DBI:mysql:database=$db_name;host=$db_host",
-                $db_user, $db_pass,
-                { PrintError => 0, AutoCommit => 1, RaiseError => 1, mysql_enable_utf8 => 1 }
-            );
-        };
-        if ($@ || !$dbh) {
-            MailScanner::Log::WarnLog("MailWatch: SQLBlackWhiteList::CreateList::: Unable to initialise database connection: %s", $DBI::errstr);
-            return 0;
-        }
-        $dbh->do('SET NAMES utf8');
+    eval {
+        $dbh = DBI->connect("DBI:MariaDB:database=$db_name;host=$db_host",
+            $db_user, $db_pass,
+            { PrintError => 0, AutoCommit => 1, RaiseError => 1 }
+        );
+    };
+    if ($@ || !$dbh) {
+        MailScanner::Log::WarnLog("MailWatch: SQLBlackWhiteList::CreateList::: Unable to initialise database connection: %s", $DBI::errstr);
+        return 0;
     }
+    $dbh->do('SET NAMES utf8mb4');
 
     # Uncommet the folloging line when debugging SQLBlackWhiteList.pm
     #MailScanner::Log::WarnLog("MailWatch: DEBUG SQLBlackWhiteList: CreateList: %s", Dumper($BlackWhite));
