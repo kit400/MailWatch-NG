@@ -2,11 +2,11 @@
 # MailWatch for MailScanner
 # Copyright (C) 2003-2011  Steve Freegard (steve@freegard.name)
 # Copyright (C) 2011  Garrod Alwood (garrod.alwood@lorodoes.com)
-# Copyright (C) 2014-2021  MailWatch Team (https://github.com/mailwatch/1.2.0/graphs/contributors)
+# Copyright (C) 2014-2024  MailWatch Team (https://github.com/mailwatch/MailWatch/graphs/contributors)
 #
 #   Custom Module MailWatch
 #
-#   Version 1.61
+#   Version 1.7
 #
 # This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public
 # License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later
@@ -47,7 +47,7 @@ use Sys::Syslog;
 use vars qw($VERSION);
 
 ### The package version, both in 1.23 style *and* usable by MakeMaker:
-$VERSION = substr q$Revision: 1.5 $, 10;
+$VERSION = '1.7';
 
 # Trace settings - uncomment this to debug
 #DBI->trace(2,'/tmp/dbitrace.log');
