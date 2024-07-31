@@ -2,11 +2,11 @@
 # MailWatch for MailScanner
 # Copyright (C) 2003-2011  Steve Freegard (steve@freegard.name)
 # Copyright (C) 2011  Garrod Alwood (garrod.alwood@lorodoes.com)
-# Copyright (C) 2014-2021  MailWatch Team (https://github.com/mailwatch/1.2.0/graphs/contributors)
+# Copyright (C) 2014-2024  MailWatch Team (https://github.com/mailwatch/MailWatch/graphs/contributors)
 #
 #   Custom Module MailWatch
 #
-#   Version 1.61
+#   Version 1.7
 #
 # This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public
 # License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later
@@ -31,6 +31,7 @@ package MailScanner::CustomConfig;
 
 use strict;
 use DBI;
+use DBD::MariaDB;
 use utf8;
 use Sys::Hostname;
 use Storable(qw[freeze thaw]);
@@ -46,7 +47,7 @@ use Sys::Syslog;
 use vars qw($VERSION);
 
 ### The package version, both in 1.23 style *and* usable by MakeMaker:
-$VERSION = substr q$Revision: 1.5 $, 10;
+$VERSION = '1.7';
 
 # Trace settings - uncomment this to debug
 #DBI->trace(2,'/tmp/dbitrace.log');
@@ -119,9 +120,9 @@ sub InitMailWatchLogging {
 sub CheckSQLVersion {
     # Prevent Logger from dying if connection fails
     eval {
-        $dbh = DBI->connect("DBI:mysql:database=$db_name;host=$db_host",
+        $dbh = DBI->connect("DBI:MariaDB:database=$db_name;host=$db_host",
             $db_user, $db_pass,
-            { PrintError => 0, AutoCommit => 1, RaiseError => 1, mysql_enable_utf8 => 1 }
+            { PrintError => 0, AutoCommit => 1, RaiseError => 1 }
         );
     };
     if ($@ || !$dbh) {
@@ -129,10 +130,10 @@ sub CheckSQLVersion {
         close(SERVER);
         return 1;
     }
-    $SQLversion = $dbh->{mysql_serverversion};
+    $SQLversion = $dbh->{mariadb_serverversion};
     $dbh->disconnect;
-    return $SQLversion;
 
+    return $SQLversion;
 }
 
 sub LogMessage {
@@ -177,29 +178,17 @@ sub InitDB {
        return 1;
     }
 
-    if (CheckSQLVersion() >= 50503 ) {
-        eval { $dbh = DBI->connect("DBI:mysql:database=$db_name;host=$db_host",
+    eval { $dbh = DBI->connect("DBI:MariaDB:database=$db_name;host=$db_host",
             $db_user, $db_pass,
-            { PrintError => 0, AutoCommit => 1, RaiseError => 1, mysql_enable_utf8mb4 => 1 }
+            { PrintError => 0, AutoCommit => 1, RaiseError => 1 }
         );
-        };
-        if ($@ || !$dbh) {
-            LogMessage('warn', "Unable to initialise database connection: $DBI::errstr");
-            return 1;
-        }
-        $dbh->do('SET NAMES utf8mb4');
-    } else {
-        eval { $dbh = DBI->connect("DBI:mysql:database=$db_name;host=$db_host",
-            $db_user, $db_pass,
-            { PrintError => 0, AutoCommit => 1, RaiseError => 1, mysql_enable_utf8 => 1 }
-        );
-        };
-        if ($@ || !$dbh) {
-            LogMessage('warn', "Unable to initialise database connection: $DBI::errstr");
-            return 1;
-        }
-        $dbh->do('SET NAMES utf8');
+    };
+    if ($@ || !$dbh) {
+        LogMessage('warn', "Unable to initialise database connection: $DBI::errstr");
+        return 1;
     }
+    $dbh->do('SET NAMES utf8mb4');
+
     $sth = $dbh->prepare("INSERT INTO maillog (timestamp, id, size, from_address, from_domain, to_address, to_domain, subject, clientip, archive, isspam, ishighspam, issaspam, isrblspam, spamwhitelisted, spamblacklisted, sascore, spamreport, virusinfected, nameinfected, otherinfected, report, ismcp, ishighmcp, issamcp, mcpwhitelisted, mcpblacklisted, mcpsascore, mcpreport, hostname, date, time, headers, quarantined, rblspamreport, token, messageid) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
     if (!$sth) {
         LogMessage('warn', "Error: $DBI::errstr" );

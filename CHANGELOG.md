@@ -5,6 +5,9 @@
 - Update htmlpurifier library to 4.17.0
 - Avoid usage of deprecated utf8_encode function in viewpart
 
+### Compatibility
+- Migrate MailScanner perl script to DBD:MariaDB
+
 ## 1.2.23
 ### Added
 - Support for handling the `uopz` extension to prevent the application from breaking due to disabled `exit` calls by `uopz`.
