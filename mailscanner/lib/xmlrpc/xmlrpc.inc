@@ -2569,8 +2569,8 @@ class xmlrpcval
     {
         foreach ($ar as $key => $val) {
             echo "$key => $val<br />";
-            if ($key == 'array') {
-                while (list($key2, $val2) = each($val)) {
+            if ($key == 'array' && is_array($val)) {
+                foreach ($val as $key2 => $val2) {
                     echo "-- $key2 => $val2<br />";
                 }
             }
@@ -2698,7 +2698,9 @@ class xmlrpcval
         //if (is_object($o) && (get_class($o) == 'xmlrpcval' || is_subclass_of($o, 'xmlrpcval')))
         //{
         reset($this->me);
-        list($typ, $val) = each($this->me);
+        foreach ($this->me as $typ => $val) {
+            break;
+        }
         return '<value>' . $this->serializedata($typ, $val, $charset_encoding) . "</value>\n";
         //}
     }
@@ -2707,13 +2709,17 @@ class xmlrpcval
     public function serializeval($o)
     {
         // add check? slower, but helps to avoid recursion in serializing broken xmlrpcvals...
-        //if (is_object($o) && (get_class($o) == 'xmlrpcval' || is_subclass_of($o, 'xmlrpcval')))
-        //{
+        // if (is_object($o) && (get_class($o) == 'xmlrpcval' || is_subclass_of($o, 'xmlrpcval')))
+        // {
         $ar = $o->me;
-        reset($ar);
-        list($typ, $val) = each($ar);
+        reset($ar); // Reset the array pointer to the first element
+
+        // Get the first key and value from the array
+        $typ = key($ar);
+        $val = current($ar);
+
         return '<value>' . $this->serializedata($typ, $val) . "</value>\n";
-        //}
+        // }
     }
 
     /**
@@ -2756,7 +2762,15 @@ class xmlrpcval
      */
     public function structeach()
     {
-        return each($this->me['struct']);
+        // Check if the struct array is not empty and has a valid current element
+        if (!empty($this->me['struct']) && null !== key($this->me['struct'])) {
+            $key = key($this->me['struct']);
+            $value = current($this->me['struct']);
+            next($this->me['struct']); // Advance the pointer for the next call
+            return [$key, $value];
+        }
+        // Return false if the array is empty or the end is reached
+        return false;
     }
 
     // DEPRECATED! this code looks like it is very fragile and has not been fixed
@@ -2765,29 +2779,32 @@ class xmlrpcval
     {
         // UNSTABLE
         reset($this->me);
-        list($a, $b) = each($this->me);
+        $a = key($this->me);
+        $b = current($this->me);
+
         // contributed by I Sofer, 2001-03-24
         // add support for nested arrays to scalarval
         // i've created a new method here, so as to
         // preserve back compatibility
 
         if (is_array($b)) {
-            @reset($b);
-            while (list($id, $cont) = @each($b)) {
-                $b[$id] = $cont->scalarval();
+            foreach ($b as $id => $cont) {
+                if (is_object($cont) && method_exists($cont, 'scalarval')) {
+                    $b[$id] = $cont->scalarval();
+                }
             }
         }
 
         // add support for structures directly encoding php objects
         if (is_object($b)) {
             $t = get_object_vars($b);
-            @reset($t);
-            while (list($id, $cont) = @each($t)) {
-                $t[$id] = $cont->scalarval();
+            foreach ($t as $id => $cont) {
+                if (is_object($cont) && method_exists($cont, 'scalarval')) {
+                    $t[$id] = $cont->scalarval();
+                }
             }
-            @reset($t);
-            while (list($id, $cont) = @each($t)) {
-                @$b->$id = $cont;
+            foreach ($t as $id => $cont) {
+                $b->$id = $cont;
             }
         }
         // end contrib
@@ -2802,7 +2819,7 @@ class xmlrpcval
     public function scalarval()
     {
         reset($this->me);
-        list(, $b) = each($this->me);
+        $b = current($this->me);
         return $b;
     }
 
@@ -2815,10 +2832,12 @@ class xmlrpcval
     public function scalartyp()
     {
         reset($this->me);
-        list($a,) = each($this->me);
+        $a = key($this->me);
+
         if ($a == $GLOBALS['xmlrpcI4']) {
             $a = $GLOBALS['xmlrpcInt'];
         }
+
         return $a;
     }
 
@@ -2936,7 +2955,9 @@ function php_xmlrpc_decode($xmlrpc_val, $options = array())
         case 'scalar':
             if (in_array('extension_api', $options)) {
                 reset($xmlrpc_val->me);
-                list($typ, $val) = each($xmlrpc_val->me);
+                $typ = key($xmlrpc_val->me);
+                $val = current($xmlrpc_val->me);
+
                 switch ($typ) {
                     case 'dateTime.iso8601':
                         $xmlrpc_val->scalar = $val;
@@ -2952,18 +2973,18 @@ function php_xmlrpc_decode($xmlrpc_val, $options = array())
                 }
             }
             if (in_array('dates_as_objects', $options) && $xmlrpc_val->scalartyp() == 'dateTime.iso8601') {
-                // we return a Datetime object instead of a string
-                // since now the constructor of xmlrpcval accepts safely strings, ints and datetimes,
+                // We return a Datetime object instead of a string
+                // Since now the constructor of xmlrpcval accepts safely strings, ints and datetimes,
                 // we cater to all 3 cases here
                 $out = $xmlrpc_val->scalarval();
                 if (is_string($out)) {
                     $out = strtotime($out);
                 }
                 if (is_int($out)) {
-                    $result = new Datetime();
+                    $result = new \DateTime();
                     $result->setTimestamp($out);
                     return $result;
-                } elseif ($out instanceof \Datetime) {
+                } elseif ($out instanceof \DateTime) {
                     return $out;
                 }
             }
@@ -2979,18 +3000,18 @@ function php_xmlrpc_decode($xmlrpc_val, $options = array())
             $xmlrpc_val->structreset();
             // If user said so, try to rebuild php objects for specific struct vals.
             /// @todo should we raise a warning for class not found?
-            // shall we check for proper subclass of xmlrpcval instead of
+            // Shall we check for proper subclass of xmlrpcval instead of
             // presence of _php_class to detect what we can do?
             if (in_array('decode_php_objs', $options) && $xmlrpc_val->_php_class != ''
                 && class_exists($xmlrpc_val->_php_class)) {
-                $obj = @new $xmlrpc_val->_php_class;
-                while (list($key, $value) = $xmlrpc_val->structeach()) {
+                $obj = new $xmlrpc_val->_php_class;
+                foreach ($xmlrpc_val->me['struct'] as $key => $value) {
                     $obj->$key = php_xmlrpc_decode($value, $options);
                 }
                 return $obj;
             } else {
                 $arr = array();
-                while (list($key, $value) = $xmlrpc_val->structeach()) {
+                foreach ($xmlrpc_val->me['struct'] as $key => $value) {
                     $arr[$key] = php_xmlrpc_decode($value, $options);
                 }
                 return $arr;
@@ -3084,8 +3105,8 @@ function php_xmlrpc_encode($php_val, $options = array())
                 $xmlrpc_val = new xmlrpcval($php_val->format('Ymd\TH:i:s'), $GLOBALS['xmlrpcStruct']);
             } else {
                 $arr = array();
-                reset($php_val);
-                while (list($k, $v) = each($php_val)) {
+
+                foreach ($php_val as $k => $v) {
                     $arr[$k] = php_xmlrpc_encode($v, $options);
                 }
                 $xmlrpc_val = new xmlrpcval($arr, $GLOBALS['xmlrpcStruct']);
