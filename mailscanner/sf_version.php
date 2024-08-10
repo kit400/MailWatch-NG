@@ -79,12 +79,19 @@ if ('A' !== $_SESSION['user_type']) {
                 $vars[$line[0]] = $line[1];
             }
         }
+
+        echo __('systemos11') . ' ';
+        $systemos = 'unknown linux';
         if (isset($vars['ID']) && in_array(strtolower($vars['ID']), ['centos', 'debian'], true)) {
-            echo __('systemos11') . ' ' . $vars['PRETTY_NAME'] . '<br>' . "\n";
+            $systemos = $vars['PRETTY_NAME'];
         }
-        if (isset($vars['ID']) && 'ubuntu' === strtolower($vars['ID'])) {
-            echo __('systemos11') . ' ' . $vars['NAME'] . ' ' . $vars['VERSION'] . '<br>' . "\n";
+        else if (isset($vars['ID']) && 'ubuntu' === strtolower($vars['ID'])) {
+            $systemos = $vars['NAME'] . ' ' . $vars['VERSION'];
         }
+        else if (isset($vars['ID'])) {
+            $systemos = $vars['ID'];
+        }
+        echo $systemos . '<br>' . "\n";
     }
     if ('freebsd' === strtolower(PHP_OS)) {
         echo __('systemos11') . ' ' . PHP_OS . ' ' . php_uname('r') . ' ' . php_uname('m') . '<br>' . "\n";
