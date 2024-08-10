@@ -7,6 +7,6 @@
 /_msconfig/
 /vendor/
 
-.php-cs-fixer.cache
-.composer.lock
+/.php-cs-fixer.cache
+/.composer.lock
 /.phpunit.cache
