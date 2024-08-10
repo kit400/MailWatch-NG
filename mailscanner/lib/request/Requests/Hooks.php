@@ -14,6 +14,13 @@
  */
 class Requests_Hooks implements Requests_Hooker {
 	/**
+	 * Registered callbacks for each hook
+	 *
+	 * @var array
+	 */
+	protected $hooks = array();
+
+	/**
 	 * Constructor
 	 */
 	public function __construct() {
@@ -29,10 +36,10 @@ class Requests_Hooks implements Requests_Hooker {
 	 */
 	public function register($hook, $callback, $priority = 0) {
 		if (!isset($this->hooks[$hook])) {
-			$this->hooks[$hook] = [];
+			$this->hooks[$hook] = array();
 		}
 		if (!isset($this->hooks[$hook][$priority])) {
-			$this->hooks[$hook][$priority] = [];
+			$this->hooks[$hook][$priority] = array();
 		}
 
 		$this->hooks[$hook][$priority][] = $callback;
@@ -45,7 +52,7 @@ class Requests_Hooks implements Requests_Hooker {
 	 * @param array $parameters Parameters to pass to callbacks
 	 * @return boolean Successfulness
 	 */
-	public function dispatch($hook, $parameters = []) {
+	public function dispatch($hook, $parameters = array()) {
 		if (empty($this->hooks[$hook])) {
 			return false;
 		}

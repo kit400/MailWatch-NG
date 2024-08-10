@@ -19,6 +19,8 @@ parameters:
 	    - mailscanner/lib/pear/Pager.php
 	    - mailscanner/lib/pear/PEAR.php
 	    - mailscanner/lib/request/Requests.php
+	    - mailscanner/lib/request/Requests/Auth/Basic.php
+	    - mailscanner/lib/request/Requests/Hooks.php
 	    - mailscanner/lib/request/Requests/Session.php
 	    - mailscanner/lib/request/Requests/Exception.php
 	    - mailscanner/lib/xmlrpc/xmlrpc.inc

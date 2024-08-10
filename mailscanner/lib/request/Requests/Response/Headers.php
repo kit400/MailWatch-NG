@@ -21,12 +21,13 @@ class Requests_Response_Headers extends Requests_Utility_CaseInsensitiveDictiona
 	 * Set-Cookie headers.
 	 *
 	 * @param string $key
-	 * @return string Header value
+	 * @return string|null Header value
 	 */
 	public function offsetGet($key) {
 		$key = strtolower($key);
-		if (!isset($this->data[$key]))
+		if (!isset($this->data[$key])) {
 			return null;
+		}
 
 		return $this->flatten($this->data[$key]);
 	}
@@ -47,7 +48,7 @@ class Requests_Response_Headers extends Requests_Utility_CaseInsensitiveDictiona
 		$key = strtolower($key);
 
 		if (!isset($this->data[$key])) {
-			$this->data[$key] = [];
+			$this->data[$key] = array();
 		}
 
 		$this->data[$key][] = $value;
@@ -57,12 +58,13 @@ class Requests_Response_Headers extends Requests_Utility_CaseInsensitiveDictiona
 	 * Get all values for a given header
 	 *
 	 * @param string $key
-	 * @return array Header values
+	 * @return array|null Header values
 	 */
 	public function getValues($key) {
 		$key = strtolower($key);
-		if (!isset($this->data[$key]))
+		if (!isset($this->data[$key])) {
 			return null;
+		}
 
 		return $this->data[$key];
 	}
@@ -77,8 +79,9 @@ class Requests_Response_Headers extends Requests_Utility_CaseInsensitiveDictiona
 	 * @return string Flattened value
 	 */
 	public function flatten($value) {
-		if (is_array($value))
+		if (is_array($value)) {
 			$value = implode(',', $value);
+		}
 
 		return $value;
 	}
@@ -90,6 +93,6 @@ class Requests_Response_Headers extends Requests_Utility_CaseInsensitiveDictiona
 	 * @return ArrayIterator
 	 */
 	public function getIterator() {
-		return new Requests_Utility_FilteredIterator($this->data, [$this, 'flatten']);
+		return new Requests_Utility_FilteredIterator($this->data, array($this, 'flatten'));
 	}
 }

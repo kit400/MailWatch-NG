@@ -22,15 +22,17 @@ class Requests_Session {
 	 * Base URL for requests
 	 *
 	 * URLs will be made absolute using this as the base
+	 *
 	 * @var string|null
 	 */
 	public $url = null;
 
 	/**
 	 * Base headers for requests
+	 *
 	 * @var array
 	 */
-	public $headers = [];
+	public $headers = array();
 
 	/**
 	 * Base data for requests
@@ -40,7 +42,7 @@ class Requests_Session {
 	 *
 	 * @var array
 	 */
-	public $data = [];
+	public $data = array();
 
 	/**
 	 * Base options for requests
@@ -53,7 +55,7 @@ class Requests_Session {
 	 *
 	 * @var array
 	 */
-	public $options = [];
+	public $options = array();
 
 	/**
 	 * Create a new session
@@ -63,10 +65,10 @@ class Requests_Session {
 	 * @param array $data Default data for requests
 	 * @param array $options Default options for requests
 	 */
-	public function __construct($url = null, $headers = [], $data = [], $options = []) {
-		$this->url = $url;
+	public function __construct($url = null, $headers = array(), $data = array(), $options = array()) {
+		$this->url     = $url;
 		$this->headers = $headers;
-		$this->data = $data;
+		$this->data    = $data;
 		$this->options = $options;
 
 		if (empty($this->options['cookies'])) {
@@ -81,8 +83,9 @@ class Requests_Session {
 	 * @return mixed|null Property value, null if none found
 	 */
 	public function __get($key) {
-		if (isset($this->options[$key]))
+		if (isset($this->options[$key])) {
 			return $this->options[$key];
+		}
 
 		return null;
 	}
@@ -112,7 +115,9 @@ class Requests_Session {
 	 * @param string $key Property key
 	 */
 	public function __unset($key) {
-		$this->options[$key] = null;
+		if (isset($this->options[$key])) {
+			unset($this->options[$key]);
+		}
 	}
 
 	/**#@+
@@ -125,21 +130,21 @@ class Requests_Session {
 	/**
 	 * Send a GET request
 	 */
-	public function get($url, $headers = [], $options = []) {
+	public function get($url, $headers = array(), $options = array()) {
 		return $this->request($url, $headers, null, Requests::GET, $options);
 	}
 
 	/**
 	 * Send a HEAD request
 	 */
-	public function head($url, $headers = [], $options = []) {
+	public function head($url, $headers = array(), $options = array()) {
 		return $this->request($url, $headers, null, Requests::HEAD, $options);
 	}
 
 	/**
 	 * Send a DELETE request
 	 */
-	public function delete($url, $headers = [], $options = []) {
+	public function delete($url, $headers = array(), $options = array()) {
 		return $this->request($url, $headers, null, Requests::DELETE, $options);
 	}
 	/**#@-*/
@@ -155,14 +160,14 @@ class Requests_Session {
 	/**
 	 * Send a POST request
 	 */
-	public function post($url, $headers = [], $data = [], $options = []) {
+	public function post($url, $headers = array(), $data = array(), $options = array()) {
 		return $this->request($url, $headers, $data, Requests::POST, $options);
 	}
 
 	/**
 	 * Send a PUT request
 	 */
-	public function put($url, $headers = [], $data = [], $options = []) {
+	public function put($url, $headers = array(), $data = array(), $options = array()) {
 		return $this->request($url, $headers, $data, Requests::PUT, $options);
 	}
 
@@ -172,9 +177,9 @@ class Requests_Session {
 	 * Note: Unlike {@see post} and {@see put}, `$headers` is required, as the
 	 * specification recommends that should send an ETag
 	 *
-	 * @link http://tools.ietf.org/html/rfc5789
+	 * @link https://tools.ietf.org/html/rfc5789
 	 */
-	public function patch($url, $headers, $data = [], $options = []) {
+	public function patch($url, $headers, $data = array(), $options = array()) {
 		return $this->request($url, $headers, $data, Requests::PATCH, $options);
 	}
 	/**#@-*/
@@ -191,12 +196,12 @@ class Requests_Session {
 	 *
 	 * @param string $url URL to request
 	 * @param array $headers Extra headers to send with the request
-	 * @param array $data Data to send either as a query string for GET/HEAD requests, or in the body for POST requests
+	 * @param array|null $data Data to send either as a query string for GET/HEAD requests, or in the body for POST requests
 	 * @param string $type HTTP request type (use Requests constants)
 	 * @param array $options Options for the request (see {@see Requests::request})
 	 * @return Requests_Response
 	 */
-	public function request($url, $headers = [], $data = [], $type = Requests::GET, $options = []) {
+	public function request($url, $headers = array(), $data = array(), $type = Requests::GET, $options = array()) {
 		$request = $this->merge_request(compact('url', 'headers', 'data', 'options'));
 
 		return Requests::request($request['url'], $request['headers'], $request['data'], $type, $request['options']);
@@ -211,7 +216,7 @@ class Requests_Session {
 	 * @param array $options Global and default options (see {@see Requests::request})
 	 * @return array Responses (either Requests_Response or a Requests_Exception object)
 	 */
-	public function request_multiple($requests, $options = []) {
+	public function request_multiple($requests, $options = array()) {
 		foreach ($requests as $key => $request) {
 			$requests[$key] = $this->merge_request($request, false);
 		}
@@ -236,9 +241,18 @@ class Requests_Session {
 			$request['url'] = Requests_IRI::absolutize($this->url, $request['url']);
 			$request['url'] = $request['url']->uri;
 		}
+
+		if (empty($request['headers'])) {
+			$request['headers'] = array();
+		}
 		$request['headers'] = array_merge($this->headers, $request['headers']);
 
-		if (is_array($request['data']) && is_array($this->data)) {
+		if (empty($request['data'])) {
+			if (is_array($this->data)) {
+				$request['data'] = $this->data;
+			}
+		}
+		elseif (is_array($request['data']) && is_array($this->data)) {
 			$request['data'] = array_merge($this->data, $request['data']);
 		}
 
@@ -248,6 +262,7 @@ class Requests_Session {
 			// Disallow forcing the type, as that's a per request setting
 			unset($request['options']['type']);
 		}
+
 		return $request;
 	}
 }

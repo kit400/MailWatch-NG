@@ -1,7 +1,7 @@
 #!/usr/bin/php -q
 <?php
 
-/*
+/**
  * MailWatch for MailScanner
  * Copyright (C) 2003-2011  Steve Freegard (steve@freegard.name)
  * Copyright (C) 2011  Garrod Alwood (garrod.alwood@lorodoes.com)
@@ -42,13 +42,13 @@ require_once MAILWATCH_HOME . '/lib/request/Requests.php';
 Requests::register_autoloader();
 
 ob_start();
-
-echo 'Downloading file, please wait...' . "\n";
+echo __('downfile15') . "\n";
 
 $files_base_url = 'https://download.maxmind.com';
 $file = [
     'description' => __('geoip15'),
-    'path' => '/app/geoip_download?edition_id=GeoLite2-Country&suffix=tar.gz&license_key=' . MAXMIND_LICENSE_KEY,
+    'path' => '/geoip/databases/GeoLite2-Country/download?suffix=tar.gz',
+    'legacy_path' => '/app/geoip_download?edition_id=GeoLite2-Country&suffix=tar.gz&license_key=' . MAXMIND_LICENSE_KEY,
     'destination' => MAILWATCH_HOME . '/temp/GeoLite2-Country.tar.gz',
     'destinationFileName' => 'GeoLite2-Country.mmdb',
 ];
@@ -108,12 +108,36 @@ if (function_exists('fsockopen') || extension_loaded('curl')) {
 
     try {
         $requestSession->options['filename'] = $file['destination'];
-        $result = $requestSession->get($file['path']);
+        if (defined('MAXMIND_ACCOUNT_ID')) {
+            // use basic auth
+            $requestSession->options['auth'] = new Requests_Auth_Basic([MAXMIND_ACCOUNT_ID, MAXMIND_LICENSE_KEY]);
+
+            // remove auth and hooks from redirect request
+            $hooks = new Requests_Hooks();
+            $hooks->register('requests.before_redirect', function (
+                &$location,
+                &$req_headers,
+                &$req_data,
+                &$options
+            ) {
+                $options['auth'] = false;
+                $options['hooks'] = new Requests_Hooks();
+            });
+            $requestSession->options['hooks'] = $hooks;
+            $result = $requestSession->get($file['path']);
+        } else {
+            $result = $requestSession->get($file['legacy_path']);
+        }
+        $result->throw_for_status();
         if (true === $result->success) {
             echo $file['description'] . ' ' . __('downok52') . "\n";
         }
     } catch (Requests_Exception $e) {
-        echo __('downbad52') . ' ' . $file['description'] . __('colon99') . ' ' . $e->getMessage() . "\n";
+        echo sprintf('%s %s%s %s', __('downbad52'), $file['description'], __('colon99'), $e->getMessage());
+        if (file_exists($file['destination'])) {
+            echo sprintf(' (%s)', strip_tags(file_get_contents($file['destination'])));
+        }
+        exit;
     }
 
     ob_flush();
@@ -133,16 +157,23 @@ if (function_exists('fsockopen') || extension_loaded('curl')) {
         }
     }
 
-    $command = escapeshellcmd('wget ' . $proxyString . ' -N ' . $files_base_url . $file['path'] . ' -O ' . $file['destination']);
-    exec(
+    if (defined('MAXMIND_ACCOUNT_ID')) {
+        $wget_basic_auth = sprintf('--user=%s --password=%s', MAXMIND_ACCOUNT_ID, MAXMIND_LICENSE_KEY);
+        $command = escapeshellcmd('wget ' . $wget_basic_auth . $proxyString . ' -N ' . $files_base_url . $file['path'] . ' -O ' . $file['destination']);
+    } else {
+        $command = escapeshellcmd('wget ' . $proxyString . ' -N ' . $files_base_url . $file['path'] . ' -O ' . $file['destination']);
+    }
+
+    $result = exec(
         $command,
         $output_wget,
         $retval_wget
     );
     if ($retval_wget > 0) {
         echo __('downbad52') . ' ' . $file['description'] . "\n";
+        exit;
     } else {
-        echo $file['description'] . ' successfully downloaded' . "\n";
+        echo $file['description'] . ' ' . __('downok52') . "\n";
     }
 } else {
     $error_message = __('message352') . "\n" . __('message452');
@@ -178,7 +209,7 @@ if (class_exists('PharData')) {
     }
 } else {
     // Unable to extract the file correctly
-    $error_message = __('message552') . "\n" . $error_message .= __('message652');
+    $error_message = __('message552') . "\n" . __('message652');
     exit($error_message);
 }
 

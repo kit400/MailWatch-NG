@@ -44,4 +44,4 @@ jobs:
         uses: "ramsey/composer-install@v2"
 
       - name: Run PHPStan
-        run: phpstan analyse --configuration=phpstan.neon.dist --error-format=github
+        run: phpstan analyse --configuration=phpstan.dist.neon --error-format=github

@@ -1,6 +1,6 @@
 <?php
 
-/*
+/**
  * MailWatch for MailScanner
  * Copyright (C) 2003-2011  Steve Freegard (steve@freegard.name)
  * Copyright (C) 2011  Garrod Alwood (garrod.alwood@lorodoes.com)
@@ -46,7 +46,7 @@ if (!defined('MAXMIND_LICENSE_KEY') || !validateInput(MAXMIND_LICENSE_KEY, 'maxm
                <tr>
                    <td>
                     <br>
-                       ' . __('message115') . ' <a href="https://dev.maxmind.com/geoip/geoip2/geolite2/" target="_maxmind">MaxMind</a> ' . __('message215') . '<br><br>
+                       ' . __('message115') . ' <a href="https://dev.maxmind.com/geoip/geolite2-free-geolocation-data" target="_maxmind">MaxMind</a> ' . __('message215') . '<br><br>
                    </td>
                </tr>
                <tr>
@@ -63,7 +63,8 @@ if (!defined('MAXMIND_LICENSE_KEY') || !validateInput(MAXMIND_LICENSE_KEY, 'maxm
 
     $files_base_url = 'https://download.maxmind.com';
     $file['description'] = __('geoip15');
-    $file['path'] = '/app/geoip_download?edition_id=GeoLite2-Country&suffix=tar.gz&license_key=' . MAXMIND_LICENSE_KEY;
+    $file['path'] = '/geoip/databases/GeoLite2-Country/download?suffix=tar.gz';
+    $file['legacy_path'] = '/app/geoip_download?edition_id=GeoLite2-Country&suffix=tar.gz&license_key=' . MAXMIND_LICENSE_KEY;
     $file['destination'] = __DIR__ . '/temp/GeoLite2-Country.tar.gz';
     $file['destinationFileName'] = 'GeoLite2-Country.mmdb';
 
@@ -112,12 +113,36 @@ if (!defined('MAXMIND_LICENSE_KEY') || !validateInput(MAXMIND_LICENSE_KEY, 'maxm
 
                 try {
                     $requestSession->options['filename'] = $file['destination'];
-                    $result = $requestSession->get($file['path']);
+                    if (defined('MAXMIND_ACCOUNT_ID')) {
+                        // use basic auth
+                        $requestSession->options['auth'] = new Requests_Auth_Basic([MAXMIND_ACCOUNT_ID, MAXMIND_LICENSE_KEY]);
+
+                        // remove auth and hooks from redirect request
+                        $hooks = new Requests_Hooks();
+                        $hooks->register('requests.before_redirect', function (
+                            &$location,
+                            &$req_headers,
+                            &$req_data,
+                            &$options
+                        ) {
+                            $options['auth'] = false;
+                            $options['hooks'] = new Requests_Hooks();
+                        });
+                        $requestSession->options['hooks'] = $hooks;
+                        $result = $requestSession->get($file['path']);
+                    } else {
+                        $result = $requestSession->get($file['legacy_path']);
+                    }
+                    $result->throw_for_status();
                     if (true === $result->success) {
                         echo $file['description'] . ' ' . __('downok15') . '<br>' . "\n";
                     }
                 } catch (Requests_Exception $e) {
-                    echo __('downbad15') . ' ' . $file['description'] . __('colon99') . ' ' . $e->getMessage() . "<br>\n";
+                    echo sprintf('%s %s%s %s', __('downbad15'), $file['description'], __('colon99'), $e->getMessage());
+                    if (file_exists($file['destination'])) {
+                        echo sprintf(' (%s)', strip_tags(file_get_contents($file['destination'])));
+                    }
+                    exit;
                 }
 
                 ob_flush();
@@ -137,7 +162,13 @@ if (!defined('MAXMIND_LICENSE_KEY') || !validateInput(MAXMIND_LICENSE_KEY, 'maxm
                     }
                 }
 
-                $command = escapeshellcmd('wget ' . $proxyString . ' -N ' . $files_base_url . $file['path'] . ' -O ' . $file['destination']);
+                if (defined('MAXMIND_ACCOUNT_ID')) {
+                    $wget_basic_auth = sprintf('--user=%s --password=%s', MAXMIND_ACCOUNT_ID, MAXMIND_LICENSE_KEY);
+                    $command = escapeshellcmd('wget ' . $wget_basic_auth . $proxyString . ' -N ' . $files_base_url . $file['path'] . ' -O ' . $file['destination']);
+                } else {
+                    $command = escapeshellcmd('wget ' . $proxyString . ' -N ' . $files_base_url . $file['path'] . ' -O ' . $file['destination']);
+                }
+
                 $result = exec(
                     $command,
                     $output_wget,
@@ -146,6 +177,7 @@ if (!defined('MAXMIND_LICENSE_KEY') || !validateInput(MAXMIND_LICENSE_KEY, 'maxm
 
                 if ($retval_wget > 0) {
                     echo __('downbad15') . ' ' . $file['description'] . "<br>\n";
+                    exit;
                 } else {
                     echo $file['description'] . ' ' . __('downok15') . '<br>' . "\n";
                 }
