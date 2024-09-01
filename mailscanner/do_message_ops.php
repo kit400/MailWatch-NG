@@ -96,7 +96,10 @@ if (isset($_POST) && !empty($_POST)) {
             echo '<td class="error">' . $items . '</td>' . "\n";
         } else {
             if (count($items) > 0) {
-                $num = 0;
+                // Originally this was 0, which assumed entire message was first item
+                // Now pass -1, which will inform quarantine_release and quarantine_learn
+                // to scan for entire message regardless of its position in the items list
+                $num = -1;
                 $itemnum = [$num];
                 echo '<td>';
                 if ('release' === $type) {
