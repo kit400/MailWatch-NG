@@ -3583,6 +3583,7 @@ function quarantine_release($list, $num, $to, $rpc_only = false)
 
     // Check for [-1], indicating just to release message itself, regardless of its item position
     if ($num[0] === -1) {
+        $num = [0];
         // Locate message in items
         for ($index=0;$index<count($list);$index++) {
             if (preg_match('/message\/rfc822/', $list[$index]['type'])) {
@@ -3717,6 +3718,7 @@ function quarantine_learn($list, $num, $type, $rpc_only = false)
 
     // Check for [-1], indicating just to release message itself, regardless of its item position
     if ($num[0] === -1) {
+        $num = [0];
         // Locate message in items
         for ($index=0;$index<count($list);$index++) {
             if (preg_match('/message\/rfc822/', $list[$index]['type'])) {
