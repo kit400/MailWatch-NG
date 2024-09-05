@@ -3528,7 +3528,12 @@ SELECT
                     $quarantined[$count]['to'] = $row->to_address;
                     $quarantined[$count]['file'] = $f;
                     $file = escapeshellarg($quarantine . '/' . $f);
-                    $quarantined[$count]['type'] = ltrim(rtrim(shell_exec('/usr/bin/file -bi ' . $file)));
+                    $type = ltrim(rtrim(shell_exec('/usr/bin/file -bi ' . $file)));
+                    // In some cases file returns text/x-mail instead of message/rfc822
+                    if (preg_match('!^text/x-mail!', $type)) {
+                        $type = 'message/rfc822';
+                    }
+                    $quarantined[$count]['type'] = $type;
                     $quarantined[$count]['path'] = $quarantine . '/' . $f;
                     $quarantined[$count]['md5'] = md5($quarantine . '/' . $f);
                     $quarantined[$count]['dangerous'] = $infected;
@@ -3575,6 +3580,18 @@ function quarantine_release($list, $num, $to, $rpc_only = false)
 
     $new = quarantine_list_items($list[0]['msgid']);
     $list = &$new;
+
+    // Check for [-1], indicating just to release message itself, regardless of its item position
+    if ($num[0] === -1) {
+        $num = [0];
+        // Locate message in items
+        for ($index=0;$index<count($list);$index++) {
+            if (preg_match('/message\/rfc822/', $list[$index]['type'])) {
+                $num = [$index];
+                break;
+            }
+        }
+    }
 
     if (!$rpc_only && is_local($list[0]['host'])) {
         if (!QUARANTINE_USE_SENDMAIL) {
@@ -3698,6 +3715,19 @@ function quarantine_learn($list, $num, $type, $rpc_only = false)
     }
     $new = quarantine_list_items($list[0]['msgid']);
     $list = &$new;
+
+    // Check for [-1], indicating just to release message itself, regardless of its item position
+    if ($num[0] === -1) {
+        $num = [0];
+        // Locate message in items
+        for ($index=0;$index<count($list);$index++) {
+            if (preg_match('/message\/rfc822/', $list[$index]['type'])) {
+                $num = [$index];
+                break;
+            }
+        }
+    }
+
     $status = [];
     if (!$rpc_only && is_local($list[0]['host'])) {
         // prevent sa-learn process blocking complete apache server
