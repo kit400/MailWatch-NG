@@ -43,7 +43,7 @@ if (extension_loaded('uopz') && !(ini_get('uopz.disable') || ini_get('uopz.exit'
 }
 
 // Read in MailWatch configuration file
-if (!is_readable(__DIR__ . '/conf.php')) {
+if (!file_exists(__DIR__ . '/conf.php') || !is_readable(__DIR__ . '/conf.php')) {
     exit(__('cannot_read_conf'));
 }
 require_once __DIR__ . '/conf.php';

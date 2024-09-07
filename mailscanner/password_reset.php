@@ -294,7 +294,7 @@ if (defined('PWD_RESET') && PWD_RESET === true) {
             </div>
             <div class="border-rounded">
                 <h1><?php echo __('title63'); ?></h1>
-                <?php if (file_exists('conf.php')) {
+                <?php if (file_exists(__DIR__ . '/conf.php')) {
                     if ('' !== $fields) {
                         ?>
                         <form name="pwdresetform" class="pwdresetform" method="post" action="<?php echo sanitizeInput($_SERVER['PHP_SELF']); ?>" autocomplete="off">

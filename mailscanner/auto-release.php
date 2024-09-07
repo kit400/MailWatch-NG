@@ -26,7 +26,7 @@
  */
 
 require_once __DIR__ . '/functions.php';
-if (file_exists('conf.php')) {
+if (file_exists(__DIR__ . '/conf.php')) {
     $output = [];
     if (isset($_GET['mid']) && (isset($_GET['r']) || isset($_GET['amp;r']))) {
         dbconn();
