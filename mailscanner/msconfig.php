@@ -36,7 +36,7 @@ if ('A' !== $_SESSION['user_type']) {
     audit_log(__('auditlog27', true));
 
     $conf_dir = get_conf_include_folder();
-    $MailScanner_conf_file = '' . MS_CONFIG_DIR . 'MailScanner.conf';
+    $MailScanner_conf_file = MS_CONFIG_DIR . 'MailScanner.conf';
 
     echo '<table border="0" cellpadding="1" cellspacing="1" class="maildetail" width="100%">';
     echo '<tr><th colspan="2">' . __('msconfig27') . '</th></tr>';

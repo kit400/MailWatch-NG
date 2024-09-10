@@ -1752,6 +1752,10 @@ function get_conf_var($name, $force = false)
  */
 function parse_conf_dir($conf_dir)
 {
+    if (!realpath($conf_dir)) {
+        $conf_dir = rtrim(MS_CONFIG_DIR, '/') . '/' . ltrim($conf_dir, '/');
+    }
+
     $array_output1 = [];
     if ($dh = opendir($conf_dir)) {
         while (($file = readdir($dh)) !== false) {
