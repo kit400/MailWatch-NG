@@ -32,7 +32,7 @@ require_once __DIR__ . '/functions.php';
 // Authentication checking
 require __DIR__ . '/login.function.php';
 
-// add the header information such as the logo, search, menu, ....
+// Add the header information such as the logo, search, menu, ....
 $filter = html_start(__('virusreport50'), 0, false, true);
 
 // Get a list of virus scanners from MailScanner.conf
@@ -54,7 +54,6 @@ foreach ($scanners as $vscanner) {
             break;
         case 'clamd':
             $scanner[$vscanner]['name'] = 'ClamD';
-            // ORIG#$scanner[$vscanner]['regexp'] = "/(?P<file>.+) contains (?P<virus>\S+)/";
             $scanner[$vscanner]['regexp'] = "/(?P<file>.+) was infected: (?P<virus>\S+)/";
             break;
         case 'clamavmodule':
@@ -62,6 +61,8 @@ foreach ($scanners as $vscanner) {
             $scanner[$vscanner]['regexp'] = "/(?P<file>.+) was infected: (?P<virus>\S+)/";
             break;
         case 'f-prot':
+        case 'f-prot-6':
+        case 'f-protd-6':
             $scanner[$vscanner]['name'] = 'F-Prot';
             $scanner[$vscanner]['regexp'] = "/(?P<file>.+) Infection: (?P<virus>\S+)/";
             break;
@@ -71,6 +72,7 @@ foreach ($scanners as $vscanner) {
             $scanner[$vscanner]['regexp'] = "/(?P<file>.+) Found the (?P<virus>\S+) (trojan|virus) !!!/";
             break;
         case 'f-secure':
+        case 'f-secure-12':
             $scanner[$vscanner]['name'] = 'F-Secure';
             $scanner[$vscanner]['regexp'] = "/(?P<file>.+) Infected: (?P<virus>\S+)/";
             break;
@@ -109,6 +111,11 @@ foreach ($scanners as $vscanner) {
         case 'avast':
             $scanner[$vscanner]['name'] = 'Avast';
             $scanner[$vscanner]['regexp'] = '/Avast: found (?P<virus>.*) in (?P<file>.*)/';
+            break;
+        case 'esets':
+        case 'esetsefs':
+            $scanner[$vscanner]['name'] = 'ESET';
+            $scanner[$vscanner]['regexp'] = '/Esets: found (?P<virus>\S+) in (?P<file>\S+)/';
             break;
     }
 }
