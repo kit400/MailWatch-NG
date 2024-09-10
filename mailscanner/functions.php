@@ -120,7 +120,7 @@ set_include_path(
 // ForceUTF8
 require_once __DIR__ . '/lib/ForceUTF8/Encoding.php';
 
-// HTLMPurifier
+// HTMLPurifier
 require_once __DIR__ . '/lib/htmlpurifier/HTMLPurifier.standalone.php';
 
 // Enforce SSL if SSL_ONLY=true
@@ -1100,6 +1100,10 @@ function dbquerydebug($link, $sql)
 function sanitizeInput($string)
 {
     $config = HTMLPurifier_Config::createDefault();
+    $cachePath = rtrim(sys_get_temp_dir(), '/') . '/MailWatch';
+    if (is_dir($cachePath) || mkdir($cachePath)) {
+        $config->set('Cache.SerializerPath', $cachePath);
+    }
     $purifier = new HTMLPurifier($config);
 
     return $purifier->purify($string);
