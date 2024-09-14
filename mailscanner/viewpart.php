@@ -136,9 +136,12 @@ function decode_structure($structure)
             }
             */
             if (isset($structure->ctype_parameters['charset'])) {
-                if ('windows-1255' == strtolower($structure->ctype_parameters['charset'])) {
-                    $structure->body = iconv('ISO-8859-8', 'UTF-8', $structure->body);
-                } elseif ('utf-8' !== strtolower($structure->ctype_parameters['charset'])) {
+                $charset = strtoupper($structure->ctype_parameters['charset']);
+                if ('WINDOWS-1255' === $charset ) {
+                    $structure->body = iconv('ISO-8859-8//TRANSLIT', 'UTF-8', $structure->body);
+                } elseif ( preg_match('/^ISO-8859-([1-9]|10|1[3-6])$/',$charset)) {
+                    $structure->body = iconv(sprintf('%s//TRANSLIT',$charset), 'UTF-8', $structure->body);
+                } elseif ('UTF-8' !== $charset) {
                     $structure->body = getUTF8String($structure->body);
                 }
             }
@@ -156,9 +159,12 @@ function decode_structure($structure)
         case 'text/html':
             echo '<!DOCTYPE html>' . "\n";
             if (isset($structure->ctype_parameters['charset'])) {
-                if ('windows-1255' == strtolower($structure->ctype_parameters['charset'])) {
-                    $structure->body = iconv('ISO-8859-8', 'UTF-8', $structure->body);
-                } elseif ('utf-8' !== strtolower($structure->ctype_parameters['charset'])) {
+                $charset = strtoupper($structure->ctype_parameters['charset']);
+                if ('WINDOWS-1255' === $charset ) {
+                    $structure->body = iconv('ISO-8859-8//TRANSLIT', 'UTF-8', $structure->body);
+                } elseif ( preg_match('/^ISO-8859-([1-9]|10|1[3-6])$/',$charset)) {
+                    $structure->body = iconv(sprintf('%s//TRANSLIT',$charset), 'UTF-8', $structure->body);
+                } elseif ('UTF-8' !== $charset) {
                     $structure->body = getUTF8String($structure->body);
                 }
             }
