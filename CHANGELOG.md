@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+### Added
+- Add support for new AV engine supported by MailScanner (avastd, eset, esetsefs, kaspersky, kse)
+
 ### Changed
 - Update htmlpurifier library to 4.17.0
 - Avoid usage of deprecated utf8_encode function in viewpart

@@ -163,8 +163,7 @@ function getVirusRegex($scanner = null)
      scanner as your primary scanner - this should be the scanner you wish to
      report against.  It defaults to the first scanner found in MailScanner.conf.
 
-     Please submit any new regular expressions to the MailWatch mailing-list or
-     open an issue on GitHub.
+     Please submit any new regular expressions by opening an issue on GitHub.
 
      If you are running MailWatch in DISTRIBUTED_MODE or you wish to override the
      selection of the regular expression - you will need to add one of the following
@@ -186,14 +185,18 @@ function getVirusRegex($scanner = null)
 
     $regex = null;
     switch ($scanner) {
-        case 'none':
-            $regex = '/^Dummy$/';
+        case 'antivir':
+            $regex = '/ALERT: \[(?P<virus>\S+) \S+\]/';
             break;
-        case 'sophos':
-            $regex = '/>>> Virus \'(?P<virus>\S+)\' found in (?P<file>.*)/';
+        case 'avast':
+        case 'avastd':
+            $regex = '/Avast: found (?P<virus>.+) in (?P<file>.*)/';
             break;
-        case 'sophossavi':
-            $regex = '/(?P<file>\S+) was infected by (?P<virus>\S+)/';
+        case 'avg':
+            $regex = '/Found virus (?P<virus>\S+) in file (?P<file>\S+)/';
+            break;
+        case 'bitdefender':
+            $regex = '/(?P<file>\S+) Found virus (?P<virus>\S+)/';
             break;
         case 'clamav':
             $regex = '/(?P<file>.+) contains (?P<virus>\S+)/';
@@ -202,49 +205,52 @@ function getVirusRegex($scanner = null)
         case 'clamavmodule':
             $regex = '/(?P<file>.+) was infected: (?P<virus>\S+)/';
             break;
+        case 'esets':
+        case 'esetsefs':
+            $regex = '/Esets: found (?P<virus>\S+) in (?P<file>\S+)/';
+            break;
+        case 'etrust':
+            $regex = '/(?P<file>\S+) is infected by virus: (?P<virus>\S+)/';
+            break;
         case 'f-prot':
         case 'f-prot-6':
         case 'f-protd-6':
             $regex = '/(?P<file>.+) Infection: (?P<virus>\S+)/';
             break;
-        case 'mcafee':
-        case 'mcafee6':
-            $regex = '/(?P<file>.+) Found the (?P<virus>\S+) virus !!!/';
-            break;
         case 'f-secure':
         case 'f-secure-12':
             $regex = '/(?P<file>.+) Infected: (?P<virus>\S+)/';
             break;
-        case 'avg':
-        case 'norman':
-        case 'trend':
-            $regex = '/Found virus (?P<virus>\S+) in file (?P<file>\S+)/';
-            break;
-        case 'bitdefender':
-            $regex = '/(?P<file>\S+) Found virus (?P<virus>\S+)/';
-            break;
         case 'kaspersky-4.5':
+        case 'kaspersky':
+        case 'kse':
             $regex = '/(?P<file>.+) INFECTED (?P<virus>\S+)/';
             break;
-        case 'etrust':
-            $regex = '/(?P<file>\S+) is infected by virus: (?P<virus>\S+)/';
+        case 'mcafee':
+        case 'mcafee6':
+            $regex = '/(?P<file>.+) Found the (?P<virus>\S+) virus !!!/';
+            break;
+        case 'none':
+            $regex = '/^Dummy$/';
+            break;
+        case 'norman':
+            $regex = '/Found virus (?P<virus>\S+) in file (?P<file>\S+)/';
             break;
         case 'nod32-1.99':
             $regex = '/Found virus (?P<virus>\S+) in (?P<file>\S+)/';
             break;
-        case 'antivir':
-            $regex = '/ALERT: \[(?P<virus>\S+) \S+\]/';
+        case 'sophos':
+            $regex = '/>>> Virus \'(?P<virus>\S+)\' found in (?P<file>.*)/';
             break;
-        case 'avast':
-            $regex = '/Avast: found (?P<virus>.+) in (?P<file>.*)/';
+        case 'sophossavi':
+            $regex = '/(?P<file>\S+) was infected by (?P<virus>\S+)/';
             break;
-        case 'esets':
-        case 'esetsefs':
-            $regex = '/Esets: found (?P<virus>\S+) in (?P<file>\S+)/';
+        case 'trend':
+            $regex = '/Found virus (?P<virus>\S+) in file (?P<file>\S+)/';
             break;
-            // default:
-            // die("<B>" . __('dieerror03') . "</B><BR>\n&nbsp;" . __('diescanner03' . "\n");
-            // break;
+        // default:
+        // die("<B>" . __('dieerror03') . "</B><BR>\n&nbsp;" . __('diescanner03' . "\n");
+        // break;
     }
 
     return $regex;
