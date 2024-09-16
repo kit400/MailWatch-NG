@@ -2,14 +2,20 @@
 
 ## Unreleased
 ### Added
-- Add support for new AV engine supported by MailScanner (avastd, eset, esetsefs, kaspersky, kse)
+- Add support for new AV engine supported by MailScanner (avastd, eset, esetsefs, f-secure, f-prot, kaspersky, kse)
 
 ### Changed
 - Update htmlpurifier library to 4.17.0
 - Avoid usage of deprecated utf8_encode function in viewpart
+- Better Linux OS recognition
 
 ### Compatibility
 - Migrate MailScanner perl script to DBD:MariaDB
+- Update GeoIP to support authentication by account id+license key
+
+### Fixes
+- Fix release of text/x-mail messages (#1306)
+- Improve ISO-8859 charset conversion (#1309)
 
 ## 1.2.23
 ### Added
