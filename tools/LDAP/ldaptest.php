@@ -35,9 +35,10 @@
  */
 $username = '';
 $password = '';
-require '/var/www/html/mailscanner/functions.php';
+
+require '../../mailscanner/functions.php';
 // uncomment the following line for more verbose output
-// $verbose=true;
+// $verbose = true;
 
 echo 'Test connection to server' . PHP_EOL;
 $ds = ldap_connect(LDAP_HOST, LDAP_PORT) or exit('Connection to server failed');
@@ -59,12 +60,12 @@ echo 'Try authenticating as ' . LDAP_USER . PHP_EOL;
 $bindResult = @ldap_bind($ds, LDAP_USER, LDAP_PASS);
 if (false === $bindResult) {
     exit(ldap_print_error($ds));
-} else {
-    echo 'authentication for searching the account was successful' . PHP_EOL;
 }
 
+echo 'authentication for searching the account was successful' . PHP_EOL;
+
 echo "search for $username in LDAP directory" . PHP_EOL;
-$ldap_search_results = ldap_search($ds, LDAP_DN, sprintf(LDAP_FILTER, $username)) or exit('searching for accounts failed');
+$ldap_search_results = ldap_search($ds, LDAP_DN, sprintf(LDAP_FILTER, $username));
 echo 'search done' . PHP_EOL;
 if (false === $ldap_search_results) {
     exit('no valid result while searching for acccounts');
@@ -74,9 +75,9 @@ if (1 > ldap_count_entries($ds, $ldap_search_results)) {
 }
 if (ldap_count_entries($ds, $ldap_search_results) > 1) {
     exit('no accounts found matching the filter');
-} else {
-    echo 'found ' . ldap_count_entries($ds, $ldap_search_results) . ' accounts matching the filter' . PHP_EOL;
 }
+
+echo 'found ' . ldap_count_entries($ds, $ldap_search_results) . ' accounts matching the filter' . PHP_EOL;
 
 if ($ldap_search_results) {
     $result = ldap_get_entries($ds, $ldap_search_results) or exit('getting account search results failed');
@@ -90,8 +91,8 @@ if ($ldap_search_results) {
             var_dump($result);
         }
 
-        if (!isset($result[0][LDAP_USERNAME_FIELD], $result[0][LDAP_USERNAME_FIELD][0])) {
-            if (!isset($result[0][strtolower(LDAP_USERNAME_FIELD)], $result[0][strtolower(LDAP_USERNAME_FIELD)][0])) {
+        if (!isset($result[0][LDAP_USERNAME_FIELD][0])) {
+            if (!isset($result[0][strtolower(LDAP_USERNAME_FIELD)][0])) {
                 exit('Use all lower case LDAP_USERNAME_FIELD!');
             }
             exit('found ldap account object does not contain the username field: ' . LDAP_USERNAME_FIELD);
@@ -126,7 +127,7 @@ if ($ldap_search_results) {
             if (!isset($email)) {
                 exit('no smtp mail found');
             }
-            echo 'db data for account: Mail: ' . $email . '; Internal account id' . $result[0]['cn'][0] . PHP_EOL;
+            echo 'db data for account: Mail: ' . $email . '; Internal account id: ' . $result[0]['cn'][0] . PHP_EOL;
             exit('login success' . PHP_EOL);
         }
 

@@ -8,6 +8,7 @@
         "ext-mysqli": "*"
     },
     "require-dev": {
+        "ext-ldap": "*",
         "friendsofphp/php-cs-fixer": "^3",
         "phpstan/phpstan": "^1",
         "php-parallel-lint/php-parallel-lint": "^1.4",
@@ -15,6 +16,9 @@
         "rector/rector": "^1",
         "phpunit/phpunit": "^9.6",
         "symfony/var-dumper": "^2.8|^3.4|^4.4|^5.4|^6|^7"
+    },
+    "suggest": {
+        "ext-ldap": "For LDAP support"
     },
     "autoload-dev": {
         "psr-4": {
