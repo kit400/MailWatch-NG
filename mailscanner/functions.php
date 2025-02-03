@@ -3274,7 +3274,7 @@ function imap_authenticate($username, $password)
         ) {
             $imapUsername = substr($username, 0, strrpos($username, '@'));
         }
-        $mbox = imap_open(IMAP_HOST, $imapUsername, $password, null, 0);
+        $mbox = imap_open(IMAP_HOST, $imapUsername, $password, \OP_READONLY, 0);
 
         if (false === $mbox) {
             // auth faild
