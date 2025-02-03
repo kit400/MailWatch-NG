@@ -2945,6 +2945,35 @@ function address_filter_sql($addresses, $type)
 }
 
 /**
+ * Constructs an LDAP URI using the given host and port.
+ *
+ * If the host doesn't already include a protocol, it will be prefixed with "ldaps://" when the port is "636",
+ * otherwise with "ldap://". If the URI doesn't already contain a port, the port is appended.
+ *
+ * @param string     $host The LDAP host.
+ * @param int|string $port The LDAP port.
+ * @return string The constructed LDAP URI.
+ */
+function ldap_build_uri($host, $port) {
+    // Convert the port to a string immediately
+    $portStr = (string)$port;
+
+    // If the host doesn't already start with "ldap://" or "ldaps://", prepend the appropriate protocol
+    if (stripos($host, 'ldap://') !== 0 && stripos($host, 'ldaps://') !== 0) {
+        $protocol = ($portStr === '636') ? 'ldaps://' : 'ldap://';
+        $host = $protocol . $host;
+    }
+
+    // Use parse_url to check if the URI already includes a port
+    $parsedUrl = parse_url($host);
+    if ($portStr && !isset($parsedUrl['port'])) {
+        $host .= ':' . $portStr;
+    }
+
+    return $host;
+}
+
+/**
  * @param string $username
  * @param string $password
  *
@@ -2954,7 +2983,8 @@ function ldap_authenticate($username, $password)
 {
     $username = ldap_escape(strtolower($username), '', LDAP_ESCAPE_DN);
     if ('' !== $username && '' !== $password) {
-        $ds = ldap_connect(LDAP_HOST, LDAP_PORT) or exit(__('ldpaauth103') . ' ' . LDAP_HOST);
+        $ldap_uri = ldap_build_uri(LDAP_HOST, LDAP_PORT);
+        $ds = ldap_connect($ldap_uri) or exit(__('ldpaauth103') . ' ' . $ldap_uri);
 
         $ldap_protocol_version = 3;
         if (defined('LDAP_PROTOCOL_VERSION')) {
@@ -3172,8 +3202,9 @@ function ldap_get_conf_var($entry)
     // Translate MailScanner.conf vars to internal
     $entry = translate_etoi($entry);
 
-    $lh = ldap_connect(LDAP_HOST, LDAP_PORT)
-    or exit(__('ldapgetconfvar103') . ' ' . LDAP_HOST . "\n");
+    $ldap_uri = ldap_build_uri(LDAP_HOST, LDAP_PORT);
+    $lh = ldap_connect($ldap_uri)
+    or exit(__('ldapgetconfvar103') . ' ' . $ldap_uri . "\n");
 
     @ldap_bind($lh)
     or exit(__('ldapgetconfvar203') . "\n");
@@ -3212,8 +3243,9 @@ function ldap_get_conf_truefalse($entry)
     // Translate MailScanner.conf vars to internal
     $entry = translate_etoi($entry);
 
-    $lh = ldap_connect(LDAP_HOST, LDAP_PORT)
-    or exit(__('ldapgetconfvar103') . ' ' . LDAP_HOST . "\n");
+    $ldap_uri = ldap_build_uri(LDAP_HOST, LDAP_PORT);
+    $lh = ldap_connect($ldap_uri)
+    or exit(__('ldapgetconfvar103') . ' ' . $ldap_uri . "\n");
 
     @ldap_bind($lh)
     or exit(__('ldapgetconfvar203') . "\n");
