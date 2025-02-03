@@ -50,14 +50,14 @@ require_once __DIR__ . '/conf.php';
 require_once __DIR__ . '/database.php';
 
 // more secure session cookies
-ini_set('session.use_cookies', 1);
-ini_set('session.cookie_httponly', 1);
-ini_set('session.use_only_cookies', 1);
-ini_set('session.use_trans_sid', 0);
+ini_set('session.use_cookies', '1');
+ini_set('session.cookie_httponly', '1');
+ini_set('session.use_only_cookies', '1');
+ini_set('session.use_trans_sid', '0');
 
 $session_cookie_secure = false;
 if (SSL_ONLY === true) {
-    ini_set('session.cookie_secure', 1);
+    ini_set('session.cookie_secure', '1');
     $session_cookie_secure = true;
 }
 
@@ -1718,7 +1718,7 @@ function get_default_ruleset_value($file)
  * @param string $name
  * @param bool   $force
  *
- * @return bool
+ * @return mixed
  */
 function get_conf_var($name, $force = false)
 {
@@ -4506,7 +4506,7 @@ function ip_in_range($ip, $net = false, $privateLocal = false)
 }
 
 /**
- * @param string $input
+ * @param string|int|float $input
  * @param string $type
  *
  * @return string|false
@@ -4551,8 +4551,8 @@ function deepSanitizeInput($input, $type)
 }
 
 /**
- * @param string|bool $input
- * @param string      $type
+ * @param string|int|float|bool $input
+ * @param string $type
  *
  * @return bool
  */

@@ -160,7 +160,7 @@ class Net_Socket extends PEAR
         if (function_exists('error_clear_last')) {
             error_clear_last();
         } else {
-            $old_track_errors = @ini_set('track_errors', 1);
+            $old_track_errors = @ini_set('track_errors', '1');
         }
 
         if ($timeout <= 0) {

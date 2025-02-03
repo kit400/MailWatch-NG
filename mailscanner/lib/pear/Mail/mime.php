@@ -495,13 +495,13 @@ class Mail_mime
 
         // Temporarily reset magic_quotes_runtime and read file contents
         if (version_compare(PHP_VERSION, '5.4.0', '<')) {
-            $magic_quotes = @ini_set('magic_quotes_runtime', 0);
+            $magic_quotes = @ini_set('magic_quotes_runtime', '0');
         }
 
         $cont = file_get_contents($file_name);
 
         if (isset($magic_quotes)) {
-            @ini_set('magic_quotes_runtime', $magic_quotes);
+            @ini_set('magic_quotes_runtime', (string) $magic_quotes);
         }
 
         return $cont;
@@ -770,7 +770,7 @@ class Mail_mime
 
         // Temporarily reset magic_quotes_runtime and read file contents
         if (version_compare(PHP_VERSION, '5.4.0', '<')) {
-            $magic_quotes = @ini_set('magic_quotes_runtime', 0);
+            $magic_quotes = @ini_set('magic_quotes_runtime', '0');
         }
 
         if (!($fh = fopen($filename, 'ab'))) {
@@ -786,7 +786,7 @@ class Mail_mime
         fclose($fh);
 
         if (isset($magic_quotes)) {
-            @ini_set('magic_quotes_runtime', $magic_quotes);
+            @ini_set('magic_quotes_runtime', (string) $magic_quotes);
         }
 
         // Write the rest of the message into file
@@ -823,7 +823,7 @@ class Mail_mime
 
         // Temporarily reset magic_quotes_runtime and read file contents
         if (version_compare(PHP_VERSION, '5.4.0', '<')) {
-            $magic_quotes = @ini_set('magic_quotes_runtime', 0);
+            $magic_quotes = @ini_set('magic_quotes_runtime', '0');
         }
 
         // Write the rest of the message into file
@@ -834,7 +834,7 @@ class Mail_mime
         }
 
         if (isset($magic_quotes)) {
-            @ini_set('magic_quotes_runtime', $magic_quotes);
+            @ini_set('magic_quotes_runtime', (string) $magic_quotes);
         }
 
         return $res ? $res : true;

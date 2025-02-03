@@ -26,7 +26,7 @@
  */
 
 require_once __DIR__ . '/functions.php';
-ini_set('memory_limit', MEMORY_LIMIT);
+ini_set('memory_limit', (string) MEMORY_LIMIT);
 
 function rpc_get_quarantine($msg)
 {
@@ -226,28 +226,28 @@ function rpc_bayes_info()
         if (preg_match('/\S+\s+\S+\s+(\S+)\s+\S+\s+non-token data: (.+)/', $line, $regs)) {
             switch ($regs[2]) {
                 case 'nspam':
-                    $output['Number of Spam Messages:'] = new xmlrpcval(number_format($regs[1]));
+                    $output['Number of Spam Messages:'] = new xmlrpcval(number_format((float) $regs[1]));
                     break;
                 case 'nham':
-                    $output['Number of Ham Messages:'] = new xmlrpcval(number_format($regs[1]));
+                    $output['Number of Ham Messages:'] = new xmlrpcval(number_format((float) $regs[1]));
                     break;
                 case 'ntokens':
-                    $output['Number of Tokens:'] = new xmlrpcval(number_format($regs[1]));
+                    $output['Number of Tokens:'] = new xmlrpcval(number_format((float) $regs[1]));
                     break;
                 case 'oldest atime':
-                    $output['Oldest Token:'] = new xmlrpcval(date('r', $regs[1]));
+                    $output['Oldest Token:'] = new xmlrpcval(date('r', (int) $regs[1]));
                     break;
                 case 'newest atime':
-                    $output['Newest Token:'] = new xmlrpcval(date('r', $regs[1]));
+                    $output['Newest Token:'] = new xmlrpcval(date('r', (int) $regs[1]));
                     break;
                 case 'last journal sync atime':
-                    $output['Last Journal Sync:'] = new xmlrpcval(date('r', $regs[1]));
+                    $output['Last Journal Sync:'] = new xmlrpcval(date('r', (int) $regs[1]));
                     break;
                 case 'last expiry atime':
-                    $output['Last Expiry:'] = new xmlrpcval(date('r', $regs[1]));
+                    $output['Last Expiry:'] = new xmlrpcval(date('r', (int) $regs[1]));
                     break;
                 case 'last expire reduction count':
-                    $output['Last Expiry Reduction Count:'] = new xmlrpcval(number_format($regs[1]));
+                    $output['Last Expiry Reduction Count:'] = new xmlrpcval(number_format((float) $regs[1]));
                     break;
             }
         }

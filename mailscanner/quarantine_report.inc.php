@@ -262,7 +262,7 @@ ORDER BY a.date DESC, a.time DESC';
             ini_set('html_errors', 'off');
             ini_set('display_errors', 'on');
             ini_set('implicit_flush', 'false');
-            ini_set('error_reporting', E_ALL);
+            ini_set('error_reporting', (string) E_ALL);
         } else {
             require_once __DIR__ . '/lib/pear/Mail.php';
             require_once __DIR__ . '/lib/pear/Mail/smtp.php';
@@ -270,7 +270,7 @@ ORDER BY a.date DESC, a.time DESC';
         }
         date_default_timezone_set(TIME_ZONE);
         ini_set('memory_limit', '256M');
-        ini_set('max_execution_time', 0);
+        ini_set('max_execution_time', '0');
 
         if (count($usersForReport) > 0) {
             $userConditions = [];
