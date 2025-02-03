@@ -3018,6 +3018,9 @@ function ldap_authenticate($username, $password)
                 if (defined('LDAP_BIND_SUFFIX')) {
                     $user .= LDAP_BIND_SUFFIX;
                 }
+                if (!defined('LDAP_BIND_PREFIX') && !defined('LDAP_BIND_SUFFIX')) {
+                    $user=$result[0]['dn'];
+                }
 
                 if (!isset($result[0][LDAP_EMAIL_FIELD])) {
                     @trigger_error(__('ldapno03') . ' "' . LDAP_EMAIL_FIELD . '" ' . __('ldapresults03'));
