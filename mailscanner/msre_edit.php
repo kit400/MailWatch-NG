@@ -305,7 +305,7 @@ function Show_Form($status_msg, $short_filename, $file_contents, $CONF_ruleset_k
         // all, but w/the new way i'm writing the rules (w/the border),
         // each one is in a seperate table, and they don't line up
         // w/out the select box.
-        if (strtolower('default' === $rule_part['1target'])) {
+        if ('default' === strtolower($rule_part['1target'])) {
             $rule_action_select_html .= ' disabled';
         }
 
