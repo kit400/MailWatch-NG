@@ -4151,21 +4151,19 @@ function is_rpc_client_allowed()
 function xmlrpc_wrapper($host, $msg)
 {
     $method = 'http';
-    // Work out port
+
     if (defined('SSL_ONLY') && SSL_ONLY) {
-        $port = 443;
         $method = 'https';
+        $port = defined('RPC_PORT') ? RPC_PORT : 443;
+    } elseif (defined('RPC_SSL') && RPC_SSL) {
+        $method = 'https';
+        $port = defined('RPC_PORT') ? RPC_PORT : 443;
     } elseif (defined('RPC_PORT')) {
         $port = RPC_PORT;
-        if (defined('RPC_SSL') && RPC_SSL) {
-            $method = 'https';
-            if (!defined('RPC_PORT')) {
-                $port = 443;
-            }
-        }
     } else {
         $port = 80;
     }
+
     $client = new xmlrpc_client(constant('RPC_RELATIVE_PATH') . '/rpcserver.php', $host, $port);
     if (DEBUG) {
         $client->setDebug(1);
