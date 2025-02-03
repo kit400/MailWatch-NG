@@ -18,7 +18,8 @@
         "symfony/var-dumper": "^2.8|^3.4|^4.4|^5.4|^6|^7"
     },
     "suggest": {
-        "ext-ldap": "For LDAP support"
+        "ext-ldap": "For LDAP support",
+        "ext-xml": "For XMLRPC support"
     },
     "autoload-dev": {
         "psr-4": {

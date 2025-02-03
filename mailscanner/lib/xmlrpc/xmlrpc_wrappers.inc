@@ -437,7 +437,7 @@ function wrap_php_class($classname, $extra_options = array())
 }
 
 /**
- * Given an xmlrpc client and a method name, register a php wrapper function
+ * Given an XML-RPC client and a method name, register a php wrapper function
  * that will call it and return results using native php types for both
  * params and results. The generated php function will return an xmlrpcresp
  * oject for failed xmlrpc calls
@@ -455,11 +455,11 @@ function wrap_php_class($classname, $extra_options = array())
  * and reused for the connection used during the call to the generated
  * php function.
  * Calling the generated php function 'might' be slow: a new xmlrpc client
- * is created on every invocation and an xmlrpc-connection opened+closed.
+ * is created on every invocation and an XML-RPC-connection opened+closed.
  * An extra 'debug' param is appended to param list of xmlrpc method, useful
  * for debugging purposes.
  *
- * @param xmlrpc_client $client        an xmlrpc client set up correctly to communicate with target server
+ * @param xmlrpc_client $client        an XML-RPC client set up correctly to communicate with target server
  * @param string        $methodname    the xmlrpc method to be mapped to a php function
  * @param array         $extra_options array of options that specify conversion details. valid ptions include
  *                                     integer       signum      the index of the method signature to use in mapping (if method exposes many sigs)
