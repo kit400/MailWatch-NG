@@ -50,14 +50,14 @@ require_once __DIR__ . '/conf.php';
 require_once __DIR__ . '/database.php';
 
 // more secure session cookies
-ini_set('session.use_cookies', 1);
-ini_set('session.cookie_httponly', 1);
-ini_set('session.use_only_cookies', 1);
-ini_set('session.use_trans_sid', 0);
+ini_set('session.use_cookies', '1');
+ini_set('session.cookie_httponly', '1');
+ini_set('session.use_only_cookies', '1');
+ini_set('session.use_trans_sid', '0');
 
 $session_cookie_secure = false;
 if (SSL_ONLY === true) {
-    ini_set('session.cookie_secure', 1);
+    ini_set('session.cookie_secure', '1');
     $session_cookie_secure = true;
 }
 
@@ -125,7 +125,10 @@ require_once __DIR__ . '/lib/htmlpurifier/HTMLPurifier.standalone.php';
 
 // Enforce SSL if SSL_ONLY=true
 if (PHP_SAPI !== 'cli' && SSL_ONLY && !empty($_SERVER['PHP_SELF'])) {
-    if (!isset($_SERVER['HTTPS']) || 'on' !== $_SERVER['HTTPS']) {
+    // Is the connection secure?
+    $is_ssl = !empty($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] === 'on' || $_SERVER['HTTPS'] === '1');
+    // Force SSL with a redirect to https:// if not already using SSL
+    if (!$is_ssl) {
         header('Location: https://' . sanitizeInput($_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']));
         exit;
     }
@@ -1718,7 +1721,7 @@ function get_default_ruleset_value($file)
  * @param string $name
  * @param bool   $force
  *
- * @return bool
+ * @return mixed
  */
 function get_conf_var($name, $force = false)
 {
@@ -2942,6 +2945,35 @@ function address_filter_sql($addresses, $type)
 }
 
 /**
+ * Constructs an LDAP URI using the given host and port.
+ *
+ * If the host doesn't already include a protocol, it will be prefixed with "ldaps://" when the port is "636",
+ * otherwise with "ldap://". If the URI doesn't already contain a port, the port is appended.
+ *
+ * @param string     $host The LDAP host.
+ * @param int|string $port The LDAP port.
+ * @return string The constructed LDAP URI.
+ */
+function ldap_build_uri($host, $port) {
+    // Convert the port to a string immediately
+    $portStr = (string)$port;
+
+    // If the host doesn't already start with "ldap://" or "ldaps://", prepend the appropriate protocol
+    if (stripos($host, 'ldap://') !== 0 && stripos($host, 'ldaps://') !== 0) {
+        $protocol = ($portStr === '636') ? 'ldaps://' : 'ldap://';
+        $host = $protocol . $host;
+    }
+
+    // Use parse_url to check if the URI already includes a port
+    $parsedUrl = parse_url($host);
+    if ($portStr && !isset($parsedUrl['port'])) {
+        $host .= ':' . $portStr;
+    }
+
+    return $host;
+}
+
+/**
  * @param string $username
  * @param string $password
  *
@@ -2951,7 +2983,8 @@ function ldap_authenticate($username, $password)
 {
     $username = ldap_escape(strtolower($username), '', LDAP_ESCAPE_DN);
     if ('' !== $username && '' !== $password) {
-        $ds = ldap_connect(LDAP_HOST, LDAP_PORT) or exit(__('ldpaauth103') . ' ' . LDAP_HOST);
+        $ldap_uri = ldap_build_uri(LDAP_HOST, LDAP_PORT);
+        $ds = ldap_connect($ldap_uri) or exit(__('ldpaauth103') . ' ' . $ldap_uri);
 
         $ldap_protocol_version = 3;
         if (defined('LDAP_PROTOCOL_VERSION')) {
@@ -3172,8 +3205,9 @@ function ldap_get_conf_var($entry)
     // Translate MailScanner.conf vars to internal
     $entry = translate_etoi($entry);
 
-    $lh = ldap_connect(LDAP_HOST, LDAP_PORT)
-    or exit(__('ldapgetconfvar103') . ' ' . LDAP_HOST . "\n");
+    $ldap_uri = ldap_build_uri(LDAP_HOST, LDAP_PORT);
+    $lh = ldap_connect($ldap_uri)
+    or exit(__('ldapgetconfvar103') . ' ' . $ldap_uri . "\n");
 
     @ldap_bind($lh)
     or exit(__('ldapgetconfvar203') . "\n");
@@ -3212,8 +3246,9 @@ function ldap_get_conf_truefalse($entry)
     // Translate MailScanner.conf vars to internal
     $entry = translate_etoi($entry);
 
-    $lh = ldap_connect(LDAP_HOST, LDAP_PORT)
-    or exit(__('ldapgetconfvar103') . ' ' . LDAP_HOST . "\n");
+    $ldap_uri = ldap_build_uri(LDAP_HOST, LDAP_PORT);
+    $lh = ldap_connect($ldap_uri)
+    or exit(__('ldapgetconfvar103') . ' ' . $ldap_uri . "\n");
 
     @ldap_bind($lh)
     or exit(__('ldapgetconfvar203') . "\n");
@@ -3277,7 +3312,7 @@ function imap_authenticate($username, $password)
         ) {
             $imapUsername = substr($username, 0, strrpos($username, '@'));
         }
-        $mbox = imap_open(IMAP_HOST, $imapUsername, $password, null, 0);
+        $mbox = imap_open(IMAP_HOST, $imapUsername, $password, \OP_READONLY, 0);
 
         if (false === $mbox) {
             // auth faild
@@ -4509,7 +4544,7 @@ function ip_in_range($ip, $net = false, $privateLocal = false)
 }
 
 /**
- * @param string $input
+ * @param string|int|float $input
  * @param string $type
  *
  * @return string|false
@@ -4554,8 +4589,8 @@ function deepSanitizeInput($input, $type)
 }
 
 /**
- * @param string|bool $input
- * @param string      $type
+ * @param string|int|float|bool $input
+ * @param string $type
  *
  * @return bool
  */

@@ -49,7 +49,7 @@ $GLOBALS['_PEAR_destructor_object_list'] = [];
 $GLOBALS['_PEAR_shutdown_funcs']         = [];
 $GLOBALS['_PEAR_error_handler_stack']    = [];
 
-@ini_set('track_errors', true);
+@ini_set('track_errors', 'true');
 
 /**
  * Base class for other PEAR classes.  Provides rudimentary

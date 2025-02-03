@@ -31,8 +31,11 @@ if (USE_LDAP === true) {
     exit(__('pwdresetldap63'));
 }
 
-if (PHP_SAPI !== 'cli' && SSL_ONLY && (!empty($_SERVER['PHP_SELF']))) {
-    if ('on' === !$_SERVER['HTTPS']) {
+if (PHP_SAPI !== 'cli' && SSL_ONLY && !empty($_SERVER['PHP_SELF'])) {
+    // Is the connection secure?
+    $is_ssl = !empty($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] === 'on' || $_SERVER['HTTPS'] === '1');
+    // Force SSL with a redirect to https:// if not already using SSL
+    if (!$is_ssl) {
         header('Location: https://' . sanitizeInput($_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']));
         exit;
     }

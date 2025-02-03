@@ -30,7 +30,7 @@ require_once __DIR__ . '/lib/pear/Mail/mimeDecode.php';
 
 require __DIR__ . '/login.function.php';
 
-ini_set('memory_limit', MEMORY_LIMIT);
+ini_set('memory_limit', (string) MEMORY_LIMIT);
 
 if (!isset($_GET['id'])) {
     exit(__('nomessid58'));

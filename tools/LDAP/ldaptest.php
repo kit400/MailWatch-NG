@@ -41,7 +41,8 @@ require '../../mailscanner/functions.php';
 // $verbose = true;
 
 echo 'Test connection to server' . PHP_EOL;
-$ds = ldap_connect(LDAP_HOST, LDAP_PORT) or exit('Connection to server failed');
+$ldap_uri = ldap_build_uri(LDAP_HOST, LDAP_PORT);
+$ds = ldap_connect($ldap_uri) or exit(sprintf('Connection to server "%s" failed', $ldap_uri));
 
 $ldap_protocol_version = 3;
 if (defined('LDAP_PROTOCOL_VERSION')) {

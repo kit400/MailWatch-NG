@@ -19,7 +19,8 @@
     },
     "suggest": {
         "ext-ldap": "For LDAP support",
-        "ext-xml": "For XMLRPC support"
+        "ext-xml": "For XMLRPC support",
+        "ext-imap": "For IMAP support"
     },
     "autoload-dev": {
         "psr-4": {
