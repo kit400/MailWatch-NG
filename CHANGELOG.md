@@ -3,10 +3,11 @@
 ## Unreleased
 ### Added
 - Add support for new AV engine supported by MailScanner (avastd, eset, esetsefs, f-secure, f-prot, kaspersky, kse)
+- Allow foo@*.domain.ext in allow/block lists 
 
 ### Changed
 - Update htmlpurifier library to 4.17.0
-- Avoid usage of deprecated utf8_encode function in viewpart
+- Avoid usage of the deprecated utf8_encode function in the viewpart
 - Better Linux OS recognition
 
 ### Compatibility
