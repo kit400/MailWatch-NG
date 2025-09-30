@@ -1,9 +1,11 @@
 # Changelog
 
 ## Unreleased
+
+## 1.2.24
 ### Added
 - Add support for new AV engine supported by MailScanner (avastd, eset, esetsefs, f-secure, f-prot, kaspersky, kse)
-- Allow foo@*.domain.ext in allow/block lists 
+- Allow foo@*.domain.ext in allow/block lists (#1316)
 
 ### Changed
 - Update htmlpurifier library to 4.17.0
