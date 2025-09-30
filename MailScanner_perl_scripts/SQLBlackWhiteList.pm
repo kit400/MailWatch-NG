@@ -238,6 +238,12 @@ sub LookupList {
 
     # $ip1, $ip2, $ip3 all end in a trailing "."
 
+    # Precompute local part once
+    my ($localpart) = split /@/, $from;
+
+    # Precompute bounce@*.subdomain patterns
+    my @patterns = map { $localpart . '@' . $_ } @subdomains;
+
     # It is in the list if either the exact address is listed,
     # the domain is listed,
     # the IP address is listed,
@@ -256,8 +262,9 @@ sub LookupList {
         return 1 if $BlackWhite->{$i}{$ip1};
         return 1 if $BlackWhite->{$i}{$ip1c};
         return 1 if $BlackWhite->{$i}{'default'};
-        foreach (@subdomains) {
-            return 1 if $BlackWhite->{$i}{$_};
+        foreach my $sub (@subdomains) {
+            return 1 if $BlackWhite->{$i}{$sub};            # *.subdomain
+            return 1 if $BlackWhite->{$i}{$localpart.'@'.$sub}; # bounce@*.subdomain
         }
     }
 
