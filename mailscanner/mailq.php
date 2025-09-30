@@ -29,7 +29,7 @@ require_once __DIR__ . '/functions.php';
 
 require __DIR__ . '/login.function.php';
 
-html_start(__('mqviewer24'), STATUS_REFRESH, false, false);
+html_start(__('mqviewer24'), STATUS_REFRESH, false);
 
 if (false === checkToken($_GET['token'])) {
     header('Location: login.php?error=pagetimeout');

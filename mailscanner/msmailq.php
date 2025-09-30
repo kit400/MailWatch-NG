@@ -29,7 +29,7 @@ require_once __DIR__ . '/functions.php';
 
 require __DIR__ . '/login.function.php';
 
-html_start(__('mqviewer32'));
+html_start(__('mqviewer32'), 0, false);
 
 echo '<b>' . __('mqviewer32') . '</b>' . "\n";
 echo '<pre>';
