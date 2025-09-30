@@ -2227,7 +2227,7 @@ class xmlrpcmsg
             print "<PRE>---GOT---\n" . htmlentities($data) . "\n---END---\n</PRE>";
         }
 
-        if ($data == '') {
+        if ($data === '') {
             error_log('XML-RPC: ' . __METHOD__ . ': no response received from server.');
             $r = new xmlrpcresp(0, $GLOBALS['xmlrpcerr']['no_data'], $GLOBALS['xmlrpcstr']['no_data']);
             return $r;
@@ -2326,7 +2326,7 @@ class xmlrpcmsg
         xml_set_default_handler($parser, 'xmlrpc_dh');
 
         // first error check: xml not well formed
-        if (!xml_parse($parser, $data, count($data))) {
+        if (!xml_parse($parser, $data, $data !== '')) {
             // thanks to Peter Kocks <peter.kocks@baygate.com>
             if ((xml_get_current_line_number($parser)) == 1) {
                 $errstr = 'XML error at line 1, check URL';
@@ -3179,7 +3179,7 @@ function php_xmlrpc_decode_xml($xml_val, $options = array())
     xml_set_element_handler($parser, 'xmlrpc_se_any', 'xmlrpc_ee');
     xml_set_character_data_handler($parser, 'xmlrpc_cd');
     xml_set_default_handler($parser, 'xmlrpc_dh');
-    if (!xml_parse($parser, $xml_val, 1)) {
+    if (!xml_parse($parser, $xml_val, true)) {
         $errstr = sprintf('XML error: %s at line %d, column %d',
             xml_error_string(xml_get_error_code($parser)),
             xml_get_current_line_number($parser), xml_get_current_column_number($parser));
@@ -3241,7 +3241,7 @@ function decode_chunked($buffer)
         $chunkend = strpos($buffer, "\r\n", $chunkstart + $chunk_size);
 
         // just in case we got a broken connection
-        if ($chunkend == false) {
+        if ($chunkend === false) {
             $chunk = substr($buffer, $chunkstart);
             // append chunk-data to entity-body
             $new .= $chunk;
@@ -3258,10 +3258,11 @@ function decode_chunked($buffer)
         // read chunk-size and crlf
         $chunkstart = $chunkend + 2;
 
-        $chunkend = strpos($buffer, "\r\n", $chunkstart) + 2;
-        if ($chunkend == false) {
+        $pos = strpos($buffer, "\r\n", $chunkstart);
+        if ($pos === false) {
             break; //just in case we got a broken connection
         }
+        $chunkend = $pos + 2;
         $temp = substr($buffer, $chunkstart, $chunkend - $chunkstart);
         $chunk_size = hexdec(trim($temp));
         $chunkstart = $chunkend;
