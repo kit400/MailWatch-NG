@@ -7,7 +7,7 @@
 /_msconfig/
 /vendor/
 
+/composer.lock
 /.php-cs-fixer.cache
-/.composer.lock
 /.phpunit.cache
 /phpstan.neon

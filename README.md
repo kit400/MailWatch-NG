@@ -6,7 +6,7 @@ MailWatch for MailScanner is a web-based front-end to MailScanner written in PHP
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 
-It comes with a CustomConfig modules for MailScanner which causes MailScanner to log all message data (excluding body text email) to a MySQL database which is then queried by MailWatch for reporting and statistics.
+It comes with a CustomConfig module for MailScanner which causes MailScanner to log all message data (excluding body text email) to a MySQL database which is then queried by MailWatch for reporting and statistics.
 
 ## Features
 
@@ -19,7 +19,7 @@ It comes with a CustomConfig modules for MailScanner which causes MailScanner to
 * Utilities for Postfix and Sendmail to monitor and display the mail queue sizes and to record and display message relay information.
 * Multiple user levels: user, domain and admin that limit the data and features available to each.
 * XML-RPC support that allows multiple MailScanner/MailWatch installations to act as one.
-* Works with MySQL 5.5+ / MariaDB, PHP 5.4 to PHP 8, and have been tested on most popular Linux distributions (Debian/Ubuntu, CentOS and RedHat).
+* Works with MySQL 5.7+ / MariaDB, PHP 5.6 to PHP 8, and has been tested on most popular Linux distributions (Debian/Ubuntu, CentOS and RedHat).
 
 
 ## Developed with the help of

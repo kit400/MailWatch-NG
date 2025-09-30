@@ -180,8 +180,6 @@ for ($f = 0; $f < $result->field_count; ++$f) {
                     $output .= ' <td>' . __('privatenetwork04') . "</td>\n";
                 } elseif (true === $isLocalNetwork) {
                     $output .= ' <td>' . __('localhost04') . "</td>\n";
-                } elseif (!version_compare(phpversion(), '5.4.0', '>=')) {
-                    $output .= ' <td>' . __('geoipnotsupported04') . "</td>\n";
                 } elseif ($geoip_country = return_geoip_country($relay)) {
                     $output .= ' <td>' . $geoip_country . '</td>' . "\n";
                 } else {
@@ -232,15 +230,9 @@ for ($f = 0; $f < $result->field_count; ++$f) {
         $row[$f] = formatSize($row[$f]);
     }
     if ($fieldn === __('msgheaders04')) {
-        if (version_compare(PHP_VERSION, '5.4', '>=')) {
-            $row[$f] = nl2br(
-                str_replace(["\n", "\t"], ['<br>', '&nbsp; &nbsp; &nbsp;'], htmlentities($row[$f], ENT_COMPAT | ENT_HTML401 | ENT_SUBSTITUTE))
-            );
-        } else {
-            $row[$f] = nl2br(
-                str_replace(["\n", "\t"], ['<br>', '&nbsp; &nbsp; &nbsp;'], htmlentities($row[$f]))
-            );
-        }
+        $row[$f] = nl2br(
+            str_replace(["\n", "\t"], ['<br>', '&nbsp; &nbsp; &nbsp;'], htmlentities($row[$f], ENT_COMPAT | ENT_HTML401 | ENT_SUBSTITUTE))
+        );
         if (function_exists('iconv_mime_decode')) {
             $row[$f] = iconv_mime_decode(utf8_decode($row[$f]), 2, 'UTF-8');
         }

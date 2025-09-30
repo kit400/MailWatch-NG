@@ -31,10 +31,10 @@ Tell us what happens instead
 
 ### Server configuration
  - Operation System: [ Debian | Ubuntu | CentOS | Other ] version [ version ]
- - PHP version: [ 5.3 | 5.4 | 5.5 | 5.6 | 7.0 | 7.1 ]
+ - PHP version: [ 5.6 | 7.0 | 7.1 | 7.2 | 7.3 | 7.4 | 8.0 | 8.1 | 8.2 | 8.3 | 8.4 ]
  - Database: [ MySQL | MariaDB ] version [ version ]
  - Mail Server: [ Postfix | Exim | Sendmail ]
- - Used web server: [ Apache | Nginx ] version [ version ]
+ - Used web server: [ Apache | Nginx | Caddy ] version [ version ]
 
 ### Client configuration 
  - Operation System: [ operation system ] version [ version ]

@@ -339,7 +339,7 @@ class Mail_mimePart
             $encoded['body'] = $this->getEncodedData($this->body, $this->encoding);
         } else if ($this->body_file) {
             // Temporarily reset magic_quotes_runtime for file reads and writes
-            if (version_compare(PHP_VERSION, '5.4.0', '<')) {
+            if (PHP_VERSION_ID < 50400) {
                 $magic_quotes = @ini_set('magic_quotes_runtime', '0');
             }
             $body = $this->getEncodedDataFromFile($this->body_file, $this->encoding);
@@ -391,7 +391,7 @@ class Mail_mimePart
         }
 
         // Temporarily reset magic_quotes_runtime for file reads and writes
-        if (version_compare(PHP_VERSION, '5.4.0', '<')) {
+        if (PHP_VERSION_ID < 50400) {
             $magic_quotes = @ini_set('magic_quotes_runtime', '0');
         }
 

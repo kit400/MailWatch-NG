@@ -11,6 +11,7 @@
 - Better Linux OS recognition
 
 ### Compatibility
+- The minimal PHP version is now 5.6.
 - Migrate MailScanner perl script to DBD:MariaDB
 - Update GeoIP to support authentication by account id+license key
 

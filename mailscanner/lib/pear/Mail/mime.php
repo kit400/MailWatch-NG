@@ -494,7 +494,7 @@ class Mail_mime
         }
 
         // Temporarily reset magic_quotes_runtime and read file contents
-        if (version_compare(PHP_VERSION, '5.4.0', '<')) {
+        if (PHP_VERSION_ID < 50400) {
             $magic_quotes = @ini_set('magic_quotes_runtime', '0');
         }
 
@@ -769,7 +769,7 @@ class Mail_mime
         }
 
         // Temporarily reset magic_quotes_runtime and read file contents
-        if (version_compare(PHP_VERSION, '5.4.0', '<')) {
+        if (PHP_VERSION_ID < 50400) {
             $magic_quotes = @ini_set('magic_quotes_runtime', '0');
         }
 
@@ -822,7 +822,7 @@ class Mail_mime
         }
 
         // Temporarily reset magic_quotes_runtime and read file contents
-        if (version_compare(PHP_VERSION, '5.4.0', '<')) {
+        if (PHP_VERSION_ID < 50400) {
             $magic_quotes = @ini_set('magic_quotes_runtime', '0');
         }
 
