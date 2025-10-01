@@ -27,7 +27,7 @@
 
 require_once __DIR__ . '/functions.php';
 require_once __DIR__ . '/lib/pear/Mail/mimeDecode.php';
-ini_set('memory_limit', (string) MEMORY_LIMIT);
+ini_set('memory_limit', (string)MEMORY_LIMIT);
 
 require __DIR__ . '/login.function.php';
 
@@ -211,9 +211,7 @@ foreach ($mime_struct as $key => $part) {
             echo ' </tr>' . "\n";
             break;
         case 'message/rfc822':
-            break;
         case 'multipart/related':
-            break;
         case 'multipart/alternative':
             break;
         default:
@@ -231,7 +229,7 @@ foreach ($mime_struct as $key => $part) {
                 }
             } else {
                 $filename = __('nonameattachment06');
-                if ($type = 'message/partial' && property_exists($part, 'ctype_parameters')) {
+                if ('message/partial' === $type && property_exists($part, 'ctype_parameters')) {
                     $filename = isset($part->ctype_parameters['id']) ? $part->ctype_parameters['id'] : 'partialMessage';
                     if (isset($part->ctype_parameters['number'])) {
                         $filename .= ' - Part ' . $part->ctype_parameters['number'];
