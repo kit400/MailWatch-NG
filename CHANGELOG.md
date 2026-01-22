@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+### Fixed
+- Fix Message-ID extraction for RFC 5322 folded headers (#1305)
 
 ## 1.2.24
 ### Added
