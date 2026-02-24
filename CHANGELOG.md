@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+### Changed
+- Improve db_clean script performance for large databases
+
 ### Fixed
 - Fix Message-ID extraction for RFC 5322 folded headers (#1305)
 - Fix fatal errors on PHP 8.4 (#1320)

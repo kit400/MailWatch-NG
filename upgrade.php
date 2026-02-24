@@ -888,6 +888,20 @@ if ($link) {
 
     // check for missing indexes
     $indexes = array(
+        'audit_log' => array(
+            'audit_log_timestamp' => array(
+                'fields' => '(`timestamp`)',
+                'type' => 'KEY',
+                'minMysqlVersion' => '50100'
+            ),
+        ),
+        'mtalog_ids' => array(
+            'mtalog_ids_smtp_id' => array(
+                'fields' => '(`smtp_id`)',
+                'type' => 'KEY',
+                'minMysqlVersion' => '50100'
+            ),
+        ),
         'maillog' => array(
             'maillog_datetime_idx' => array(
                 'fields' => '(`date`,`time`)',
