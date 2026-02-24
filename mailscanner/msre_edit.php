@@ -712,7 +712,7 @@ function Process_Form($file_contents, $short_filename)
     list($bytes, $status_msg) = Write_File($filename, $new_file);
 
     // Schedule a reload of mailscanner's stuff. We can't do an immediate
-    // reload w/out giving the apache user rights to run the MailScanner
+    // reload w/out giving the webserver user rights to run the MailScanner
     // startup/reload script, and that could be a bad idea.
     // So instead, I schedule a reload with the msre_reload.cron cron job
     $status_msg .= '<span class="status">' . "\n";
@@ -722,6 +722,7 @@ function Process_Form($file_contents, $short_filename)
     if (!$fh) {
         $status_msg .= '<span class="error">' . __('error0155') . '</span><br>' . "\n";
     } else {
+        fclose($fh);
         $status_msg .= __('ok55') . '<br>' . "\n" . sprintf(__('message55'), MSRE_RELOAD_INTERVAL) . '<br>' . "\n";
     }
     $status_msg .= "</span>\n";
