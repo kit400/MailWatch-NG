@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+
+## 1.2.25
 ### Changed
 - Improve db_clean script performance for large databases
 
