@@ -1,8 +1,12 @@
 # Changelog
 
 ## Unreleased
+### Changed
+- Tools scripts now auto-detect functions.php path relative to their location, with fallback to the default `/var/www/html/mailscanner/` path
+
 ### Fixed
 - Fixed Message-ID extraction stripping angle brackets required by RFC 5322
+- Fixed the wrong variable check for mtalogprocessor.inc.php in mailwatch_postfix_relay.php
 
 ## 1.2.25
 ### Changed
