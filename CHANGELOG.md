@@ -1,6 +1,13 @@
 # Changelog
 
 ## Unreleased
+### Security
+- Add missing admin role authorization check on sa_lint.php, ms_lint.php, sophos_status.php, geoip_update.php, bayes_info.php and mysql_status.php
+- Improve output escaping in SpamAssassin Lint tool
+
+### Fixed
+- Fix broken HTML page on popen failure in SpamAssassin Lint tool
+
 ### Changed
 - Tools scripts now auto-detect functions.php path relative to their location, with fallback to the default `/var/www/html/mailscanner/` path
 
