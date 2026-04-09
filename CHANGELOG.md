@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+### Fixed
+- Fixed Message-ID extraction stripping angle brackets required by RFC 5322
 
 ## 1.2.25
 ### Changed
