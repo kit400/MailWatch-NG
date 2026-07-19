@@ -4155,9 +4155,9 @@ function return_virus_link($virus, $truncateOutput = false)
  */
 function is_rpc_client_allowed()
 {
-    // If no server address supplied
-    if (!isset($_SERVER['SERVER_ADDR']) || empty($_SERVER['SERVER_ADDR'])) {
-        return true;
+    // If no client address supplied
+    if (!isset($_SERVER['REMOTE_ADDR']) || empty($_SERVER['REMOTE_ADDR'])) {
+        return false;
     }
     // Get list of allowed clients
     if (defined('RPC_ALLOWED_CLIENTS') && (false === !RPC_ALLOWED_CLIENTS)) {
@@ -4165,7 +4165,7 @@ function is_rpc_client_allowed()
         $clients = explode(' ', constant('RPC_ALLOWED_CLIENTS'));
         // Validate each client type
         foreach ($clients as $client) {
-            if ('allprivate' === $client && ip_in_range($_SERVER['SERVER_ADDR'], false, 'private')) {
+            if ('allprivate' === $client && ip_in_range($_SERVER['REMOTE_ADDR'], false, 'private')) {
                 return true;
             }
             if ('local24' === $client) {
@@ -4175,17 +4175,17 @@ function is_rpc_client_allowed()
                 $ipsplit = explode('.', $ip);
                 $ipsplit[3] = '0';
                 $ip = implode('.', $ipsplit);
-                if (ip_in_range($_SERVER['SERVER_ADDR'], "{$ip}/24")) {
+                if (ip_in_range($_SERVER['REMOTE_ADDR'], "{$ip}/24")) {
                     return true;
                 }
             }
             // All any others
-            if (ip_in_range($_SERVER['SERVER_ADDR'], $client)) {
+            if (ip_in_range($_SERVER['REMOTE_ADDR'], $client)) {
                 return true;
             }
             // Try hostname
             $iplookup = gethostbyname($client);
-            if ($client !== $iplookup && ip_in_range($_SERVER['SERVER_ADDR'], $iplookup)) {
+            if ($client !== $iplookup && ip_in_range($_SERVER['REMOTE_ADDR'], $iplookup)) {
                 return true;
             }
         }
