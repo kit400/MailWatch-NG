@@ -3520,12 +3520,13 @@ function is_local($host)
 }
 
 /**
- * @param string     $msgid
- * @param bool|false $rpc_only
+ * @param string      $msgid
+ * @param bool|false  $rpc_only
+ * @param string|null $global_filter
  *
  * @return array|mixed|string
  */
-function quarantine_list_items($msgid, $rpc_only = false)
+function quarantine_list_items($msgid, $rpc_only = false, $global_filter = null)
 {
     $sql = "
 SELECT
@@ -3541,6 +3542,11 @@ SELECT
   maillog
  WHERE
   id = '$msgid'";
+    if (null !== $global_filter) {
+        $sql .= "
+ AND
+ ($global_filter)";
+    }
     $sth = dbquery($sql);
     $rows = $sth->num_rows;
     if ($rows <= 0) {
@@ -3622,20 +3628,21 @@ SELECT
 }
 
 /**
- * @param array      $list
- * @param array      $num
- * @param string     $to
- * @param bool|false $rpc_only
+ * @param array       $list
+ * @param array       $num
+ * @param string      $to
+ * @param bool|false  $rpc_only
+ * @param string|null $global_filter
  *
  * @return string
  */
-function quarantine_release($list, $num, $to, $rpc_only = false)
+function quarantine_release($list, $num, $to, $rpc_only = false, $global_filter = null)
 {
     if (!is_array($list) || !isset($list[0]['msgid'])) {
         return 'Invalid argument';
     }
 
-    $new = quarantine_list_items($list[0]['msgid']);
+    $new = quarantine_list_items($list[0]['msgid'], false, $global_filter);
     $list = &$new;
 
     // Check for [-1], indicating just to release message itself, regardless of its item position
@@ -3760,17 +3767,18 @@ function quarantine_release($list, $num, $to, $rpc_only = false)
 }
 
 /**
- * @param bool|false $rpc_only
+ * @param bool|false  $rpc_only
+ * @param string|null $global_filter
  *
  * @return string
  */
-function quarantine_learn($list, $num, $type, $rpc_only = false)
+function quarantine_learn($list, $num, $type, $rpc_only = false, $global_filter = null)
 {
     dbconn();
     if (!is_array($list) || !isset($list[0]['msgid'])) {
         return 'Invalid argument';
     }
-    $new = quarantine_list_items($list[0]['msgid']);
+    $new = quarantine_list_items($list[0]['msgid'], false, $global_filter);
     $list = &$new;
 
     // Check for [-1], indicating just to release message itself, regardless of its item position
@@ -3939,17 +3947,18 @@ function quarantine_learn($list, $num, $type, $rpc_only = false)
 }
 
 /**
- * @param bool|false $rpc_only
+ * @param bool|false  $rpc_only
+ * @param string|null $global_filter
  *
  * @return string
  */
-function quarantine_delete($list, $num, $rpc_only = false)
+function quarantine_delete($list, $num, $rpc_only = false, $global_filter = null)
 {
     if (!is_array($list) || !isset($list[0]['msgid'])) {
         return 'Invalid argument';
     }
 
-    $new = quarantine_list_items($list[0]['msgid']);
+    $new = quarantine_list_items($list[0]['msgid'], false, $global_filter);
     $list = &$new;
 
     if (!$rpc_only && is_local($list[0]['host'])) {

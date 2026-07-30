@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+### Security
+- Apply session filter consistently in quarantine operations
 
 ## 1.2.26
 ### Security
