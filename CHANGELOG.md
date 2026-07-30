@@ -1,8 +1,14 @@
 # Changelog
 
 ## Unreleased
+
+## 1.2.27
 ### Security
 - Apply session filter consistently in quarantine operations
+- Check RPC client allow-list against the connecting client address
+
+### Fixed
+- Fix uninitialized string offset warning in mimeDecode (#1325)
 
 ## 1.2.26
 ### Security
