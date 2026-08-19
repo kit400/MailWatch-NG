@@ -1,0 +1,1 @@
+*/5 * * * *   root    /usr/bin/mailwatch/tools/MailScanner_rule_editor/msre_reload.sh

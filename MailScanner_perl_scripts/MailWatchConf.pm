@@ -13,6 +13,18 @@ my ($db_host) = 'localhost';
 my ($db_user) = 'mailwatch';
 my ($db_pass) = 'mailwatch';
 
+my ($pw_config) = '/etc/eFa/MailWatch-Config';
+if (-f $pw_config && open(my $fh, '<', $pw_config)) {
+    while (my $line = <$fh>) {
+        if ($line =~ /^MAILWATCHSQLPWD:(.*)$/) {
+            $db_pass = $1;
+            $db_pass =~ s/\r?\n$//;
+            last;
+        }
+    }
+    close($fh);
+}
+
 # Change the value below for SQLSpamSettings.pm (default = 15)
 my ($ss_refresh_time) = 15;       # Time in minutes before lists are refreshed
 

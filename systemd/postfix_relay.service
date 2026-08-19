@@ -1,0 +1,18 @@
+[Unit]
+Description=Postfix relay service for MailWatch
+SourcePath=/usr/bin/mailwatch/tools/Postfix_relay
+After=network-online.target remote-fs.target rsyslog.service postfix.service mailscanner.service
+Wants=network-online.target postfix.service mailscanner.service
+
+[Service]
+Type=simple
+Restart=always
+TimeoutSec=1min
+IgnoreSIGPIPE=no
+KillMode=process
+GuessMainPID=no
+RemainAfterExit=no
+ExecStart=/usr/bin/php -q /usr/bin/mailwatch/tools/Postfix_relay/mailwatch_postfix_relay.php
+
+[Install]
+WantedBy=multi-user.target

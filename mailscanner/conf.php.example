@@ -44,10 +44,10 @@ define('USER_SELECTABLE_LANG', 'de,en,es-419,fr,it,ja,nl,pt_br,tr');
 // A valid session name may consist of digits, letters A to Z (both upper and lower case), comma and dash
 //define('SESSION_NAME', 'MailWatch');
 
-// Session Timeout - Sets the global session timeout value, default is 600 sec (10 minutes) if not defined
-// Range is 0 to 99999 seconds.  Setting to 0 will disable session timeout and active session statuses.
+// Session Timeout - Sets the global session timeout value, default is 259200 sec (3 days) if not defined
+// Setting to 0 will disable session timeout and active session statuses.
 // This can also be set individually per user in the MailWatch GUI for greater flexibility.
-define('SESSION_TIMEOUT', 600);
+define('SESSION_TIMEOUT', 259200);
 
 // MaxMind License key
 // A free license key from MaxMind is required to download GeoLite2 data
@@ -57,14 +57,22 @@ define('SESSION_TIMEOUT', 600);
 
 // Database settings
 //
-// As this file might be publically readable. It might be very userful to
-// have a completely separate username/password for this database.
-//
-// (IE) Do not use your main-global-admin accounts.
-//
 define('DB_TYPE', 'mysql');
 define('DB_USER', 'mailwatch');
-define('DB_PASS', 'mailwatch');
+
+$db_pass_val = 'mailwatch';
+if (file_exists('/etc/eFa/MailWatch-Config') && is_readable('/etc/eFa/MailWatch-Config')) {
+    $lines = file('/etc/eFa/MailWatch-Config', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    if (false !== $lines) {
+        foreach ($lines as $line) {
+            if (0 === strpos($line, 'MAILWATCHSQLPWD:')) {
+                $db_pass_val = trim(substr($line, 16));
+                break;
+            }
+        }
+    }
+}
+define('DB_PASS', $db_pass_val);
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'mailscanner');
 define('DB_PORT', 3306);
@@ -98,7 +106,7 @@ define('IMAP_USERNAME_FULL_EMAIL', true); // Set to false to login to imap serve
 
 // Set Time Zone
 // See https://php.net/manual/en/timezones.php for a list of usable timezones.
-define('TIME_ZONE', 'America/New_York');
+define('TIME_ZONE', 'Etc/UTC');
 // Date/Time settings
 define('DATE_FORMAT', '%d/%m/%y');
 define('TIME_FORMAT', '%H:%i:%s');
@@ -125,7 +133,7 @@ define('MS_LIB_DIR', '/usr/lib/MailScanner/'); // Path for sophos-wrapper file
 define('MS_EXECUTABLE_PATH', '/usr/sbin/MailScanner');
 define('IMAGES_DIR', '/images/'); // Both leading and trailing slash needed
 define('SA_DIR', '/usr/bin/');
-define('SA_RULES_DIR', '/usr/share/spamassassin/');
+define('SA_RULES_DIR', '/etc/mail/spamassassin/');
 define('SA_PREFS', MS_CONFIG_DIR . 'spamassassin.conf'); // spam.assassin.prefs.conf in V4, spamassassin.conf in V5
 define('TEMP_DIR', '/tmp/');
 
@@ -133,8 +141,8 @@ define('TEMP_DIR', '/tmp/');
 define('MW_LOGO', 'mailwatch-logo.png');
 
 // Log file location
-define('MS_LOG', '/var/log/mail.log'); // Where is MailScanner logging to?
-define('MAIL_LOG', '/var/log/mail.log'); // MTA log file, it's diferent between distributions and sometimes MTA
+define('MS_LOG', '/var/log/maillog'); // Where is MailScanner logging to?
+define('MAIL_LOG', '/var/log/maillog'); // MTA log file, it's diferent between distributions and sometimes MTA
 
 // Default number of results on Recent Messages and Message Listing Report.
 define('MAX_RESULTS', 50);
@@ -194,7 +202,7 @@ define('QUARANTINE_DAYS_TO_KEEP', 30);
 define('QUARANTINE_DAYS_TO_KEEP_NONSPAM', 30);
 //Set QUARANTINE_FILTERS_COMBINED to true to combine quarantine report into a single report when user filters are present
 define('QUARANTINE_FILTERS_COMBINED', false);
-define('QUARANTINE_REPORT_FROM_NAME', 'MailWatch for MailScanner');
+define('QUARANTINE_REPORT_FROM_NAME', 'eFa - Email Filter Appliance');
 define('QUARANTINE_REPORT_SUBJECT', 'Message Quarantine Report');
 define('QUARANTINE_SUBJECT', 'Message released from quarantine');
 define('QUARANTINE_MSG_BODY', 'Please find the original message that was quarantined attached to this mail.
@@ -258,6 +266,7 @@ define('RPC_ONLY', false);
 // Note: this only works with Exim and Sendmail.
 // You must also run /usr/local/bin/mailwatch_sendmail_queue.php from CRON
 // and uncomment MAIL_SENDER, EXIM_QUEUE_IN and EXIM_QUEUE_OUT.
+// and uncomment MAIL_SENDER, EXIM_QUEUE_IN and EXIM_QUEUE_OUT.
 // define('MAILQ', true);
 // Select if we use envelope-sender or sender (From:) in Mail Queue for Exim or Sendmail
 // Value: 'envelopesender' or 'sender'
@@ -273,7 +282,16 @@ define('RPC_ONLY', false);
 // define('SENDMAIL_QUEUE_OUT', '/usr/bin/mailq -bp');
 
 // Do you want an audit trail?
-define('AUDIT', false);
+define('AUDIT', true);
+
+// Show software versions in header / navigation?
+define('SHOW_SFVERSION', true);
+
+// Show docs in navigation?
+define('SHOW_DOC', false);
+
+// Show greylisting management menu in navigation?
+define('SHOW_GREYLIST', true);
 
 // Do you want the allowlist/blocklist functionality enabled?
 // You'll need to configure MailScanner to use it accordingly.
@@ -290,7 +308,7 @@ define('ALLOWED_TAGS', '<a><br><b><body><div><font><h1><h2><h3><h4><head><html><
 
 // Enable MailScanner Rule Editor
 // Initially disabled as other config needs to be done to use it.
-define('MSRE', false);
+define('MSRE', true);
 define('MSRE_RELOAD_INTERVAL', 5);
 define('MSRE_RULESET_DIR', '/etc/MailScanner/rules');
 
@@ -306,7 +324,7 @@ define('HIDE_HIGH_SPAM', false);
 define('HIDE_NON_SPAM', false);
 
 // Hide Unknown Mail from quarantine reports
-define('HIDE_UNKNOWN', false);
+define('HIDE_UNKNOWN', true);
 
 // Apply hide options above also to quarantine page
 define('HIDE_APPLY_QUARANTINE', false);

@@ -140,6 +140,16 @@ if (PHP_SAPI !== 'cli') {
     header('X-Frame-Options: SAMEORIGIN');
     header('X-Content-Type-Options: nosniff');
     unset($session_cookie_secure);
+    if (defined('SESSION_TIMEOUT') && SESSION_TIMEOUT > 0) {
+        ini_set('session.gc_maxlifetime', (string)SESSION_TIMEOUT);
+        session_set_cookie_params([
+            'lifetime' => SESSION_TIMEOUT,
+            'path' => '/',
+            'secure' => (isset($_SERVER['HTTPS']) && ('on' === $_SERVER['HTTPS'] || '1' === $_SERVER['HTTPS'])),
+            'httponly' => true,
+            'samesite' => 'Lax'
+        ]);
+    }
     session_start();
 }
 
@@ -268,6 +278,19 @@ function getVirusRegex($scanner = null)
 function mailwatch_version()
 {
     return '1.2.27';
+}
+
+/**
+ * eFa Version
+ *
+ * @return string
+ */
+function efa_version()
+{
+    if (file_exists('/etc/eFa-Version')) {
+        return trim(file_get_contents('/etc/eFa-Version', false, null, 0, 32));
+    }
+    return '';
 }
 
 /**
@@ -928,6 +951,11 @@ function printNavBar()
     if (SHOW_DOC === true) {
         $nav['docs.php'] = __('documentation03');
     }
+    // Begin eFa
+    if (isset($_SESSION['user_type']) && 'A' === $_SESSION['user_type'] && defined('SHOW_GREYLIST') && true === SHOW_GREYLIST) {
+        $nav['grey.php'] = 'greylist';
+    }
+    // End eFa
     $nav['logout.php'] = __('logout03');
     // $table_width = round(100 / count($nav));
 
@@ -1031,6 +1059,10 @@ function html_end($footer = '')
     echo '<p class="center footer noprint">' . "\n";
     echo __('footer03');
     echo mailwatch_version();
+    $efa_ver = efa_version();
+    if (!empty($efa_ver)) {
+        echo ' running on ' . $efa_ver;
+    }
     echo ' - &copy; 2006-' . date('Y');
     echo '</p>' . "\n";
     echo '</body>' . "\n";
@@ -4862,7 +4894,7 @@ function updateLoginExpiry($myusername)
     // Use global if individual value is disabled (-1)
     if ('-1' === $login_timeout) {
         if (defined('SESSION_TIMEOUT')) {
-            if (SESSION_TIMEOUT > 0 && SESSION_TIMEOUT <= 99999) {
+            if (SESSION_TIMEOUT > 0) {
                 $expiry_val = (time() + SESSION_TIMEOUT);
             } else {
                 $expiry_val = 0;
