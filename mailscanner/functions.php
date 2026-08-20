@@ -408,10 +408,12 @@ function html_start($title, $refresh = 0, $cacheable = true, $report = false)
     echo '</tr>' . "\n";
     echo '<tr>' . "\n";
     echo '<td valign="bottom" align="left" class="jump">' . "\n";
+    echo '<div class="jump-box">' . "\n";
     echo '<form action="./detail.php">' . "\n";
-    echo '<p>' . __('jumpmessage03') . '<input type="text" name="id" value="' . $message_id . '"></p>' . "\n";
+    echo '<p>🔍 ' . __('jumpmessage03') . ' <input type="text" name="id" value="' . $message_id . '" placeholder="ID"></p>' . "\n";
     echo '<input type="hidden" name="token" value="' . $_SESSION['token'] . '">' . "\n";
     echo '</form>' . "\n";
+    echo '</div>' . "\n";
     echo '</td>';
     echo '</tr>';
     echo '</table>' . "\n";
@@ -422,8 +424,8 @@ function html_start($title, $refresh = 0, $cacheable = true, $report = false)
         echo '  <td align="center" valign="top">' . "\n";
 
         // Status table
-        echo '   <table border="0" cellpadding="1" cellspacing="1" class="mail">' . "\n";
-        echo '    <tr><th colspan="3">' . __('status03') . '</th></tr>' . "\n";
+        echo '   <table border="0" cellpadding="0" cellspacing="0" class="mail status-widget-table">' . "\n";
+        echo '    <tr><th colspan="3" class="widget-header"><span class="widget-icon">⚡</span> ' . __('status03') . '</th></tr>' . "\n";
 
         printServiceStatus();
         printAverageLoad();
@@ -479,15 +481,15 @@ function printServiceStatus()
 {
     // MailScanner running?
     if (!DISTRIBUTED_SETUP) {
-        $no = '<span class="yes">&nbsp;' . __('no03') . '&nbsp;</span>' . "\n";
-        $yes = '<span class="no">&nbsp;' . __('yes03') . '&nbsp;</span>' . "\n";
+        $no = '<span class="status-stopped">' . __('no03') . '</span>';
+        $yes = '<span class="status-running">' . __('yes03') . '</span>';
         exec('ps ax | grep MailScanner | grep -v grep', $output);
         if (count($output) > 0) {
             $running = $yes;
-            $procs = count($output) - 1 . ' ' . __('children03');
+            $procs = '<span class="badge-count">' . (count($output) - 1) . ' ' . __('children03') . '</span>';
         } else {
             $running = $no;
-            $procs = count($output) . ' ' . __('procs03');
+            $procs = '<span class="badge-count">' . count($output) . ' ' . __('procs03') . '</span>';
         }
         echo '     <tr><td>' . __('mailscanner03') . '</td><td align="center">' . $running . '</td><td align="right">' . $procs . '</td></tr>' . "\n";
 
@@ -501,10 +503,10 @@ function printServiceStatus()
                 $masterpid = explode(' ', trim($masterproc[0]));
                 $childproc = [];
                 exec(sprintf('ps ax -j | grep %s | grep -v grep', $masterpid[0]), $childproc);
-                $procs = count($childproc) . ' ' . __('procs03');
+                $procs = '<span class="badge-count">' . count($childproc) . ' ' . __('procs03') . '</span>';
             } else {
                 $running = $no;
-                $procs = '0 ' . __('procs03');
+                $procs = '<span class="badge-count">0 ' . __('procs03') . '</span>';
             }
             echo '    <tr><td>' . ucwords('postfix') . __('colon99') . '</td>'
                 . '<td align="center">' . $running . '</td><td align="right">' . $procs . '</td></tr>' . "\n";
@@ -517,7 +519,7 @@ function printServiceStatus()
             } else {
                 $running = $no;
             }
-            $procs = count($output) . ' ' . __('procs03');
+            $procs = '<span class="badge-count">' . count($output) . ' ' . __('procs03') . '</span>';
             echo '    <tr><td>MSMilter' . __('colon99') . '</td>'
                 . '<td align="center">' . $running . '</td><td align="right">' . $procs . '</td></tr>' . "\n";
         }
@@ -529,7 +531,7 @@ function printServiceStatus()
             } else {
                 $running = $no;
             }
-            $procs = count($output) . ' ' . __('procs03');
+            $procs = '<span class="badge-count">' . count($output) . ' ' . __('procs03') . '</span>';
             echo '    <tr><td>' . ucwords($mta) . __('colon99') . '</td>'
                 . '<td align="center">' . $running . '</td><td align="right">' . $procs . '</td></tr>' . "\n";
         }
@@ -547,17 +549,17 @@ function printAverageLoad()
         $la_15m = $loadavg[2];
         echo '
         <tr>
-            <td align="left" rowspan="3">' . __('loadaverage03') . '&nbsp;</td>
-            <td align="right">' . __('1minute03') . '&nbsp;</td>
-            <td align="right">' . $la_1m . '</td>
+            <td align="left" rowspan="3" style="color: #64748b; font-weight: 500;">' . __('loadaverage03') . '&nbsp;</td>
+            <td align="right" style="color: #64748b;">' . __('1minute03') . '&nbsp;</td>
+            <td align="right"><span class="badge-count">' . $la_1m . '</span></td>
         </tr>
         <tr>
-            <td align="right" colspan="1">' . __('5minutes03') . '&nbsp;</td>
-            <td align="right">' . $la_5m . '</td>
+            <td align="right" style="color: #64748b;">' . __('5minutes03') . '&nbsp;</td>
+            <td align="right"><span class="badge-count">' . $la_5m . '</span></td>
         </tr>
         <tr>
-            <td align="right" colspan="1">' . __('15minutes03') . '&nbsp;</td>
-            <td align="right">' . $la_15m . '</td>
+            <td align="right" style="color: #64748b;">' . __('15minutes03') . '&nbsp;</td>
+            <td align="right"><span class="badge-count">' . $la_15m . '</span></td>
         </tr>
         ' . "\n";
     } elseif (!DISTRIBUTED_SETUP && file_exists('/usr/bin/uptime')) {
@@ -568,16 +570,17 @@ function printAverageLoad()
         $la_15m = rtrim($loadavg[count($loadavg) - 1]);
         echo '
         <tr>
-            <td align="left" rowspan="3">' . __('loadaverage03') . '&nbsp;</td>
-            <td align="right">' . __('1minute03') . '&nbsp;</td>
-            <td align="right">' . $la_1m . '</td>
+            <td align="left" rowspan="3" style="color: #64748b; font-weight: 500;">' . __('loadaverage03') . '&nbsp;</td>
+            <td align="right" style="color: #64748b;">' . __('1minute03') . '&nbsp;</td>
+            <td align="right"><span class="badge-count">' . $la_1m . '</span></td>
         </tr>
+        <tr>
+            <td align="right" style="color: #64748b;">' . __('5minutes03') . '&nbsp;</td>
+            <td align="right"><span class="badge-count">' . $la_5m . '</span></td>
         </tr>
-            <td align="right" colspan="1">' . __('5minutes03') . '&nbsp;</td>
-            <td align="right">' . $la_5m . '</td>
-        </tr>
-            <td align="right" colspan="1">' . __('15minutes03') . '&nbsp;</td>
-            <td align="right">' . $la_15m . '</td>
+        <tr>
+            <td align="right" style="color: #64748b;">' . __('15minutes03') . '&nbsp;</td>
+            <td align="right"><span class="badge-count">' . $la_15m . '</span></td>
         </tr>
         ' . "\n";
     }
@@ -622,9 +625,9 @@ function printMTAQueue()
             }
         }
         if (null !== $inq && null !== $outq) {
-            echo '    <tr><td colspan="3" class="heading" align="center">' . __('mailqueue03') . '</td></tr>' . "\n";
-            echo '    <tr><td colspan="2"><a href="postfixmailq.php">' . __('inbound03') . '</a></td><td align="right">' . $inq . '</td></tr>' . "\n";
-            echo '    <tr><td colspan="2"><a href="postfixmailq.php">' . __('outbound03') . '</a></td><td align="right">' . $outq . '</td></tr>' . "\n";
+            echo '    <tr><td colspan="3" class="widget-subheader" align="center">📬 ' . __('mailqueue03') . '</td></tr>' . "\n";
+            echo '    <tr><td colspan="2"><a href="postfixmailq.php">' . __('inbound03') . '</a></td><td align="right"><span class="badge-count">' . $inq . '</span></td></tr>' . "\n";
+            echo '    <tr><td colspan="2"><a href="postfixmailq.php">' . __('outbound03') . '</a></td><td align="right"><span class="badge-count">' . $outq . '</span></td></tr>' . "\n";
         }
     } elseif ('msmail' === get_conf_var('MTA', true)) {
         $incomingdir = get_conf_var('incomingqueuedir', true);
@@ -665,11 +668,11 @@ function printMTAQueue()
             }
         }
         if (null !== $inq && null !== $outq && null !== $inq2 && null !== $outq2) {
-            echo '    <tr><td colspan="3" class="heading" align="center">' . __('mailqueue03') . '</td></tr>' . "\n";
-            echo '    <tr><td colspan="2"><a href="msmailq.php">Milter ' . __('inbound03') . '</a></td><td align="right">' . $inq . '</td></tr>' . "\n";
-            echo '    <tr><td colspan="2"><a href="msmailq.php">Milter ' . __('outbound03') . '</a></td><td align="right">' . $outq . '</td></tr>' . "\n";
-            echo '    <tr><td colspan="2"><a href="postfixmailq.php">Postfix ' . __('inbound03') . '</a></td><td align="right">' . $inq2 . '</td></tr>' . "\n";
-            echo '    <tr><td colspan="2"><a href="postfixmailq.php">Postfix ' . __('outbound03') . '</a></td><td align="right">' . $outq2 . '</td></tr>' . "\n";
+            echo '    <tr><td colspan="3" class="widget-subheader" align="center">📬 ' . __('mailqueue03') . '</td></tr>' . "\n";
+            echo '    <tr><td colspan="2"><a href="msmailq.php">Milter ' . __('inbound03') . '</a></td><td align="right"><span class="badge-count">' . $inq . '</span></td></tr>' . "\n";
+            echo '    <tr><td colspan="2"><a href="msmailq.php">Milter ' . __('outbound03') . '</a></td><td align="right"><span class="badge-count">' . $outq . '</span></td></tr>' . "\n";
+            echo '    <tr><td colspan="2"><a href="postfixmailq.php">Postfix ' . __('inbound03') . '</a></td><td align="right"><span class="badge-count">' . $inq2 . '</span></td></tr>' . "\n";
+            echo '    <tr><td colspan="2"><a href="postfixmailq.php">Postfix ' . __('outbound03') . '</a></td><td align="right"><span class="badge-count">' . $outq2 . '</span></td></tr>' . "\n";
         }
         // Else use MAILQ from conf.php which is for Sendmail or Exim
     } elseif (defined('MAILQ') && MAILQ === true && !DISTRIBUTED_SETUP) {
@@ -684,9 +687,9 @@ function printMTAQueue()
             preg_match('/(Total requests: )(.*)/', $cmd, $output_array);
             $outq = $output_array[2];
         }
-        echo '    <tr><td colspan="3" class="heading" align="center">' . __('mailqueue03') . '</td></tr>' . "\n";
-        echo '    <tr><td colspan="2"><a href="mailq.php?token=' . $_SESSION['token'] . '&amp;queue=inq">' . __('inbound03') . '</a></td><td align="right">' . $inq . '</td></tr>' . "\n";
-        echo '    <tr><td colspan="2"><a href="mailq.php?token=' . $_SESSION['token'] . '&amp;queue=outq">' . __('outbound03') . '</a></td><td align="right">' . $outq . '</td></tr>' . "\n";
+        echo '    <tr><td colspan="3" class="widget-subheader" align="center">📬 ' . __('mailqueue03') . '</td></tr>' . "\n";
+        echo '    <tr><td colspan="2"><a href="mailq.php?token=' . $_SESSION['token'] . '&amp;queue=inq">' . __('inbound03') . '</a></td><td align="right"><span class="badge-count">' . $inq . '</span></td></tr>' . "\n";
+        echo '    <tr><td colspan="2"><a href="mailq.php?token=' . $_SESSION['token'] . '&amp;queue=outq">' . __('outbound03') . '</a></td><td align="right"><span class="badge-count">' . $outq . '</span></td></tr>' . "\n";
     }
 }
 
@@ -694,18 +697,12 @@ function printFreeDiskSpace()
 {
     if (!DISTRIBUTED_SETUP) {
         // Drive display
-        echo '    <tr><td colspan="3" class="heading" align="center">' . __('freedspace03') . '</td></tr>' . "\n";
+        echo '    <tr><td colspan="3" class="widget-subheader" align="center">💾 ' . __('freedspace03') . '</td></tr>' . "\n";
         foreach (get_disks() as $disk) {
             $free_space = disk_free_space($disk['mountpoint']);
             $total_space = disk_total_space($disk['mountpoint']);
-            $percent = '<span>';
-            if (round($free_space / $total_space, 2) <= 0.1) {
-                $percent = '<span class="error">';
-            }
-            $percent .= ' [';
-            $percent .= round($free_space / $total_space, 2) * 100;
-            $percent .= '%] ';
-            $percent .= '</span>';
+            $pct = round($free_space / $total_space, 2) * 100;
+            $percent = ' <span class="badge-count">' . $pct . '% free</span>';
             echo '    <tr><td>' . $disk['mountpoint'] . '</td><td colspan="2" align="right">' . formatSize($free_space) . $percent . '</td></tr>' . "\n";
         }
     }
@@ -887,39 +884,39 @@ function printTodayStatistics()
 
     $sth = dbquery($sql);
     while ($row = $sth->fetch_object()) {
-        echo '<table border="0" cellpadding="1" cellspacing="1" class="mail todaystatistics" width="220">' . "\n";
-        echo ' <tr><th align="center" colspan="3">' . __('todaystotals03') . '</th></tr>' . "\n";
-        echo ' <tr><td>' . __('processed03') . '</td><td>' . number_format(
+        echo '<table border="0" cellpadding="0" cellspacing="0" class="mail todaystatistics totals-widget-table" width="220">' . "\n";
+        echo ' <tr><th align="left" colspan="3" class="widget-header"><span class="widget-icon">📈</span> ' . __('todaystotals03') . '</th></tr>' . "\n";
+        echo ' <tr><td>' . __('processed03') . '</td><td align="right"><span class="badge-count">' . number_format(
             $row->processed
-        ) . '</td><td>' . formatSize(
+        ) . '</span></td><td align="right">' . formatSize(
             $row->size
         ) . '</td></tr>' . "\n";
-        echo ' <tr><td>' . __('cleans03') . '</td><td>' . number_format(
+        echo ' <tr><td>' . __('cleans03') . '</td><td align="right"><span class="badge-count">' . number_format(
             $row->clean
-        ) . '</td><td>' . $row->cleanpercent . '%</td></tr>' . "\n";
-        echo ' <tr><td>' . __('viruses03') . '</td><td>' . number_format(
+        ) . '</span></td><td align="right">' . $row->cleanpercent . '%</td></tr>' . "\n";
+        echo ' <tr><td>' . __('viruses03') . '</td><td align="right"><span class="badge-count">' . number_format(
             $row->viruses
-        ) . '</td><td>' . $row->viruspercent . '%</tr>' . "\n";
-        echo ' <tr><td>' . __('topvirus03') . '</td><td colspan="2">' . return_todays_top_virus() . '</td></tr>' . "\n";
-        echo ' <tr><td>' . __('blockedfiles03') . '</td><td>' . number_format(
+        ) . '</span></td><td align="right">' . $row->viruspercent . '%</td></tr>' . "\n";
+        echo ' <tr><td>' . __('topvirus03') . '</td><td colspan="2" align="right">' . return_todays_top_virus() . '</td></tr>' . "\n";
+        echo ' <tr><td>' . __('blockedfiles03') . '</td><td align="right"><span class="badge-count">' . number_format(
             $row->blockedfiles
-        ) . '</td><td>' . $row->blockedfilespercent . '%</td></tr>' . "\n";
-        echo ' <tr><td>' . __('others03') . '</td><td>' . number_format(
+        ) . '</span></td><td align="right">' . $row->blockedfilespercent . '%</td></tr>' . "\n";
+        echo ' <tr><td>' . __('others03') . '</td><td align="right"><span class="badge-count">' . number_format(
             $row->otherinfected
-        ) . '</td><td>' . $row->otherinfectedpercent . '%</td></tr>' . "\n";
-        echo ' <tr><td>' . __('spam03') . '</td><td>' . number_format(
+        ) . '</span></td><td align="right">' . $row->otherinfectedpercent . '%</td></tr>' . "\n";
+        echo ' <tr><td>' . __('spam03') . '</td><td align="right"><span class="badge-count">' . number_format(
             $row->spam
-        ) . '</td><td>' . $row->spampercent . '%</td></tr>' . "\n";
-        echo ' <tr><td>' . __('hscospam03') . '</td><td>' . number_format(
+        ) . '</span></td><td align="right">' . $row->spampercent . '%</td></tr>' . "\n";
+        echo ' <tr><td>' . __('hscospam03') . '</td><td align="right"><span class="badge-count">' . number_format(
             $row->highspam
-        ) . '</td><td>' . $row->highspampercent . '%</td></tr>' . "\n";
+        ) . '</span></td><td align="right">' . $row->highspampercent . '%</td></tr>' . "\n";
         if (get_conf_truefalse('mcpchecks')) {
-            echo ' <tr><td>MCP:</td><td>' . number_format(
+            echo ' <tr><td>MCP:</td><td align="right"><span class="badge-count">' . number_format(
                 $row->mcp
-            ) . '</td><td>' . $row->mcppercent . '%</td></tr>' . "\n";
-            echo ' <tr><td>' . __('hscomcp03') . '</td><td>' . number_format(
+            ) . '</span></td><td align="right">' . $row->mcppercent . '%</td></tr>' . "\n";
+            echo ' <tr><td>' . __('hscomcp03') . '</td><td align="right"><span class="badge-count">' . number_format(
                 $row->highmcp
-            ) . '</td><td>' . $row->highmcppercent . '%</td></tr>' . "\n";
+            ) . '</span></td><td align="right">' . $row->highmcppercent . '%</td></tr>' . "\n";
         }
         echo '</table>' . "\n";
     }
@@ -5021,14 +5018,14 @@ function printTrafficGraph()
     $graphInterval = (defined('STATUSGRAPH_INTERVAL') ? STATUSGRAPH_INTERVAL : 60);
 
     echo '<td align="center" valign="top">' . "\n";
-    echo '   <table border="0" cellpadding="1" cellspacing="1" class="mail">' . "\n";
+    echo '   <table border="0" cellpadding="0" cellspacing="0" class="mail traffic-widget-table">' . "\n";
     if ($graphInterval <= 60) {
-        echo '    <tr><th colspan="1">' . __('trafficgraph03') . '</th></tr>' . "\n";
+        echo '    <tr><th colspan="1" class="widget-header"><span class="widget-icon">📊</span> ' . __('trafficgraph03') . '</th></tr>' . "\n";
     } else {
-        echo '    <tr><th colspan="1">' . sprintf(__('trafficgraphmore03'), $graphInterval / 60) . '</th></tr>' . "\n";
+        echo '    <tr><th colspan="1" class="widget-header"><span class="widget-icon">📊</span> ' . sprintf(__('trafficgraphmore03'), $graphInterval / 60) . '</th></tr>' . "\n";
     }
     echo '    <tr>' . "\n";
-    echo '    <td>' . "\n";
+    echo '    <td style="padding: 8px 10px !important;">' . "\n";
 
     $graphgenerator = new GraphGenerator();
     $graphgenerator->sqlQuery = '

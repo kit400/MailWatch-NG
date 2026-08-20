@@ -541,9 +541,161 @@ table.boxtable td.textdata {
     box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
 }
 
-.nav-icon {
-    font-size: 14px;
-    line-height: 1;
+/* ==========================================================================
+   Header Widgets (Status, Traffic Graph, Today's Totals)
+   ========================================================================== */
+.jump-box {
+    margin-top: 6px;
+    margin-bottom: 4px;
+}
+
+.jump-box form {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 3px 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    font-size: 11px;
+    color: #475569;
+}
+
+.jump-box p {
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: #475569;
+    font-weight: 500;
+}
+
+.jump-box input[type="text"] {
+    padding: 2px 6px;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    font-size: 11px;
+    color: #1e293b;
+    background: #f8fafc;
+    width: 95px;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.jump-box input[type="text"]:focus {
+    border-color: #2563eb;
+    background: #ffffff;
+}
+
+/* Header Widget Card Tables */
+table.status-widget-table,
+table.traffic-widget-table,
+table.totals-widget-table,
+table.todaystatistics {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    overflow: hidden !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    font-size: 11px;
+    color: #334155;
+    margin: 0 auto;
+}
+
+/* Card Header Row */
+table.status-widget-table th,
+table.traffic-widget-table th,
+table.totals-widget-table th,
+table.todaystatistics th,
+.widget-header {
+    background: #f8fafc !important;
+    color: #1e293b !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    padding: 6px 10px !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    text-align: left;
+    letter-spacing: 0.2px;
+}
+
+.widget-icon {
+    font-size: 13px;
+    margin-right: 4px;
+}
+
+/* Subheadings inside Status Widget (Mail Queue, Free Disk Space) */
+.widget-subheader,
+table.status-widget-table td.heading {
+    background: #f1f5f9 !important;
+    color: #475569 !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    padding: 3px 8px !important;
+    border-top: 1px solid #e2e8f0 !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Data Cells */
+table.status-widget-table td,
+table.traffic-widget-table td,
+table.totals-widget-table td,
+table.todaystatistics td {
+    padding: 3px 8px !important;
+    border-bottom: 1px solid #f8fafc !important;
+    font-size: 11px !important;
+    line-height: 1.4 !important;
+}
+
+table.status-widget-table tr:last-child td,
+table.totals-widget-table tr:last-child td,
+table.todaystatistics tr:last-child td {
+    border-bottom: none !important;
+}
+
+/* Status Badges */
+span.status-stopped,
+span.yes {
+    background-color: #fee2e2 !important;
+    color: #b91c1c !important;
+    border: 1px solid #fecaca !important;
+    border-radius: 4px !important;
+    padding: 1px 6px !important;
+    font-weight: 600 !important;
+    font-size: 10px !important;
+    text-transform: uppercase;
+    display: inline-block;
+}
+
+span.status-running,
+span.no {
+    background-color: #dcfce7 !important;
+    color: #15803d !important;
+    border: 1px solid #bbf7d0 !important;
+    border-radius: 4px !important;
+    padding: 1px 6px !important;
+    font-weight: 600 !important;
+    font-size: 10px !important;
+    text-transform: uppercase;
+    display: inline-block;
+}
+
+.badge-count {
+    background: #f1f5f9;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-weight: 600;
+    font-size: 10px;
+    font-family: monospace;
+    display: inline-block;
 }
 
 td.heading {
@@ -567,31 +719,19 @@ table.maildetail td.detail {
     word-break: break-all;
 }
 
-span.yes {
-    background-color: red;
-    color: #FFF;
-    font-weight: 700;
-}
-
-span.no {
-    background-color: green;
-    color: #FFF;
-    font-weight: 700;
-}
-
 a {
     text-decoration: none;
-    color: blue;
+    color: #2563eb;
 }
 
 a:visited {
     text-decoration: none;
-    color: blue;
+    color: #2563eb;
 }
 
 a:hover {
-    background-color: blue;
-    color: #FFF;
+    background-color: #eff6ff;
+    color: #1d4ed8;
 }
 
 a.logo {
