@@ -989,7 +989,7 @@ function printUserCabinet()
 
     echo '    <div class="user-cabinet-actions">' . "\n";
     echo '      <a href="user_manager.php" class="cabinet-btn cabinet-btn-profile">⚙️ ' . __('usermgnt10') . '</a>' . "\n";
-    echo '      <a href="logout.php" class="cabinet-btn cabinet-btn-logout">🚪 ' . __('logout03') . '</a>' . "\n";
+    echo '      <a href="logout.php" class="cabinet-btn cabinet-btn-logout">' . __('logout03') . '</a>' . "\n";
     echo '    </div>' . "\n";
     echo '  </div>' . "\n";
     echo '</div>' . "\n";
