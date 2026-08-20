@@ -929,9 +929,12 @@ function printUserCabinet()
 {
     global $langCode;
     $username = htmlspecialchars($_SESSION['fullname'] ?? $_SESSION['myusername'] ?? 'User');
-    $userType = ('A' === ($_SESSION['user_type'] ?? '')) ? __('administrator12', true) : (('D' === ($_SESSION['user_type'] ?? '')) ? __('domainadmin12', true) : __('user12', true));
-    if (empty($userType)) {
-        $userType = ('A' === ($_SESSION['user_type'] ?? '')) ? 'Administrator' : (('D' === ($_SESSION['user_type'] ?? '')) ? 'Domain Admin' : 'User');
+    if ('A' === ($_SESSION['user_type'] ?? '')) {
+        $userType = __('admin12');
+    } elseif ('D' === ($_SESSION['user_type'] ?? '')) {
+        $userType = __('domainadmin12');
+    } else {
+        $userType = __('user12');
     }
 
     echo '<div class="user-cabinet-widget">' . "\n";
@@ -954,7 +957,7 @@ function printUserCabinet()
         $langCount = count($langCodes);
         if ($langCount > 1) {
             echo '    <div class="user-cabinet-row">' . "\n";
-            echo '      <span class="user-cabinet-label">🌐 ' . __('languages03', true) . ':</span>' . "\n";
+            echo '      <span class="user-cabinet-label">🌐 Language:</span>' . "\n";
             echo '      <select id="langSelect" class="user-cabinet-lang" onChange="changeLang()">' . "\n";
             for ($i = 0; $i < $langCount; ++$i) {
                 echo '        <option value="' . $langCodes[$i] . '"'
