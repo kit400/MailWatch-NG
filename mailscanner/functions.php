@@ -1603,35 +1603,33 @@ AND
 }
 
 /**
- * @return array|mixed
+ * @return array
  */
 function get_disks()
 {
     $disks = [];
+    $disksToShow = defined('DISKS_TO_SHOW') ? DISKS_TO_SHOW : ['/'];
+    if (is_string($disksToShow) && trim($disksToShow) !== '') {
+        $disksToShow = array_map('trim', explode(',', $disksToShow));
+    }
+    $filterDisks = (is_array($disksToShow) && !empty($disksToShow) && !in_array('*', $disksToShow, true));
+
     if (PHP_OS === 'Windows NT') {
         // windows
-        $disks = shell_exec('fsutil fsinfo drives');
-        $disks = str_word_count($disks, 1);
-        // TODO: won't work on non english installation, we need to find an universal command
-        if ('Drives' !== $disks[0]) {
+        $drives = shell_exec('fsutil fsinfo drives');
+        $drives = str_word_count((string)$drives, 1);
+        if ('Drives' !== ($drives[0] ?? '')) {
             return [];
         }
-        unset($disks[0]);
-        foreach ($disks as $disk) {
-            $disks[]['mountpoint'] = $disk . ':\\';
+        unset($drives[0]);
+        foreach ($drives as $drive) {
+            $mp = $drive . ':\\';
+            if (!$filterDisks || in_array($mp, $disksToShow, true) || in_array($drive, $disksToShow, true)) {
+                $disks[] = ['mountpoint' => $mp];
+            }
         }
     } else {
         // unix
-        /*
-         * Using /proc/mounts as it seem to be standard on unix
-         *
-         * https://unix.stackexchange.com/a/24230/33366
-         * https://unix.stackexchange.com/a/12086/33366
-         */
-        $temp_drive = [];
-        // TODO: list nfs mount (and other relevant fs type) in $disks[]
-        // TODO: remove bind mount
-        // TODO: list MailScanner tmpfs
         if (is_file('/proc/mounts')) {
             $mounted_fs = file('/proc/mounts');
             foreach ($mounted_fs as $fs_row) {
@@ -1643,36 +1641,64 @@ function get_disks()
                         && false === stripos($drive[1], '/snap/')
                     )
                 ) {
-                    $temp_drive['device'] = $drive[0];
-                    $temp_drive['mountpoint'] = $drive[1];
-                    $disks[] = $temp_drive;
-                    unset($temp_drive);
+                    $mp = $drive[1];
+                    if (!$filterDisks || in_array($mp, $disksToShow, true)) {
+                        $disks[] = [
+                            'device' => $drive[0],
+                            'mountpoint' => $mp,
+                        ];
+                    }
                 }
             }
         } else {
             // fallback to mount command
             $data = shell_exec('mount');
-            $data = explode("\n", $data);
+            $data = explode("\n", (string)$data);
             foreach ($data as $disk) {
                 $drive = preg_split("/[\s]+/", $disk);
                 if (
-                    (0 === strpos($drive[0], '/dev/'))
+                    isset($drive[0], $drive[2])
+                    && (0 === strpos($drive[0], '/dev/'))
                     && (
                         false === stripos($drive[2], '/chroot/')
-                        && (false === stripos($drive[2], '/snapd/')
-                        )
+                        && false === stripos($drive[2], '/snapd/')
                     )
                 ) {
-                    $temp_drive['device'] = $drive[0];
-                    $temp_drive['mountpoint'] = $drive[2];
-                    $disks[] = $temp_drive;
-                    unset($temp_drive);
+                    $mp = $drive[2];
+                    if (!$filterDisks || in_array($mp, $disksToShow, true)) {
+                        $disks[] = [
+                            'device' => $drive[0],
+                            'mountpoint' => $mp,
+                        ];
+                    }
+                }
+            }
+        }
+
+        // If filtering is enabled and specific mount points were not matched via /dev/ (e.g. rootfs on virtio, zfs, etc)
+        if ($filterDisks && empty($disks)) {
+            foreach ($disksToShow as $mp) {
+                if (@disk_total_space($mp) !== false) {
+                    $disks[] = [
+                        'device' => 'root',
+                        'mountpoint' => $mp,
+                    ];
                 }
             }
         }
     }
 
-    return $disks;
+    // Deduplicate by mountpoint
+    $seen = [];
+    $uniqueDisks = [];
+    foreach ($disks as $disk) {
+        if (!isset($seen[$disk['mountpoint']])) {
+            $seen[$disk['mountpoint']] = true;
+            $uniqueDisks[] = $disk;
+        }
+    }
+
+    return $uniqueDisks;
 }
 
 /**

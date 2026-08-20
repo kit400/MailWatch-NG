@@ -176,6 +176,11 @@ define('DB_CLEAN_OPTIMIZE', true);
 // Show Software Version tab (only Admins can see it).
 define('SHOW_SFVERSION', true);
 
+// Free Disk Space widget: list of mountpoints to display (array or comma-separated string)
+// E.g. ['/'] or ['/', '/var']
+// Default for eFa is only the root filesystem '/'
+define('DISKS_TO_SHOW', ['/']);
+
 // Show Documentation tab (deprecated feature, should always be false, use at your own risk).
 define('SHOW_DOC', false);
 
