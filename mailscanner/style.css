@@ -342,45 +342,162 @@ table.boxtable td.textdata {
 }
 
 /* ==========================================================================
-   User Cabinet Widget (Header)
+   Header Row & Equal Height Card Layout
    ========================================================================== */
+.header-widgets-row {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.header-col {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.header-col-user {
+    flex: 0 0 170px;
+    max-width: 180px;
+    min-width: 155px;
+    gap: 4px;
+}
+
+.header-col-services {
+    flex: 1 1 0;
+}
+
+.header-col-storage {
+    flex: 1 1 0;
+}
+
+.header-col-traffic {
+    flex: 1.25 1 0;
+}
+
+.header-col-totals {
+    flex: 1.1 1 0;
+}
+
+/* Brand Box (Logo + Jump box) */
+.header-brand-box {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+.header-logo-img {
+    max-height: 32px;
+    max-width: 135px;
+    height: auto;
+    width: auto;
+    object-fit: contain;
+    display: block;
+}
+
+.jump-box {
+    width: 100%;
+    margin: 0;
+}
+
+.jump-box form {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 2px 6px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    font-size: 10px;
+    color: #475569;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.jump-box p {
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    color: #64748b;
+    font-weight: 500;
+    width: 100%;
+    justify-content: space-between;
+}
+
+.jump-box input[type="text"] {
+    padding: 2px 4px;
+    border: 1px solid #cbd5e1;
+    border-radius: 3px;
+    font-size: 10px;
+    color: #1e293b;
+    background: #f8fafc;
+    width: 65px;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.jump-box input[type="text"]:focus {
+    border-color: #2563eb;
+    background: #ffffff;
+}
+
+/* User Cabinet Card */
 .user-cabinet-widget {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
-    padding: 8px 12px;
+    padding: 6px 8px;
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-    margin-top: 6px;
-    min-width: 220px;
     box-sizing: border-box;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    width: 100%;
+    margin-top: 0;
 }
 
 .user-cabinet-header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding-bottom: 6px;
+    gap: 6px;
+    padding-bottom: 4px;
     border-bottom: 1px solid #f1f5f9;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
 }
 
 .user-cabinet-avatar {
-    font-size: 20px;
+    font-size: 16px;
     line-height: 1;
 }
 
 .user-cabinet-info {
     display: flex;
     flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .user-cabinet-name {
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 600;
     color: #1e293b;
     text-decoration: none;
     line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .user-cabinet-name:hover {
@@ -389,7 +506,7 @@ table.boxtable td.textdata {
 }
 
 .user-cabinet-role {
-    font-size: 10px;
+    font-size: 9px;
     color: #64748b;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -399,14 +516,14 @@ table.boxtable td.textdata {
 .user-cabinet-details {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 3px;
 }
 
 .user-cabinet-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-size: 12px;
+    font-size: 10px;
     color: #475569;
 }
 
@@ -417,29 +534,30 @@ table.boxtable td.textdata {
 
 .user-cabinet-clock {
     font-family: monospace;
-    font-size: 12px;
+    font-size: 10px;
     color: #1e293b;
     font-weight: 600;
 }
 
 .user-cabinet-lang {
     font-family: inherit;
-    font-size: 11px;
+    font-size: 10px;
     color: #334155;
     background: #f8fafc;
     border: 1px solid #cbd5e1;
-    border-radius: 4px;
-    padding: 2px 6px;
+    border-radius: 3px;
+    padding: 1px 4px;
     outline: none;
     cursor: pointer;
+    max-width: 80px;
 }
 
 .user-cabinet-actions {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
     margin-top: 4px;
-    padding-top: 6px;
+    padding-top: 4px;
     border-top: 1px solid #f1f5f9;
 }
 
@@ -448,12 +566,13 @@ table.boxtable td.textdata {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 4px 8px;
-    border-radius: 5px;
-    font-size: 11px;
+    padding: 3px 4px;
+    border-radius: 4px;
+    font-size: 10px;
     font-weight: 600;
     text-decoration: none;
     transition: all 0.15s ease;
+    white-space: nowrap;
 }
 
 .cabinet-btn-profile {
@@ -479,6 +598,132 @@ table.boxtable td.textdata {
     border-color: #dc2626;
 }
 
+/* Base styling for Header Cards */
+.header-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+.widget-header {
+    background: #f8fafc;
+    color: #1e293b;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 8px;
+    border-bottom: 1px solid #e2e8f0;
+    text-align: left;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.widget-icon {
+    font-size: 12px;
+    margin-right: 4px;
+}
+
+.card-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+}
+
+.card-chart-content {
+    padding: 6px 8px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 120px;
+    box-sizing: border-box;
+}
+
+.card-chart-content canvas {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 150px;
+}
+
+.card-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10.5px;
+    color: #334155;
+}
+
+.card-table td {
+    padding: 2.5px 6px;
+    border-bottom: 1px solid #f8fafc;
+    font-size: 10.5px;
+    line-height: 1.35;
+}
+
+.card-table tr:last-child td {
+    border-bottom: none;
+}
+
+.widget-subheader {
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 9.5px;
+    font-weight: 600;
+    padding: 3px 6px;
+    border-top: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Status Badges */
+span.status-stopped,
+span.yes {
+    background-color: #fee2e2 !important;
+    color: #b91c1c !important;
+    border: 1px solid #fecaca !important;
+    border-radius: 4px !important;
+    padding: 1px 5px !important;
+    font-weight: 600 !important;
+    font-size: 9.5px !important;
+    text-transform: uppercase;
+    display: inline-block;
+}
+
+span.status-running,
+span.no {
+    background-color: #dcfce7 !important;
+    color: #15803d !important;
+    border: 1px solid #bbf7d0 !important;
+    border-radius: 4px !important;
+    padding: 1px 5px !important;
+    font-weight: 600 !important;
+    font-size: 9.5px !important;
+    text-transform: uppercase;
+    display: inline-block;
+}
+
+.badge-count {
+    background: #f1f5f9;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 1px 4px;
+    font-weight: 600;
+    font-size: 9.5px;
+    font-family: monospace;
+    display: inline-block;
+}
+
 /* ==========================================================================
    Modern Compact Light Navigation Bar
    ========================================================================== */
@@ -493,7 +738,7 @@ table.boxtable td.textdata {
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
-    min-height: 40px;
+    min-height: 38px;
     height: auto;
     min-width: 0;
     width: 100%;
@@ -517,7 +762,7 @@ table.boxtable td.textdata {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 14px;
+    padding: 5px 12px;
     line-height: 1.2;
     color: #334155;
     text-decoration: none;
@@ -541,161 +786,9 @@ table.boxtable td.textdata {
     box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
 }
 
-/* ==========================================================================
-   Header Widgets (Status, Traffic Graph, Today's Totals)
-   ========================================================================== */
-.jump-box {
-    margin-top: 6px;
-    margin-bottom: 4px;
-}
-
-.jump-box form {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 3px 8px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-    font-size: 11px;
-    color: #475569;
-}
-
-.jump-box p {
-    margin: 0;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 11px;
-    color: #475569;
-    font-weight: 500;
-}
-
-.jump-box input[type="text"] {
-    padding: 2px 6px;
-    border: 1px solid #cbd5e1;
-    border-radius: 4px;
-    font-size: 11px;
-    color: #1e293b;
-    background: #f8fafc;
-    width: 95px;
-    outline: none;
-    transition: border-color 0.15s ease;
-}
-
-.jump-box input[type="text"]:focus {
-    border-color: #2563eb;
-    background: #ffffff;
-}
-
-/* Header Widget Card Tables */
-table.status-widget-table,
-table.traffic-widget-table,
-table.totals-widget-table,
-table.todaystatistics {
-    background: #ffffff !important;
-    border: 1px solid #e2e8f0 !important;
-    border-radius: 8px !important;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
-    border-collapse: separate !important;
-    border-spacing: 0 !important;
-    overflow: hidden !important;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
-    font-size: 11px;
-    color: #334155;
-    margin: 0 auto;
-}
-
-/* Card Header Row */
-table.status-widget-table th,
-table.traffic-widget-table th,
-table.totals-widget-table th,
-table.todaystatistics th,
-.widget-header {
-    background: #f8fafc !important;
-    color: #1e293b !important;
-    font-size: 12px !important;
-    font-weight: 600 !important;
-    padding: 6px 10px !important;
-    border-bottom: 1px solid #e2e8f0 !important;
-    text-align: left;
-    letter-spacing: 0.2px;
-}
-
-.widget-icon {
-    font-size: 13px;
-    margin-right: 4px;
-}
-
-/* Subheadings inside Status Widget (Mail Queue, Free Disk Space) */
-.widget-subheader,
-table.status-widget-table td.heading {
-    background: #f1f5f9 !important;
-    color: #475569 !important;
-    font-size: 10px !important;
-    font-weight: 600 !important;
-    padding: 3px 8px !important;
-    border-top: 1px solid #e2e8f0 !important;
-    border-bottom: 1px solid #e2e8f0 !important;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-/* Data Cells */
-table.status-widget-table td,
-table.traffic-widget-table td,
-table.totals-widget-table td,
-table.todaystatistics td {
-    padding: 3px 8px !important;
-    border-bottom: 1px solid #f8fafc !important;
-    font-size: 11px !important;
-    line-height: 1.4 !important;
-}
-
-table.status-widget-table tr:last-child td,
-table.totals-widget-table tr:last-child td,
-table.todaystatistics tr:last-child td {
-    border-bottom: none !important;
-}
-
-/* Status Badges */
-span.status-stopped,
-span.yes {
-    background-color: #fee2e2 !important;
-    color: #b91c1c !important;
-    border: 1px solid #fecaca !important;
-    border-radius: 4px !important;
-    padding: 1px 6px !important;
-    font-weight: 600 !important;
-    font-size: 10px !important;
-    text-transform: uppercase;
-    display: inline-block;
-}
-
-span.status-running,
-span.no {
-    background-color: #dcfce7 !important;
-    color: #15803d !important;
-    border: 1px solid #bbf7d0 !important;
-    border-radius: 4px !important;
-    padding: 1px 6px !important;
-    font-weight: 600 !important;
-    font-size: 10px !important;
-    text-transform: uppercase;
-    display: inline-block;
-}
-
-.badge-count {
-    background: #f1f5f9;
-    color: #334155;
-    border: 1px solid #e2e8f0;
-    border-radius: 4px;
-    padding: 1px 5px;
-    font-weight: 600;
-    font-size: 10px;
-    font-family: monospace;
-    display: inline-block;
+.nav-icon {
+    font-size: 14px;
+    line-height: 1;
 }
 
 td.heading {

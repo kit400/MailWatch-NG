@@ -399,52 +399,69 @@ function html_start($title, $refresh = 0, $cacheable = true, $report = false)
     }
     echo '</head>' . "\n";
     echo '<body onload="updateClock(); setInterval(\'updateClock()\', 1000 )">' . "\n";
-    echo '<table border="0" cellpadding="5" width="100%">' . "\n";
+    echo '<table border="0" cellpadding="0" cellspacing="0" width="100%">' . "\n";
     echo '<tr class="noprint">' . "\n";
-    echo '<td>' . "\n";
-    echo '<table border="0" cellpadding="0" cellspacing="0">' . "\n";
-    echo '<tr>' . "\n";
-    echo '<td align="left"><a href="index.php" class="logo"><img src=".' . IMAGES_DIR . MW_LOGO . '" alt="' . __('mailwatchtitle03') . '"></a></td>' . "\n";
-    echo '</tr>' . "\n";
-    echo '<tr>' . "\n";
-    echo '<td valign="bottom" align="left" class="jump">' . "\n";
-    echo '<div class="jump-box">' . "\n";
-    echo '<form action="./detail.php">' . "\n";
-    echo '<p>🔍 ' . __('jumpmessage03') . ' <input type="text" name="id" value="' . $message_id . '" placeholder="ID"></p>' . "\n";
-    echo '<input type="hidden" name="token" value="' . $_SESSION['token'] . '">' . "\n";
-    echo '</form>' . "\n";
-    echo '</div>' . "\n";
-    echo '</td>';
-    echo '</tr>';
-    echo '</table>' . "\n";
+    echo '<td colspan="' . ('A' === $_SESSION['user_type'] ? '5' : '4') . '" style="padding: 6px 8px 2px 8px;">' . "\n";
+
+    echo '<div class="header-widgets-row">' . "\n";
+
+    // 1. Column 1: Logo, Jump box, User Cabinet
+    echo '  <div class="header-col header-col-user">' . "\n";
+    echo '    <div class="header-brand-box">' . "\n";
+    echo '      <a href="index.php" class="logo"><img src=".' . IMAGES_DIR . MW_LOGO . '" alt="' . __('mailwatchtitle03') . '" class="header-logo-img"></a>' . "\n";
+    echo '      <div class="jump-box">' . "\n";
+    echo '        <form action="./detail.php">' . "\n";
+    echo '          <p>🔍 ' . __('jumpmessage03') . ' <input type="text" name="id" value="' . $message_id . '" placeholder="ID"></p>' . "\n";
+    echo '          <input type="hidden" name="token" value="' . $_SESSION['token'] . '">' . "\n";
+    echo '        </form>' . "\n";
+    echo '      </div>' . "\n";
+    echo '    </div>' . "\n";
     printUserCabinet();
-    echo '</td>' . "\n";
+    echo '  </div>' . "\n";
 
     if ('A' === $_SESSION['user_type'] || 'D' === $_SESSION['user_type']) {
-        echo '  <td align="center" valign="top">' . "\n";
-
-        // Status table
-        echo '   <table border="0" cellpadding="0" cellspacing="0" class="mail status-widget-table">' . "\n";
-        echo '    <tr><th colspan="3" class="widget-header"><span class="widget-icon">⚡</span> ' . __('status03') . '</th></tr>' . "\n";
-
+        // 2. Widget 1 of Status: Services & Load
+        echo '  <div class="header-col header-col-services">' . "\n";
+        echo '    <div class="header-card">' . "\n";
+        echo '      <div class="widget-header"><span class="widget-icon">⚡</span> ' . __('status03') . '</div>' . "\n";
+        echo '      <div class="card-content">' . "\n";
+        echo '        <table class="card-table">' . "\n";
         printServiceStatus();
         printAverageLoad();
+        echo '        </table>' . "\n";
+        echo '      </div>' . "\n";
+        echo '    </div>' . "\n";
+        echo '  </div>' . "\n";
 
+        // 3. Widget 2 of Status: Queues & Storage
         if ('A' === $_SESSION['user_type']) {
+            echo '  <div class="header-col header-col-storage">' . "\n";
+            echo '    <div class="header-card">' . "\n";
+            echo '      <div class="widget-header"><span class="widget-icon">💾</span> ' . __('freedspace03') . ' &amp; ' . __('mailqueue03') . '</div>' . "\n";
+            echo '      <div class="card-content">' . "\n";
+            echo '        <table class="card-table">' . "\n";
             printMTAQueue();
             printFreeDiskSpace();
+            echo '        </table>' . "\n";
+            echo '      </div>' . "\n";
+            echo '    </div>' . "\n";
+            echo '  </div>' . "\n";
         }
-        echo '  </table>' . "\n";
-        echo '  </td>' . "\n";
 
+        // 4. Traffic Graph Widget
+        echo '  <div class="header-col header-col-traffic">' . "\n";
         printTrafficGraph();
+        echo '  </div>' . "\n";
     }
 
-    echo '<td align="center" valign="top">' . "\n";
+    // 5. Today's Totals Widget
+    echo '  <div class="header-col header-col-totals">' . "\n";
     printTodayStatistics();
-    echo '  </td>' . "\n";
+    echo '  </div>' . "\n";
 
-    echo ' </tr>' . "\n";
+    echo '</div>' . "\n";
+    echo '</td>' . "\n";
+    echo '</tr>' . "\n";
 
     printNavBar();
     echo '
@@ -884,41 +901,45 @@ function printTodayStatistics()
 
     $sth = dbquery($sql);
     while ($row = $sth->fetch_object()) {
-        echo '<table border="0" cellpadding="0" cellspacing="0" class="mail todaystatistics totals-widget-table" width="220">' . "\n";
-        echo ' <tr><th align="left" colspan="3" class="widget-header"><span class="widget-icon">📈</span> ' . __('todaystotals03') . '</th></tr>' . "\n";
-        echo ' <tr><td>' . __('processed03') . '</td><td align="right"><span class="badge-count">' . number_format(
+        echo '<div class="header-card">' . "\n";
+        echo '  <div class="widget-header"><span class="widget-icon">📈</span> ' . __('todaystotals03') . '</div>' . "\n";
+        echo '  <div class="card-content">' . "\n";
+        echo '    <table class="card-table">' . "\n";
+        echo '      <tr><td>' . __('processed03') . '</td><td align="right"><span class="badge-count">' . number_format(
             $row->processed
         ) . '</span></td><td align="right">' . formatSize(
             $row->size
         ) . '</td></tr>' . "\n";
-        echo ' <tr><td>' . __('cleans03') . '</td><td align="right"><span class="badge-count">' . number_format(
+        echo '      <tr><td>' . __('cleans03') . '</td><td align="right"><span class="badge-count">' . number_format(
             $row->clean
         ) . '</span></td><td align="right">' . $row->cleanpercent . '%</td></tr>' . "\n";
-        echo ' <tr><td>' . __('viruses03') . '</td><td align="right"><span class="badge-count">' . number_format(
+        echo '      <tr><td>' . __('viruses03') . '</td><td align="right"><span class="badge-count">' . number_format(
             $row->viruses
         ) . '</span></td><td align="right">' . $row->viruspercent . '%</td></tr>' . "\n";
-        echo ' <tr><td>' . __('topvirus03') . '</td><td colspan="2" align="right">' . return_todays_top_virus() . '</td></tr>' . "\n";
-        echo ' <tr><td>' . __('blockedfiles03') . '</td><td align="right"><span class="badge-count">' . number_format(
+        echo '      <tr><td>' . __('topvirus03') . '</td><td colspan="2" align="right">' . return_todays_top_virus() . '</td></tr>' . "\n";
+        echo '      <tr><td>' . __('blockedfiles03') . '</td><td align="right"><span class="badge-count">' . number_format(
             $row->blockedfiles
         ) . '</span></td><td align="right">' . $row->blockedfilespercent . '%</td></tr>' . "\n";
-        echo ' <tr><td>' . __('others03') . '</td><td align="right"><span class="badge-count">' . number_format(
+        echo '      <tr><td>' . __('others03') . '</td><td align="right"><span class="badge-count">' . number_format(
             $row->otherinfected
         ) . '</span></td><td align="right">' . $row->otherinfectedpercent . '%</td></tr>' . "\n";
-        echo ' <tr><td>' . __('spam03') . '</td><td align="right"><span class="badge-count">' . number_format(
+        echo '      <tr><td>' . __('spam03') . '</td><td align="right"><span class="badge-count">' . number_format(
             $row->spam
         ) . '</span></td><td align="right">' . $row->spampercent . '%</td></tr>' . "\n";
-        echo ' <tr><td>' . __('hscospam03') . '</td><td align="right"><span class="badge-count">' . number_format(
+        echo '      <tr><td>' . __('hscospam03') . '</td><td align="right"><span class="badge-count">' . number_format(
             $row->highspam
         ) . '</span></td><td align="right">' . $row->highspampercent . '%</td></tr>' . "\n";
         if (get_conf_truefalse('mcpchecks')) {
-            echo ' <tr><td>MCP:</td><td align="right"><span class="badge-count">' . number_format(
+            echo '      <tr><td>MCP:</td><td align="right"><span class="badge-count">' . number_format(
                 $row->mcp
             ) . '</span></td><td align="right">' . $row->mcppercent . '%</td></tr>' . "\n";
-            echo ' <tr><td>' . __('hscomcp03') . '</td><td align="right"><span class="badge-count">' . number_format(
+            echo '      <tr><td>' . __('hscomcp03') . '</td><td align="right"><span class="badge-count">' . number_format(
                 $row->highmcp
             ) . '</span></td><td align="right">' . $row->highmcppercent . '%</td></tr>' . "\n";
         }
-        echo '</table>' . "\n";
+        echo '    </table>' . "\n";
+        echo '  </div>' . "\n";
+        echo '</div>' . "\n";
     }
 }
 
@@ -5043,15 +5064,13 @@ function printTrafficGraph()
 
     $graphInterval = (defined('STATUSGRAPH_INTERVAL') ? STATUSGRAPH_INTERVAL : 60);
 
-    echo '<td align="center" valign="top">' . "\n";
-    echo '   <table border="0" cellpadding="0" cellspacing="0" class="mail traffic-widget-table">' . "\n";
+    echo '<div class="header-card">' . "\n";
     if ($graphInterval <= 60) {
-        echo '    <tr><th colspan="1" class="widget-header"><span class="widget-icon">📊</span> ' . __('trafficgraph03') . '</th></tr>' . "\n";
+        echo '  <div class="widget-header"><span class="widget-icon">📊</span> ' . __('trafficgraph03') . '</div>' . "\n";
     } else {
-        echo '    <tr><th colspan="1" class="widget-header"><span class="widget-icon">📊</span> ' . sprintf(__('trafficgraphmore03'), $graphInterval / 60) . '</th></tr>' . "\n";
+        echo '  <div class="widget-header"><span class="widget-icon">📊</span> ' . sprintf(__('trafficgraphmore03'), $graphInterval / 60) . '</div>' . "\n";
     }
-    echo '    <tr>' . "\n";
-    echo '    <td style="padding: 8px 10px !important;">' . "\n";
+    echo '  <div class="card-content card-chart-content">' . "\n";
 
     $graphgenerator = new GraphGenerator();
     $graphgenerator->sqlQuery = '
@@ -5097,6 +5116,14 @@ function printTrafficGraph()
         'dataFormattedColumns' => [
             ['total_virusconv', 'total_spamconv', 'total_mailconv'],
         ],
+        'options' => [
+            'responsive' => 'true',
+            'maintainAspectRatio' => 'false',
+        ],
+        'tooltips' => [
+            'mode' => 'index',
+            'intersect' => 'false',
+        ],
         'xAxeDescription' => '',
         'yAxeDescriptions' => [
             '',
@@ -5121,10 +5148,8 @@ function printTrafficGraph()
     $graphgenerator->printTable = false;
     $graphgenerator->printLineGraph();
 
-    echo '    </td>' . "\n";
-    echo '    </tr>' . "\n";
-    echo '  </table>' . "\n";
-    echo '  </td>' . "\n";
+    echo '  </div>' . "\n";
+    echo '</div>' . "\n";
 }
 
 /**
