@@ -377,11 +377,11 @@ table.boxtable td.textdata {
 }
 
 .header-col-traffic {
-    flex: 1.25 1 0;
+    flex: 1.45 1 0;
 }
 
 .header-col-totals {
-    flex: 1.1 1 0;
+    flex: 0.88 1 0;
 }
 
 /* Brand Box (Logo + Jump box) */

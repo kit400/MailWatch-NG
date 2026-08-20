@@ -74,7 +74,7 @@ return [
     'others03' => 'Other:',
     'spam03' => 'Spam:',
     'spam103' => 'Spam',
-    'hscospam03' => 'High Score Spam:',
+    'hscospam03' => 'High Spam:',
     'hscomcp03' => 'High Score MCP:',
     'recentmessages03' => 'Recent Messages',
     'lists03' => 'Block and Allow Lists',
