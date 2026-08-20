@@ -364,8 +364,7 @@ function html_start($title, $refresh = 0, $cacheable = true, $report = false)
     echo '<link rel="shortcut icon" href="images/favicon.png" >' . "\n";
     echo '<script type="text/javascript">';
     echo '' . java_time() . '';
-    // $current_url = "".MAILWATCH_HOME."/status.php";
-    // if($_SERVER['SCRIPT_FILENAME'] === $active_url){
+    echo 'function changeLang() { var el = document.getElementById("langSelect"); if(el) { document.cookie = "MW_LANG=" + el.value + ";path=/;max-age=31536000"; location.reload(); } }' . "\n";
     echo '</script>';
     if ($report) {
         echo '<title>' . __('mwfilterreport03') . ' ' . $title . ' </title>' . "\n";
@@ -416,10 +415,7 @@ function html_start($title, $refresh = 0, $cacheable = true, $report = false)
     echo '</td>';
     echo '</tr>';
     echo '</table>' . "\n";
-    echo '<table cellspacing="1" class="mail">' . "\n";
-    echo '<tr><td class="heading" align="center">' . __('cuser03') . '</td><td class="heading" align="center">' . __('cst03') . '</td></tr>' . "\n";
-    echo '<tr><td>' . $_SESSION['fullname'] . '</td><td><span id="clock">&nbsp;</span></td></tr>' . "\n";
-    echo '</table>' . "\n";
+    printUserCabinet();
     echo '</td>' . "\n";
 
     if ('A' === $_SESSION['user_type'] || 'D' === $_SESSION['user_type']) {
@@ -929,6 +925,55 @@ function printTodayStatistics()
     }
 }
 
+function printUserCabinet()
+{
+    global $langCode;
+    $username = htmlspecialchars($_SESSION['fullname'] ?? $_SESSION['myusername'] ?? 'User');
+    $userType = ('A' === ($_SESSION['user_type'] ?? '')) ? __('administrator12', true) : (('D' === ($_SESSION['user_type'] ?? '')) ? __('domainadmin12', true) : __('user12', true));
+    if (empty($userType)) {
+        $userType = ('A' === ($_SESSION['user_type'] ?? '')) ? 'Administrator' : (('D' === ($_SESSION['user_type'] ?? '')) ? 'Domain Admin' : 'User');
+    }
+
+    echo '<div class="user-cabinet-widget">' . "\n";
+    echo '  <div class="user-cabinet-header">' . "\n";
+    echo '    <span class="user-cabinet-avatar">👤</span>' . "\n";
+    echo '    <div class="user-cabinet-info">' . "\n";
+    echo '      <a href="user_manager.php" class="user-cabinet-name" title="' . __('usermgnt12') . '">' . $username . '</a>' . "\n";
+    echo '      <span class="user-cabinet-role">' . $userType . '</span>' . "\n";
+    echo '    </div>' . "\n";
+    echo '  </div>' . "\n";
+
+    echo '  <div class="user-cabinet-details">' . "\n";
+    echo '    <div class="user-cabinet-row">' . "\n";
+    echo '      <span class="user-cabinet-label">🕒 ' . __('cst03') . ':</span>' . "\n";
+    echo '      <span id="clock" class="user-cabinet-clock">&nbsp;</span>' . "\n";
+    echo '    </div>' . "\n";
+
+    if (defined('USER_SELECTABLE_LANG')) {
+        $langCodes = explode(',', USER_SELECTABLE_LANG);
+        $langCount = count($langCodes);
+        if ($langCount > 1) {
+            echo '    <div class="user-cabinet-row">' . "\n";
+            echo '      <span class="user-cabinet-label">🌐 ' . __('languages03', true) . ':</span>' . "\n";
+            echo '      <select id="langSelect" class="user-cabinet-lang" onChange="changeLang()">' . "\n";
+            for ($i = 0; $i < $langCount; ++$i) {
+                echo '        <option value="' . $langCodes[$i] . '"'
+                    . ($langCodes[$i] === $langCode ? ' selected' : '')
+                    . '>' . __($langCodes[$i]) . '</option>' . "\n";
+            }
+            echo '      </select>' . "\n";
+            echo '    </div>' . "\n";
+        }
+    }
+
+    echo '    <div class="user-cabinet-actions">' . "\n";
+    echo '      <a href="user_manager.php" class="cabinet-btn cabinet-btn-profile">⚙️ ' . __('usermgnt10') . '</a>' . "\n";
+    echo '      <a href="logout.php" class="cabinet-btn cabinet-btn-logout">🚪 ' . __('logout03') . '</a>' . "\n";
+    echo '    </div>' . "\n";
+    echo '  </div>' . "\n";
+    echo '</div>' . "\n";
+}
+
 function printNavBar()
 {
     // Navigation links - put them into an array to allow them to be switched
@@ -956,13 +1001,12 @@ function printNavBar()
         $nav['grey.php'] = ['title' => 'Greylist', 'icon' => '⏱️'];
     }
     // End eFa
-    $nav['logout.php'] = ['title' => __('logout03'), 'icon' => '🚪', 'class' => 'nav-logout'];
 
     // Navigation table
     echo '<tr class="noprint">' . "\n";
     echo '<td colspan="' . ('A' === $_SESSION['user_type'] ? '5' : '4') . '">' . "\n";
 
-    echo '<ul id="menu" class="modern-dark-menu">' . "\n";
+    echo '<ul id="menu" class="modern-light-menu">' . "\n";
 
     // Display the items
     foreach ($nav as $url => $item) {
@@ -976,22 +1020,6 @@ function printNavBar()
         $liClassAttr = !empty(trim($liClass)) ? ' class="' . trim($liClass) . '"' : '';
 
         echo "<li{$liClassAttr}><a href=\"$url\">{$icon}<span class=\"nav-text\">$desc</span></a></li>\n";
-    }
-
-    if (defined('USER_SELECTABLE_LANG')) {
-        $langCodes = explode(',', USER_SELECTABLE_LANG);
-        $langCount = count($langCodes);
-        if ($langCount > 1) {
-            global $langCode;
-            echo '<script>function changeLang() { document.cookie = "MW_LANG="+document.getElementById("langSelect").selectedOptions[0].value; location.reload();} </script>';
-            echo '<li class="lang"><span class="lang-icon">🌐</span><select id="langSelect" class="lang" onChange="changeLang()">' . "\n";
-            for ($i = 0; $i < $langCount; ++$i) {
-                echo '<option value="' . $langCodes[$i] . '"'
-                . ($langCodes[$i] === $langCode ? ' selected' : '')
-                . '>' . __($langCodes[$i]) . '</option>' . "\n";
-            }
-            echo '</select></li>' . "\n";
-        }
     }
 
     echo '
