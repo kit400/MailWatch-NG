@@ -934,45 +934,48 @@ function printNavBar()
     // Navigation links - put them into an array to allow them to be switched
     // on or off as necessary and to allow for the table widths to be calculated.
     $nav = [];
-    $nav['status.php'] = __('recentmessages03');
+    $nav['status.php'] = ['title' => __('recentmessages03'), 'icon' => '📬'];
     if (LISTS) {
-        $nav['lists.php'] = __('lists03');
+        $nav['lists.php'] = ['title' => __('lists03'), 'icon' => '📋'];
     }
     if (!DISTRIBUTED_SETUP) {
-        $nav['quarantine.php'] = __('quarantine03');
+        $nav['quarantine.php'] = ['title' => __('quarantine03'), 'icon' => '🛡️'];
     }
-    $nav['reports.php'] = __('reports03');
-    $nav['other.php'] = __('toolslinks03');
+    $nav['reports.php'] = ['title' => __('reports03'), 'icon' => '📈'];
+    $nav['other.php'] = ['title' => __('toolslinks03'), 'icon' => '⚙️'];
 
     if (SHOW_SFVERSION === true && 'A' === $_SESSION['user_type']) {
-        $nav['sf_version.php'] = __('softwareversions03');
+        $nav['sf_version.php'] = ['title' => __('softwareversions03'), 'icon' => 'ℹ️'];
     }
 
     if (SHOW_DOC === true) {
-        $nav['docs.php'] = __('documentation03');
+        $nav['docs.php'] = ['title' => __('documentation03'), 'icon' => '📖'];
     }
     // Begin eFa
     if (isset($_SESSION['user_type']) && 'A' === $_SESSION['user_type'] && defined('SHOW_GREYLIST') && true === SHOW_GREYLIST) {
-        $nav['grey.php'] = 'greylist';
+        $nav['grey.php'] = ['title' => 'Greylist', 'icon' => '⏱️'];
     }
     // End eFa
-    $nav['logout.php'] = __('logout03');
-    // $table_width = round(100 / count($nav));
+    $nav['logout.php'] = ['title' => __('logout03'), 'icon' => '🚪', 'class' => 'nav-logout'];
 
     // Navigation table
     echo '<tr class="noprint">' . "\n";
     echo '<td colspan="' . ('A' === $_SESSION['user_type'] ? '5' : '4') . '">' . "\n";
 
-    echo '<ul id="menu" class="yellow">' . "\n";
+    echo '<ul id="menu" class="modern-dark-menu">' . "\n";
 
-    // Display the different words
-    foreach ($nav as $url => $desc) {
+    // Display the items
+    foreach ($nav as $url => $item) {
+        $desc = is_array($item) ? $item['title'] : $item;
+        $icon = is_array($item) && isset($item['icon']) ? '<span class="nav-icon">' . $item['icon'] . '</span> ' : '';
+        $extraClass = is_array($item) && isset($item['class']) ? ' ' . $item['class'] : '';
+
         $active_url = MAILWATCH_HOME . '/' . $url;
-        if ($_SERVER['SCRIPT_FILENAME'] === $active_url) {
-            echo "<li class=\"active\"><a href=\"$url\">$desc</a></li>\n";
-        } else {
-            echo "<li><a href=\"$url\">$desc</a></li>\n";
-        }
+        $isActive = ($_SERVER['SCRIPT_FILENAME'] === $active_url);
+        $liClass = ($isActive ? 'active' : '') . $extraClass;
+        $liClassAttr = !empty(trim($liClass)) ? ' class="' . trim($liClass) . '"' : '';
+
+        echo "<li{$liClassAttr}><a href=\"$url\">{$icon}<span class=\"nav-text\">$desc</span></a></li>\n";
     }
 
     if (defined('USER_SELECTABLE_LANG')) {
@@ -981,7 +984,7 @@ function printNavBar()
         if ($langCount > 1) {
             global $langCode;
             echo '<script>function changeLang() { document.cookie = "MW_LANG="+document.getElementById("langSelect").selectedOptions[0].value; location.reload();} </script>';
-            echo '<li class="lang"><select id="langSelect" class="lang" onChange="changeLang()">' . "\n";
+            echo '<li class="lang"><span class="lang-icon">🌐</span><select id="langSelect" class="lang" onChange="changeLang()">' . "\n";
             for ($i = 0; $i < $langCount; ++$i) {
                 echo '<option value="' . $langCodes[$i] . '"'
                 . ($langCodes[$i] === $langCode ? ' selected' : '')
