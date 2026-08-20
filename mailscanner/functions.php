@@ -437,7 +437,7 @@ function html_start($title, $refresh = 0, $cacheable = true, $report = false)
         if ('A' === $_SESSION['user_type']) {
             echo '  <div class="header-col header-col-storage">' . "\n";
             echo '    <div class="header-card">' . "\n";
-            echo '      <div class="widget-header"><span class="widget-icon">💾</span> ' . __('freedspace03') . ' &amp; ' . __('mailqueue03') . '</div>' . "\n";
+            echo '      <div class="widget-header"><span class="widget-icon">💾</span> ' . __('diskspace_and_queues03') . '</div>' . "\n";
             echo '      <div class="card-content">' . "\n";
             echo '        <table class="card-table">' . "\n";
             printMTAQueue();

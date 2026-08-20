@@ -373,11 +373,11 @@ table.boxtable td.textdata {
 }
 
 .header-col-storage {
-    flex: 1 1 0;
+    flex: 0.80 1 0;
 }
 
 .header-col-traffic {
-    flex: 1.45 1 0;
+    flex: 1.65 1 0;
 }
 
 .header-col-totals {
