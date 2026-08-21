@@ -28,43 +28,52 @@
 */
 body {
     margin: 0;
-    font-family: verdana, sans-serif;
+    padding: 0 10px 20px 10px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    background-color: #f8fafc;
+    color: #1e293b;
+    font-size: 12px;
+    line-height: 1.5;
 }
 
 .inner-container {
-    border: solid 2px #000;
-    border-top: 0;
-    -webkit-border-radius: 0 0 15px 15px;
-    -moz-border-radius: 0 0 15px 15px;
-    border-radius: 0 0 15px 15px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+    padding: 12px;
 }
 
-/*login*/
-
+/* ==========================================================================
+   Login & Password Reset
+   ========================================================================== */
 .loginbody {
-    color: #000;
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 16px;
-    line-height: 1.5em;
+    color: #1e293b;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    background-color: #f8fafc;
 }
 
 .login {
-    margin: 50px auto;
-    width: 350px;
+    margin: 60px auto;
+    width: 360px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    overflow: hidden;
 }
 
 .login h1 {
-    background-color: #999999;
-    -webkit-border-radius: 15px 15px 0 0;
-    -moz-border-radius: 15px 15px 0 0;
-    border-radius: 15px 15px 0 0;
-    color: #222;
-    font-size: 28px;
-    padding: 15px 15px;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: 600;
+    padding: 16px 20px;
     margin: 0;
     text-align: center;
-    border: 2px solid #000000;
-    border-bottom: 0;
+    border: none;
 }
 
 .login form {
@@ -74,12 +83,13 @@ body {
 .login fieldset {
     border: 0;
     margin: 0;
-    padding: 20px 20px;
+    padding: 24px 20px 20px 20px;
 }
 
 .login fieldset p {
-    color: #222;
-    margin: 0 0 8px;
+    color: #475569;
+    margin: 0 0 10px;
+    font-size: 12px;
 }
 
 .login fieldset p:last-child {
@@ -87,258 +97,365 @@ body {
 }
 
 .login p.loginerror {
-    background-color: #F2DEDE;
-    border-color: #EBCCD1;
-    color: #A94442;
-    padding: 10px;
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #b91c1c;
+    padding: 10px 12px;
     text-align: center;
-    -webkit-border-radius: 3px;
-    -moz-border-radius: 3px;
-    border-radius: 3px;
+    border-radius: 6px;
+    font-size: 12px;
+    margin-bottom: 15px;
 }
 
 .login input {
-    border: 0;
-    border-bottom: 1px solid #222;
     font-family: inherit;
-    font-size: inherit;
-    font-weight: inherit;
-    line-height: inherit;
-    -webkit-appearance: none;
+    font-size: 13px;
+    box-sizing: border-box;
 }
 
 .login fieldset input[type="text"], .login fieldset input[type="password"] {
-    background-color: #E9E9E9;
-    color: #222;
-    padding: 4px;
-    width: 298px;
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #1e293b;
+    padding: 8px 12px;
+    width: 100%;
     margin-bottom: 16px;
+    border-radius: 6px;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.login fieldset input[type="text"]:focus, .login fieldset input[type="password"]:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
 }
 
 .login fieldset button[type="submit"],
 .pwdresetform fieldset button[type="submit"] {
-    font-size: 16px;
-    background-color: #999999;
-    color: #222;
+    font-size: 14px;
+    font-weight: 500;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    color: #ffffff;
     display: block;
-    margin: 0 auto;
-    padding: 4px 0;
-    width: 100px;
-    -webkit-border-radius: 3px;
-    -moz-border-radius: 3px;
-    border-radius: 3px;
-    border: 0;
-}
-
-.pwdresetform fieldset button[type="submit"] {
-    width: auto;
-    min-width: 100px;
+    margin: 8px auto 0 auto;
+    padding: 8px 16px;
+    width: 100%;
+    border-radius: 6px;
+    border: 1px solid #2563eb;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
+    transition: all 0.15s ease;
 }
 
 .login fieldset button[type="submit"]:hover,
 .pwdresetform fieldset button[type="submit"]:hover {
-    background-color: #DEB531;
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+    border-color: #1d4ed8;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);
 }
 
 .pwdresetButton {
     text-align: center;
-    margin-bottom: 10px;
-    min-height: 40px;
+    margin-bottom: 15px;
+    min-height: 35px;
 }
 
 .pwdresetButton a.loginButton {
-    padding: 10px;
-    background-color: #999999;
-    color: #222222;
+    padding: 8px 16px;
+    background: #f1f5f9;
+    color: #334155;
     margin: 0 auto;
     min-width: 100px;
-    -webkit-border-radius: 3px;
-    -moz-border-radius: 3px;
-    border-radius: 3px;
-    border: 0;
-    font-size: 16px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.15s ease;
 }
 
 .pwdresetButton a.loginButton:hover {
-    background-color: #DEB531;
+    background: #e2e8f0;
+    color: #0f172a;
 }
 
 .pwdresetButton a {
-    color: #000;
-    font-size: 14px;
+    color: #2563eb;
+    font-size: 13px;
     text-decoration: none;
-    font-family: Arial, Helvetica, sans-serif;
 }
 
-.loginbody .pwdresetButton a:hover {
-    background-color: blue;
-    color: #FFF;
-    padding: 5px;
-    -webkit-border-radius: 5px;
-    -moz-border-radius: 5px;
-    border-radius: 5px;
-}
-
-/* mail table */
-table.mail TH, table.boxtable TH, table.maildetail TH {
-    font-size: 10pt;
-    font-weight: 700;
-    text-align: center;
-    background-color: #999999;
-}
-
-table.blackwhitelist {
+/* ==========================================================================
+   Global Card Tables (Mail, Box, Detail, Reports, Lists, User Edit)
+   ========================================================================== */
+table.mail,
+table.boxtable,
+table.maildetail,
+table.mailwatch,
+table.reportTable,
+table.blackwhitelist,
+table.sophos,
+table.sa_rules_report,
+table.sa_rule_report,
+table.useredit {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    overflow: hidden !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif !important;
+    font-size: 11.5px !important;
+    color: #334155 !important;
+    margin-top: 6px !important;
+    margin-bottom: 12px !important;
     width: 100%;
-    border: 0;
-}
-
-td.blackwhitelist {
-    width: 50%;
-    vertical-align: text-top;
-}
-
-table.sa_rule_report {
-    padding: 0;
-    width: 100%;
-}
-
-table.mail tr, table.sophos tr, table.sa_rules_report tr {
-    font-size: 8pt;
-    background-color: #EBEBEB;
-}
-
-table.colorcodes tr {
-    background-color: inherit;
-}
-
-table.sa_rules_report TH {
-    text-align: left;
-}
-
-table.mail tr.infected {
-    background-color: #B22222;
-    color: #FFF;
-}
-
-table.mail td.infected {
-    background-color: #B22222;
-    border: 1px solid #000;
-    width: 15px;
-}
-
-table.mail tr.spam {
-    background-color: #F5BBBB;
-    color: #000;
-}
-
-table.mail td.spam {
-    background-color: #F5BBBB;
-    border: 1px solid #000;
-    width: 15px;
-}
-
-table.mail tr.highspam {
-    background-color: #EE6262;
-    color: #000;
-}
-
-table.mail td.highspam {
-    background-color: #EE6262;
-    border: 1px solid #000;
-    width: 15px;
-}
-
-table.mail tr.mcp {
-    background-color: #ADD8E6;
-    color: #000;
-}
-
-table.mail tr.notscanned {
-    background-color: #800080;
-    color: #FFF;
-}
-
-table.mail td.notscanned {
-    background-color: #800080;
-    border: 1px solid #000;
-    width: 15px;
-}
-
-table.mail tr.clean {
-    background-color: #EBEBEB;
-    color: #FFF;
-}
-
-table.mail td.clean {
-    background-color: #EBEBEB;
-    border: 1px solid #000;
-    width: 15px;
-}
-
-table.mail td.mcp {
-    background-color: #ADD8E6;
-    border: 1px solid #000;
-    width: 15px;
-}
-
-table.mail tr.highmcp {
-    background-color: #00008B;
-    color: #FFF;
-}
-
-table.mail td.highmcp {
-    background-color: #00008B;
-    border: 1px solid #000;
-    width: 15px;
-}
-
-table.mail tr.whitelisted {
-    background-color: #90EE90;
-    color: #000;
-}
-
-table.mail td.whitelisted {
-    background-color: #90EE90;
-    border: 1px solid #000;
-    width: 15px;
-}
-
-table.mail tr.blacklisted {
-    color: #FFF;
-    background-color: #000;
-}
-
-table.mail td.blacklisted {
-    background-color: #000;
-    border: 1px solid #000;
-    width: 15px;
-}
-
-table.mail, table.maildetail, table.navigation, table.boxtable {
-    border: 1px solid #000;
-    padding: 0;
-}
-
-table.rowhover tr:hover {
-    -webkit-filter: invert(0.1);
-    filter: invert(0.1);
-}
-
-tr.nohover {
-    -webkit-filter:none !important;
-    filter:none !important;
-}
-table.colorcodes tr:hover {
-    -webkit-filter: none;
-    filter: none;
 }
 
 table.boxtable {
     margin-left: auto;
     margin-right: auto;
 }
+
+/* Headers */
+table.mail th,
+table.boxtable th,
+table.maildetail th,
+table.mailwatch th,
+table.reportTable th,
+table.blackwhitelist th,
+table.sophos th,
+table.sa_rules_report th,
+table.sa_rule_report th,
+table.useredit th,
+td.heading,
+td.heading-w175,
+td.titleReport,
+td.message {
+    background: #f8fafc !important;
+    color: #1e293b !important;
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    padding: 7px 10px !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    text-align: left !important;
+    letter-spacing: 0.2px !important;
+}
+
+th.center, th.aligncenter, td.heading.center {
+    text-align: center !important;
+}
+
+td.heading-w175 {
+    width: 175px !important;
+    text-align: right !important;
+    vertical-align: top !important;
+    color: #475569 !important;
+}
+
+/* Data Cells */
+table.mail td,
+table.boxtable td,
+table.maildetail td,
+table.mailwatch td,
+table.reportTable td,
+table.blackwhitelist td,
+table.sophos td,
+table.sa_rules_report td,
+table.sa_rule_report td,
+table.useredit td,
+table.maildetail td.detail,
 table.boxtable td.textdata {
-    padding-left: 10px;
+    padding: 6px 10px !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    font-size: 11.5px !important;
+    color: #334155 !important;
+    line-height: 1.4 !important;
+}
+
+table.mail tr:last-child td,
+table.boxtable tr:last-child td,
+table.maildetail tr:last-child td,
+table.mailwatch tr:last-child td,
+table.reportTable tr:last-child td,
+table.blackwhitelist tr:last-child td,
+table.sophos tr:last-child td,
+table.sa_rules_report tr:last-child td,
+table.sa_rule_report tr:last-child td,
+table.useredit tr:last-child td {
+    border-bottom: none !important;
+}
+
+/* Row Hover */
+table.rowhover tr:hover td,
+.table-background:hover td {
+    background-color: #f1f5f9 !important;
+}
+
+table.rowhover tr:hover {
+    -webkit-filter: none !important;
+    filter: none !important;
+}
+
+/* Status Color Highlights (Soft modern tints) */
+table.mail tr.clean,
+table.mail tr.clean td {
+    background-color: #ffffff;
+    color: #334155;
+}
+
+table.mail tr.infected,
+table.mail tr.infected td {
+    background-color: #fef2f2 !important;
+    color: #991b1b !important;
+}
+
+table.mail tr.spam,
+table.mail tr.spam td {
+    background-color: #fffbeb !important;
+    color: #92400e !important;
+}
+
+table.mail tr.highspam,
+table.mail tr.highspam td {
+    background-color: #fff1f2 !important;
+    color: #be123c !important;
+}
+
+table.mail tr.mcp,
+table.mail tr.mcp td {
+    background-color: #eff6ff !important;
+    color: #1e40af !important;
+}
+
+table.mail tr.highmcp,
+table.mail tr.highmcp td {
+    background-color: #eef2ff !important;
+    color: #3730a3 !important;
+}
+
+table.mail tr.whitelisted,
+table.mail tr.whitelisted td {
+    background-color: #f0fdf4 !important;
+    color: #166534 !important;
+}
+
+table.mail tr.blacklisted,
+table.mail tr.blacklisted td {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+    font-weight: 500;
+}
+
+table.mail tr.notscanned,
+table.mail tr.notscanned td {
+    background-color: #faf5ff !important;
+    color: #6b21a8 !important;
+}
+
+/* Color indicator pills */
+table.mail td.infected, td.colorcode-infected {
+    background-color: #ef4444 !important;
+    border-radius: 3px !important;
+    border: none !important;
+    width: 12px !important;
+    min-width: 12px !important;
+    height: 12px !important;
+}
+
+table.mail td.spam, td.colorcode-spam {
+    background-color: #f59e0b !important;
+    border-radius: 3px !important;
+    border: none !important;
+    width: 12px !important;
+    min-width: 12px !important;
+    height: 12px !important;
+}
+
+table.mail td.highspam, td.colorcode-highspam {
+    background-color: #dc2626 !important;
+    border-radius: 3px !important;
+    border: none !important;
+    width: 12px !important;
+    min-width: 12px !important;
+    height: 12px !important;
+}
+
+table.mail td.mcp, td.colorcode-mcp {
+    background-color: #3b82f6 !important;
+    border-radius: 3px !important;
+    border: none !important;
+    width: 12px !important;
+    min-width: 12px !important;
+    height: 12px !important;
+}
+
+table.mail td.highmcp, td.colorcode-highmcp {
+    background-color: #1d4ed8 !important;
+    border-radius: 3px !important;
+    border: none !important;
+    width: 12px !important;
+    min-width: 12px !important;
+    height: 12px !important;
+}
+
+table.mail td.whitelisted, td.colorcode-whitelisted {
+    background-color: #22c55e !important;
+    border-radius: 3px !important;
+    border: none !important;
+    width: 12px !important;
+    min-width: 12px !important;
+    height: 12px !important;
+}
+
+table.mail td.blacklisted, td.colorcode-blacklisted {
+    background-color: #0f172a !important;
+    border-radius: 3px !important;
+    border: none !important;
+    width: 12px !important;
+    min-width: 12px !important;
+    height: 12px !important;
+}
+
+table.mail td.notscanned, td.colorcode-notscanned {
+    background-color: #a855f7 !important;
+    border-radius: 3px !important;
+    border: none !important;
+    width: 12px !important;
+    min-width: 12px !important;
+    height: 12px !important;
+}
+
+table.mail td.clean, td.colorcode-clean {
+    background-color: #cbd5e1 !important;
+    border-radius: 3px !important;
+    border: none !important;
+    width: 12px !important;
+    min-width: 12px !important;
+    height: 12px !important;
+}
+
+/* Color Legend Table */
+table.colorcodes {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+    padding: 6px 12px !important;
+    margin: 6px auto 12px auto !important;
+    font-size: 11px !important;
+    width: auto !important;
+}
+
+table.colorcodes td {
+    padding: 3px 6px !important;
+    border: none !important;
 }
 
 /* ==========================================================================
@@ -791,27 +908,6 @@ span.no {
     line-height: 1;
 }
 
-td.heading {
-    background-color: #999999;
-    font-weight: 700;
-    font-size: 10pt;
-}
-
-td.heading-w175 {
-    background-color: #999999;
-    font-weight: 700;
-    font-size: 10pt;
-    width: 175px;
-    text-align: right;
-    vertical-align: top;
-}
-
-table.maildetail td.detail {
-    background-color: #EBEBEB;
-    font-size: 8pt;
-    word-break: break-all;
-}
-
 a {
     text-decoration: none;
     color: #2563eb;
@@ -832,39 +928,102 @@ a.logo {
     background-color: transparent;
 }
 
-table.boxtable tr {
-    /*border-collapse: collapse;*/
-    border-bottom: 1px solid #000;
+/* Form Controls & Inputs */
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"],
+select,
+textarea {
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-family: inherit;
+    font-size: 11.5px;
+    color: #1e293b;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-/* Lint */
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+input[type="number"]:focus,
+select:focus,
+textarea:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+input[type="submit"],
+input[type="button"],
+input[type="reset"],
+button[type="submit"],
+button[type="button"],
+button {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    color: #ffffff;
+    border: 1px solid #2563eb;
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-family: inherit;
+    font-size: 11.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}
+
+input[type="submit"]:hover,
+input[type="button"]:hover,
+button[type="submit"]:hover,
+button[type="button"]:hover,
+button:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+    border-color: #1d4ed8;
+    color: #ffffff;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);
+}
+
+/* Lint Statuses */
 td.lint_1 {
-    background-color: green;
-    color: #FFF;
+    background-color: #dcfce7 !important;
+    color: #15803d !important;
+    font-weight: 600;
     text-align: right;
 }
 
 td.lint_2 {
-    background-color: #FF0;
-    color: #000;
+    background-color: #fef9c3 !important;
+    color: #854d0e !important;
+    font-weight: 600;
     text-align: right;
 }
 
 td.lint_3 {
-    background-color: orange;
-    color: #000;
+    background-color: #ffedd5 !important;
+    color: #9a3412 !important;
+    font-weight: 600;
     text-align: right;
 }
 
 td.lint_4 {
-    background-color: #FF4500;
-    color: #000;
+    background-color: #fee2e2 !important;
+    color: #b91c1c !important;
+    font-weight: 600;
     text-align: right;
 }
 
 td.lint_5 {
-    background-color: red;
-    color: #000;
+    background-color: #fef2f2 !important;
+    color: #991b1b !important;
+    font-weight: 600;
     text-align: right;
 }
 
@@ -872,78 +1031,48 @@ p.center {
     text-align: center;
 }
 
-/* MSRE */
-table.mailwatch TH {
-    font-size: 10pt;
-    font-weight: bold;
-    text-align: center;
-    background-color: #999999;
-}
-
-table.mailwatch tr {
-    font-size: 8pt;
-    background-color: #EBEBEB;
-}
-
-table.mailwatch tr.alt {
-    font-size: 8pt;
-    background-color: #CFCCDF;
-}
-
-table.mailwatch td.footer {
-    font-size: 9pt;
-    background-color: white;
-}
-
-table.mailwatch tr.footer {
-    font-size: 9pt;
-    background-color: white;
-}
-
-table.mailwatch td.header {
-    font-size: 9pt;
-}
-
-table.mailwatch tr.header {
-    font-size: 9pt;
-}
-
 span.status {
-    font-size: 8pt;
-    color: blue;
+    font-size: 11px;
+    color: #2563eb;
+    font-weight: 500;
 }
 
 span.debug {
-    font-size: 8pt;
-    color: green;
+    font-size: 11px;
+    color: #16a34a;
 }
 
 .error {
-    font-size: 10pt;
-    color: red;
+    font-size: 12px;
+    color: #dc2626;
+    font-weight: 500;
 }
+
 .success {
-    font-size: 10pt;
-    color: green;
+    font-size: 12px;
+    color: #16a34a;
+    font-weight: 500;
 }
 
 td.dashblackbox {
-    border: 2px dashed black;
-    background-color: white;
-    padding: 5px;
+    border: 1px dashed #94a3b8;
+    background-color: #ffffff;
+    border-radius: 6px;
+    padding: 8px;
 }
 
 td.dashgreybox {
-    border: 2px dashed #CCCCCC;
-    background-color: white;
-    padding: 5px;
+    border: 1px dashed #cbd5e1;
+    background-color: #ffffff;
+    border-radius: 6px;
+    padding: 8px;
 }
 
 .hidden {
     display: none;
 }
 
-/*adjustments for printing a page e.g. hide elements*/
+/* Adjustments for printing */
 @media print {
     .noprint {
         display: none;
@@ -953,31 +1082,22 @@ td.dashgreybox {
         background: transparent;
     }
 
-    table.maildetail {
-        border: none;
-    }
+    table.maildetail,
     table.reportTable {
         border: none;
-        border-collapse: collapse;
-    }
-    table.reportTable>tbody>tr>td {
-        border: 1px solid black;
+        box-shadow: none;
     }
 }
 
-div.table input {
-    width: 100%;
-    -moz-box-sizing: border-box;
-    -webkit-box-sizing: border-box;
-    box-sizing: border-box;
-}
-
+/* Div Table */
 div.table {
     display: table;
-    font-size: 10pt;
-    font-weight: 700;
-    background-color: #EBEBEB;
-    border: 0;
+    font-size: 11.5px;
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+    overflow: hidden;
 }
 
 div.table > .row {
@@ -986,31 +1106,25 @@ div.table > .row {
 
 div.table .cell {
     display: table-cell;
-}
-
-div.table .cell:not(:last-child) {
-    border-right: 0.3em solid transparent;
-}
-
-div.table .cell:first-child {
-    border-left: 0.3em solid transparent;
+    padding: 6px 10px;
 }
 
 div.table .head {
-    background-color: #999999;
+    background-color: #f8fafc;
+    font-weight: 600;
+    color: #1e293b;
+    border-bottom: 1px solid #e2e8f0;
 }
 
 div.table .data {
-    background-color: #EBEBEB;
+    background-color: #ffffff;
+    border-bottom: 1px solid #f1f5f9;
 }
 
 div.table > .caption {
     display: table-caption;
     text-align: center;
-}
-
-div.table > .caption > input {
-    width: auto !important;
+    padding: 6px;
 }
 
 .center {
@@ -1030,47 +1144,42 @@ div.table > .caption > input {
     word-wrap: break-word;
 }
 
-/*auto-release*/
+/* Auto-release page */
 .autorelease body {
-    background-color: #FFFFFF;
-    color: #000;
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 16px;
-    line-height: 1.5em;
+    background-color: #f8fafc;
+    color: #1e293b;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
 }
 
 .autorelease {
     margin: 50px auto;
-    width: 350px;
+    width: 400px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
 }
 
 .autorelease h1 {
-    background-color: #999999;
-    color: #222;
-    font-size: 28px;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: 600;
     margin: 0;
     text-align: center;
-    -webkit-border-top-left-radius: 15px;
-    -moz-border-radius-topleft: 15px;
-    border-top-left-radius: 15px;
-    -webkit-border-top-right-radius: 15px;
-    -moz-border-radius-topright: 15px;
-    border-top-right-radius: 15px;
-    padding: 20px
-}
-
-.autorelease .border-rounded {
-    border: solid 2px #000;
-    -webkit-border-radius: 15px;
-    -moz-border-radius: 15px;
-    border-radius: 15px;
+    padding: 16px 20px;
 }
 
 .autorelease p {
-    padding: 0 10px;
+    padding: 16px 20px;
     text-align: center;
+    color: #475569;
 }
 
+/* Reports */
 .reportGraph {
     text-align: center;
     height: auto;
@@ -1088,279 +1197,136 @@ div.table > .caption > input {
 }
 
 .reportTable {
-   padding: 10px;
-   margin-left: auto;
-   margin-right: auto;
+    padding: 0;
+    margin-left: auto;
+    margin-right: auto;
 }
 
-.reportTable>tbody>tr>th {
-   background-color: #999999;
+.reportTable > tbody > tr > th.white,
+.reportTable > tbody > tr > td.white {
+    background-color: #ffffff !important;
 }
 
-.reportTable>tbody>tr>td {
-   background-color: #EBEBEB;
-}
-
-.reportTable>tbody>tr>th,
-.reportTable>tbody>tr>td {
-    text-align: center;
-    padding: 5px;
-}
-
-.reportTable>tbody>tr>th.white,
-.reportTable>tbody>tr>td.white{
-    background-color: #FFFFFF;
-}
-
-.reportTable>tbody>tr>td:first-child {
+.reportTable > tbody > tr > td:first-child {
     text-align: left;
 }
 
-.reportTable>tbody>tr>td:last-child {
-    text-align: right;
-}
-
-td.titleReport {
-    font-size: 12pt;
-    font-weight: bold;
-    text-align: center;
-}
 .reportTable > tbody > tr > td:last-child {
     text-align: right;
 }
 
-td.message {
-    background-color: #999999;
-    font-size: 10pt;
-}
-
-/*Password-reset*/
-.pwdreset body {
-    color: #000;
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 16px;
-    line-height: 1.5em;
-}
-
+/* Password reset */
 .pwdreset {
     margin: 50px auto;
-    width: 500px;
+    width: 480px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
 }
 
 .pwdreset h1 {
-    background-color: #999999;
-    color: #222;
-    font-size: 28px;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: 600;
     margin: 0;
     text-align: center;
-    -webkit-border-top-left-radius: 15px;
-    -moz-border-radius-topleft: 15px;
-    border-top-left-radius: 15px;
-    -webkit-border-top-right-radius: 15px;
-    -moz-border-radius-topright: 15px;
-    border-top-right-radius: 15px;
-    padding: 20px
-}
-
-.pwdreset form {
-    border-top: 0;
-    background-color: #FFF;
-    -webkit-border-radius: 0 0 15px 15px;
-    -moz-border-radius: 0 0 15px 15px;
-    border-radius: 0 0 15px 15px;
+    padding: 16px 20px;
 }
 
 .pwdreset fieldset {
     border: 0;
     margin: 0;
-    padding: 20px 20px;
-}
-
-.pwdreset fieldset p {
-    color: #222;
-    margin: 0;
-}
-
-.pwdreset fieldset p:last-child {
-    margin-bottom: 0;
+    padding: 24px 20px;
 }
 
 .pwdreset p.pwdreseterror {
-    background-color: #F2DEDE;
-    border-color: #EBCCD1;
-    color: #A94442;
-    padding: 10px;
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #b91c1c;
+    padding: 10px 12px;
     text-align: center;
-    margin: 10px;
-    -webkit-border-radius: 3px;
-    -moz-border-radius: 3px;
-    border-radius: 3px;
+    border-radius: 6px;
+    font-size: 12px;
+    margin-bottom: 15px;
 }
 
-.pwdreset input {
-    border: 0;
-    border-bottom: 1px solid #222;
-    font-family: inherit;
-    font-size: inherit;
-    font-weight: inherit;
-    line-height: inherit;
-    -webkit-appearance: none;
-}
-
-.pwdreset fieldset input[type="text"], .pwdreset fieldset input[type="password"] {
-    background-color: #E9E9E9;
-    color: #222;
-    padding: 4px;
-    width: 256px;
-    margin-bottom: 16px;
-}
-
-.pwdreset fieldset input[type="submit"] {
-    background-color: #999999;
-    color: #222;
-    display: block;
-    margin: 0 auto;
-    padding: 5px 15px;
-    -webkit-border-radius: 3px;
-    -moz-border-radius: 3px;
-    border-radius: 3px;
-    border: 0;
-}
-
-.pwdreset fieldset input[type="submit"]:hover {
-    background-color: #DEB531;
-}
-
-.pwdreset .border-rounded {
-    border: solid 2px #000;
-    -webkit-border-radius: 15px;
-    -moz-border-radius: 15px;
-    border-radius: 15px;
-}
-
-.pwdreset p {
-    padding: 0 10px;
-    text-align: center;
-}
-
-/* user_manager.php */
+/* User manager */
 .inputerror {
-    background: rgba(255, 0, 0, 0.57);
+    background: #fef2f2 !important;
+    border-color: #ef4444 !important;
 }
 
 #formerror {
-    background-color: #F2DEDE;
-    border-color: #EBCCD1;
-    color: #A94442;
-    padding: 10px;
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #b91c1c;
+    padding: 10px 12px;
     text-align: center;
-    margin: 10px;
-    -webkit-border-radius: 3px;
-    -moz-border-radius: 3px;
-    border-radius: 3px;
+    margin: 10px auto;
+    border-radius: 6px;
     max-width: 560px;
+    font-size: 12px;
 }
 
-/*general styles*/
-
-.font-1em {
-    font-size: 1em;
-}
-
-.mw-logo {
-    text-align: center;
-}
-
-/* dbtable */
-
+/* DB Table Alternating */
 .table-background:nth-child(even),
-.blackwhitelist>tbody>tr:nth-child(even) {
-    background-color: #EBEBEB;
+.blackwhitelist > tbody > tr:nth-child(even) {
+    background-color: #f8fafc;
 }
 
 .table-background:nth-child(odd),
-.blackwhitelist>tbody>tr:nth-child(odd) {
-    background-color: #D8D8D8;
+.blackwhitelist > tbody > tr:nth-child(odd) {
+    background-color: #ffffff;
 }
 
-.table-background:hover {
-    background-color: #999999 !important;
-}
-
-.mw-icon {
+/* Action Badges */
+.released {
+    background-color: #dcfce7 !important;
+    color: #15803d !important;
+    border: 1px solid #bbf7d0 !important;
+    border-radius: 4px !important;
+    padding: 2px 6px !important;
+    font-weight: 600 !important;
+    font-size: 10.5px !important;
     display: inline-block;
 }
 
-.mw-info-circle {
-    background: url(images/info-circle.png);
-    -webkit-background-size: contain;
-    background-size: contain;
-    height: 16px;
-    width: 16px;
-}
-
-.mw-info-circle:hover {
-    background: url(images/info-circle-hover.png);
-    -webkit-background-size: contain;
-    background-size: contain;
-    height: 16px;
-    width: 16px;
-}
-
-.link-transparent > a:hover {
-    background-color: transparent;
-}
-
-/* Colors for quarantine actions */
-
-.released {
-    background-color:#008000;
-    color:#fff;
-}
-
 .salearn-1 { /* HAM */
-    background-color:#008000;
-    color:#fff
+    background-color: #dcfce7 !important;
+    color: #15803d !important;
+    border: 1px solid #bbf7d0 !important;
+    border-radius: 4px !important;
+    padding: 2px 6px !important;
+    font-weight: 600 !important;
+    font-size: 10.5px !important;
+    display: inline-block;
 }
 
 .salearn-2 { /* SPAM */
-    background-color: #F51111;
-    color:#fff;
-}
-
-#trafficgraph {
-    width: auto;
-    height: 180px;
-    margin: -4px -2px 0 4px;
+    background-color: #fee2e2 !important;
+    color: #b91c1c !important;
+    border: 1px solid #fecaca !important;
+    border-radius: 4px !important;
+    padding: 2px 6px !important;
+    font-weight: 600 !important;
+    font-size: 10.5px !important;
+    display: inline-block;
 }
 
 .filterbuttons {
     white-space: nowrap;
-    text-align:right;
-}
-
-.todaystatistics>tbody>tr>td {
-    white-space: nowrap;
-}
-
-.todaystatistics>tbody>tr>td:not(:first-child) {
     text-align: right;
+    padding: 6px 0;
 }
 
 p.footer {
-    font-size: 13px;
-}
-
-table.sa_rules_report>tbody>tr>td {
-    text-align: left;
-}
-
-table.sa_rules_report>tbody>tr>td:nth-child(2) {
-    width: 200px;
-}
-
-table.mail>tbody>tr>th.alignleft {
-    text-align: left;
+    font-size: 12px;
+    color: #64748b;
+    text-align: center;
+    margin-top: 20px;
 }
 
 .nowrap {
