@@ -413,63 +413,133 @@ function html_start($title, $refresh = 0, $cacheable = true, $report = false)
     echo '<tr class="noprint">' . "\n";
     echo '<td colspan="' . ('A' === $_SESSION['user_type'] ? '5' : '4') . '" style="padding: 6px 8px 2px 8px;">' . "\n";
 
-    echo '<div class="header-widgets-row">' . "\n";
+    $services = getServicesQuickStatus();
+    $username = htmlspecialchars($_SESSION['fullname'] ?? $_SESSION['myusername'] ?? 'User');
 
-    // 1. Column 1: Logo, Jump box, User Cabinet
-    echo '  <div class="header-col header-col-user">' . "\n";
-    echo '    <div class="header-brand-box">' . "\n";
-    echo '      <a href="index.php" class="logo"><img src=".' . IMAGES_DIR . MW_LOGO . '" alt="' . __('mailwatchtitle03') . '" class="header-logo-img"></a>' . "\n";
-    echo '      <div class="jump-box">' . "\n";
-    echo '        <form action="./detail.php">' . "\n";
-    echo '          <p>🔍 ' . __('jumpmessage03') . ' <input type="text" name="id" value="' . $message_id . '" placeholder="ID"></p>' . "\n";
+    echo '<div id="mwHeaderContainer" class="mw-header-container">' . "\n";
+
+    // 1. COMPACT COLLAPSED 1-LINE HEADER
+    echo '  <div class="header-compact-bar">' . "\n";
+    echo '    <div class="compact-left-group">' . "\n";
+    echo '      <a href="index.php" class="compact-brand" title="EFA-NG MailWatch">' . "\n";
+    echo '        <img src=".' . IMAGES_DIR . 'favicon.png" alt="EFA-NG" class="compact-brand-icon">' . "\n";
+    echo '        <span class="compact-brand-name">EFA<span class="compact-brand-ng">-NG</span></span>' . "\n";
+    echo '      </a>' . "\n";
+    echo '      <span class="compact-vdiv">|</span>' . "\n";
+    echo '      <div class="compact-jump-box">' . "\n";
+    echo '        <form action="./detail.php" method="get" class="compact-jump-form">' . "\n";
+    echo '          <span class="compact-jump-label">🔍 ' . __('jumpmessage03') . '</span>' . "\n";
+    echo '          <input type="text" name="id" value="' . $message_id . '" placeholder="ID" class="compact-jump-input">' . "\n";
     echo '          <input type="hidden" name="token" value="' . $_SESSION['token'] . '">' . "\n";
     echo '        </form>' . "\n";
     echo '      </div>' . "\n";
     echo '    </div>' . "\n";
-    printUserCabinet();
+
+    if ('A' === $_SESSION['user_type'] || 'D' === $_SESSION['user_type']) {
+        echo '    <div class="compact-services-status">' . "\n";
+        echo '      <span class="compact-svc-title">⚡ Services:</span>' . "\n";
+        echo '      <span class="compact-svc-item">MailScanner: ' . ($services['mailscanner'] ? '<span class="svc-dot dot-up" title="MailScanner: Running">● Running</span>' : '<span class="svc-dot dot-down" title="MailScanner: Stopped">● Stopped</span>') . '</span>' . "\n";
+        echo '      <span class="compact-svc-sep">|</span>' . "\n";
+        echo '      <span class="compact-svc-item">Postfix: ' . ($services['postfix'] ? '<span class="svc-dot dot-up" title="Postfix: Running">● Running</span>' : '<span class="svc-dot dot-down" title="Postfix: Stopped">● Stopped</span>') . '</span>' . "\n";
+        echo '      <span class="compact-svc-sep">|</span>' . "\n";
+        echo '      <span class="compact-svc-item">MSMilter: ' . ($services['msmilter'] ? '<span class="svc-dot dot-up" title="MSMilter: Running">● Running</span>' : '<span class="svc-dot dot-down" title="MSMilter: Stopped">● Stopped</span>') . '</span>' . "\n";
+        echo '    </div>' . "\n";
+    }
+
+    echo '    <div class="compact-right-group">' . "\n";
+    echo '      <a href="user_manager.php" class="compact-user-link" title="' . __('usermgnt12') . '">👤 ' . $username . '</a>' . "\n";
+    echo '      <span class="compact-vdiv">|</span>' . "\n";
+    echo '      <a href="logout.php" class="compact-logout-link" title="' . __('logout03') . '">🚪 ' . __('logout03') . '</a>' . "\n";
+    echo '      <button type="button" class="header-toggle-btn header-toggle-expand" onclick="toggleHeaderWidgets()" title="' . __('status03') . '">▼ ' . __('status03') . '</button>' . "\n";
+    echo '    </div>' . "\n";
     echo '  </div>' . "\n";
+
+    // 2. FULL EXPANDED VIEW
+    echo '  <div class="header-full-view">' . "\n";
+    echo '    <div class="header-widgets-row">' . "\n";
+
+    // 1. Column 1: Logo, Jump box, User Cabinet
+    echo '      <div class="header-col header-col-user">' . "\n";
+    echo '        <div class="header-brand-box">' . "\n";
+    echo '          <div class="header-brand-top">' . "\n";
+    echo '            <a href="index.php" class="logo"><img src=".' . IMAGES_DIR . MW_LOGO . '" alt="' . __('mailwatchtitle03') . '" class="header-logo-img"></a>' . "\n";
+    echo '            <button type="button" class="header-toggle-btn header-toggle-collapse" onclick="toggleHeaderWidgets()" title="Compact header view">▲</button>' . "\n";
+    echo '          </div>' . "\n";
+    echo '          <div class="jump-box">' . "\n";
+    echo '            <form action="./detail.php">' . "\n";
+    echo '              <p>🔍 ' . __('jumpmessage03') . ' <input type="text" name="id" value="' . $message_id . '" placeholder="ID"></p>' . "\n";
+    echo '              <input type="hidden" name="token" value="' . $_SESSION['token'] . '">' . "\n";
+    echo '            </form>' . "\n";
+    echo '          </div>' . "\n";
+    echo '        </div>' . "\n";
+    printUserCabinet();
+    echo '      </div>' . "\n";
 
     if ('A' === $_SESSION['user_type'] || 'D' === $_SESSION['user_type']) {
         // 2. Widget 1 of Status: Services & Load
-        echo '  <div class="header-col header-col-services">' . "\n";
-        echo '    <div class="header-card">' . "\n";
-        echo '      <div class="widget-header"><span class="widget-icon">⚡</span> ' . __('status03') . '</div>' . "\n";
-        echo '      <div class="card-content">' . "\n";
-        echo '        <table class="card-table">' . "\n";
+        echo '      <div class="header-col header-col-services">' . "\n";
+        echo '        <div class="header-card">' . "\n";
+        echo '          <div class="widget-header"><span class="widget-icon">⚡</span> ' . __('status03') . '</div>' . "\n";
+        echo '          <div class="card-content">' . "\n";
+        echo '            <table class="card-table">' . "\n";
         printServiceStatus();
         printAverageLoad();
-        echo '        </table>' . "\n";
+        echo '            </table>' . "\n";
+        echo '          </div>' . "\n";
+        echo '        </div>' . "\n";
         echo '      </div>' . "\n";
-        echo '    </div>' . "\n";
-        echo '  </div>' . "\n";
 
         // 3. Widget 2 of Status: Queues & Storage
         if ('A' === $_SESSION['user_type']) {
-            echo '  <div class="header-col header-col-storage">' . "\n";
-            echo '    <div class="header-card">' . "\n";
-            echo '      <div class="widget-header"><span class="widget-icon">💾</span> ' . __('diskspace_and_queues03') . '</div>' . "\n";
-            echo '      <div class="card-content">' . "\n";
-            echo '        <table class="card-table">' . "\n";
+            echo '      <div class="header-col header-col-storage">' . "\n";
+            echo '        <div class="header-card">' . "\n";
+            echo '          <div class="widget-header"><span class="widget-icon">💾</span> ' . __('diskspace_and_queues03') . '</div>' . "\n";
+            echo '          <div class="card-content">' . "\n";
+            echo '            <table class="card-table">' . "\n";
             printMTAQueue();
             printFreeDiskSpace();
-            echo '        </table>' . "\n";
+            echo '            </table>' . "\n";
+            echo '          </div>' . "\n";
+            echo '        </div>' . "\n";
             echo '      </div>' . "\n";
-            echo '    </div>' . "\n";
-            echo '  </div>' . "\n";
         }
 
         // 4. Traffic Graph Widget
-        echo '  <div class="header-col header-col-traffic">' . "\n";
+        echo '      <div class="header-col header-col-traffic">' . "\n";
         printTrafficGraph();
-        echo '  </div>' . "\n";
+        echo '      </div>' . "\n";
     }
 
     // 5. Today's Totals Widget
-    echo '  <div class="header-col header-col-totals">' . "\n";
+    echo '      <div class="header-col header-col-totals">' . "\n";
     printTodayStatistics();
+    echo '      </div>' . "\n";
+
+    echo '    </div>' . "\n";
     echo '  </div>' . "\n";
 
     echo '</div>' . "\n";
+    echo '<script type="text/javascript">
+function toggleHeaderWidgets() {
+    var c = document.getElementById("mwHeaderContainer");
+    if (!c) return;
+    if (c.classList.contains("is-collapsed")) {
+        c.classList.remove("is-collapsed");
+        try { localStorage.setItem("mw_header_collapsed", "0"); } catch(e) {}
+    } else {
+        c.classList.add("is-collapsed");
+        try { localStorage.setItem("mw_header_collapsed", "1"); } catch(e) {}
+    }
+}
+(function() {
+    try {
+        if (localStorage.getItem("mw_header_collapsed") === "1") {
+            var c = document.getElementById("mwHeaderContainer");
+            if (c) c.classList.add("is-collapsed");
+        }
+    } catch(e) {}
+})();
+</script>' . "\n";
     echo '</td>' . "\n";
     echo '</tr>' . "\n";
 
@@ -502,6 +572,36 @@ function printColorCodes()
     echo '    <td class="notscanned"></td> <td>' . __('notverified03') . '</td>' . "\n";
     echo '    <td class="clean"></td> <td>' . __('clean03') . '</td></tr>' . "\n";
     echo '   </table>' . "\n";
+}
+
+function getServicesQuickStatus()
+{
+    $res = [
+        'mailscanner' => false,
+        'postfix' => false,
+        'msmilter' => false,
+    ];
+    if (!DISTRIBUTED_SETUP) {
+        $msOut = [];
+        exec('ps ax | grep MailScanner | grep -v grep', $msOut);
+        $res['mailscanner'] = count($msOut) > 0;
+
+        $mta = get_conf_var('mta');
+        if (('msmail' === $mta) || ('postfix' === $mta) || empty($mta)) {
+            $pfOut = [];
+            exec('ps ax | grep postfix.*master | grep -v grep', $pfOut);
+            $res['postfix'] = count($pfOut) > 0;
+        } else {
+            $mtaOut = [];
+            exec(sprintf('ps ax | grep %s | grep -v grep | grep -v php', $mta), $mtaOut);
+            $res['postfix'] = count($mtaOut) > 0;
+        }
+
+        $milterOut = [];
+        exec('ps ax | grep MSMilter | grep -v grep', $milterOut);
+        $res['msmilter'] = count($milterOut) > 0;
+    }
+    return $res;
 }
 
 function printServiceStatus()

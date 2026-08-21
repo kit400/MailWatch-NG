@@ -478,6 +478,244 @@ table.colorcodes td.clean {
 }
 
 /* ==========================================================================
+   Collapsible Header & Compact Bar Layout
+   ========================================================================== */
+.mw-header-container {
+    width: 100%;
+    position: relative;
+    margin-bottom: 2px;
+}
+
+/* Default (Full View) */
+.mw-header-container .header-compact-bar {
+    display: none;
+}
+.mw-header-container .header-full-view {
+    display: block;
+}
+
+/* Collapsed State */
+.mw-header-container.is-collapsed .header-full-view {
+    display: none;
+}
+.mw-header-container.is-collapsed .header-compact-bar {
+    display: flex;
+}
+
+/* Compact 1-line bar */
+.header-compact-bar {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 5px 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    box-sizing: border-box;
+    width: 100%;
+    font-size: 11px;
+    color: #334155;
+}
+
+.compact-left-group,
+.compact-right-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.compact-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    text-decoration: none;
+    line-height: 1;
+}
+
+.compact-brand-icon {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+    display: block;
+}
+
+.compact-brand-name {
+    font-size: 13px;
+    font-weight: 800;
+    color: #1e293b;
+    letter-spacing: -0.3px;
+}
+
+.compact-brand-ng {
+    color: #1f6cb0;
+    font-weight: 900;
+}
+
+.compact-vdiv {
+    color: #cbd5e1;
+    font-size: 12px;
+    user-select: none;
+}
+
+.compact-jump-box {
+    display: flex;
+    align-items: center;
+}
+
+.compact-jump-form {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+}
+
+.compact-jump-label {
+    font-size: 10.5px;
+    color: #64748b;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.compact-jump-input {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 5px;
+    padding: 2px 6px;
+    font-size: 11px;
+    width: 110px;
+    color: #1e293b;
+    outline: none;
+    transition: all 0.15s ease;
+}
+
+.compact-jump-input:focus {
+    background: #ffffff;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+/* Compact Services Status */
+.compact-services-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 10.5px;
+    white-space: nowrap;
+}
+
+.compact-svc-title {
+    color: #64748b;
+    font-weight: 600;
+}
+
+.compact-svc-item {
+    color: #334155;
+    font-weight: 500;
+}
+
+.compact-svc-sep {
+    color: #cbd5e1;
+    font-size: 10px;
+}
+
+.svc-dot {
+    font-weight: 700;
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: 4px;
+}
+
+.svc-dot.dot-up {
+    color: #16a34a;
+    background: #dcfce7;
+}
+
+.svc-dot.dot-down {
+    color: #dc2626;
+    background: #fee2e2;
+}
+
+.compact-user-link {
+    color: #1e293b;
+    font-weight: 600;
+    font-size: 11px;
+    text-decoration: none;
+    transition: color 0.15s ease;
+    white-space: nowrap;
+}
+
+.compact-user-link:hover {
+    color: #2563eb;
+    text-decoration: underline;
+}
+
+.compact-logout-link {
+    color: #dc2626;
+    font-weight: 600;
+    font-size: 10.5px;
+    text-decoration: none;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 5px;
+    padding: 2px 6px;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.compact-logout-link:hover {
+    background: #fee2e2;
+    color: #b91c1c;
+    border-color: #fca5a5;
+}
+
+/* Header Toggle Buttons */
+.header-toggle-btn {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 2px 7px;
+    font-size: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    line-height: 1.3;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.header-toggle-btn:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+    border-color: #94a3b8;
+}
+
+.header-brand-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 4px;
+}
+
+.header-toggle-collapse {
+    font-size: 11px;
+    padding: 2px 6px;
+    color: #64748b;
+}
+
+.header-toggle-collapse:hover {
+    color: #0f172a;
+    background: #e2e8f0;
+}
+
+/* ==========================================================================
    Header Row & Equal Height Card Layout
    ========================================================================== */
 .header-widgets-row {
