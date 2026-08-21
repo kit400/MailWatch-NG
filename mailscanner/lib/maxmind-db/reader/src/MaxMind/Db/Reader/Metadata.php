@@ -66,4 +66,9 @@ class Metadata
     {
         return $this->$var;
     }
+
+    public function __isset($var)
+    {
+        return isset($this->$var);
+    }
 }
