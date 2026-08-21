@@ -277,7 +277,17 @@ function getVirusRegex($scanner = null)
  */
 function mailwatch_version()
 {
-    return '1.2.27';
+    return '1.2.27-14';
+}
+
+function mailwatch_full_version()
+{
+    return 'MailWatch-NG-' . mailwatch_version();
+}
+
+function mailwatch_project_url()
+{
+    return 'https://github.com/kit400/MailWatch-NG';
 }
 
 /**
@@ -479,7 +489,7 @@ function html_start($title, $refresh = 0, $cacheable = true, $report = false)
 
 function printColorCodes()
 {
-    echo '   <table border="0" cellpadding="1" cellspacing="3"  align="center" class="mail colorcodes">' . "\n";
+    echo '   <table border="0" cellpadding="0" cellspacing="2" align="center" class="mail colorcodes">' . "\n";
     echo '    <tr><td class="infected"></td> <td>' . __('badcontentinfected03') . '</td>' . "\n";
     echo '    <td class="spam"></td> <td>' . __('spam103') . ' </td>' . "\n";
     echo '    <td class="highspam"></td> <td>' . __('highspam03') . '</td>' . "\n";
@@ -491,7 +501,7 @@ function printColorCodes()
     echo '    <td class="blacklisted"></td> <td>' . __('blacklisted03') . '</td>' . "\n";
     echo '    <td class="notscanned"></td> <td>' . __('notverified03') . '</td>' . "\n";
     echo '    <td class="clean"></td> <td>' . __('clean03') . '</td></tr>' . "\n";
-    echo '   </table><br>' . "\n";
+    echo '   </table>' . "\n";
 }
 
 function printServiceStatus()
@@ -1109,8 +1119,7 @@ function html_end($footer = '')
         echo '</i></p>' . "\n";
     }
     echo '<p class="center footer noprint">' . "\n";
-    echo __('footer03');
-    echo mailwatch_version();
+    echo '<a href="' . mailwatch_project_url() . '" target="_blank" rel="noopener noreferrer">' . htmlspecialchars(mailwatch_full_version()) . '</a>';
     $efa_ver = efa_version();
     if (!empty($efa_ver)) {
         echo ' running on ' . $efa_ver;

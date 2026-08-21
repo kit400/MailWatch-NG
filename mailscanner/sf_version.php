@@ -55,9 +55,7 @@ if ('A' !== $_SESSION['user_type']) {
     echo '<tr>' . "\n";
     echo '<td class="textdata">' . "\n";
 
-    echo '<br>' . "\n";
-
-    echo 'MailWatch ' . __('version11') . ' ' . $mailwatch_version . '<br>' . "\n";
+    echo '<a href="' . mailwatch_project_url() . '" target="_blank" rel="noopener noreferrer">' . htmlspecialchars(mailwatch_full_version()) . '</a><br>' . "\n";
     echo '<br>' . "\n";
 
     // Add test for OS
