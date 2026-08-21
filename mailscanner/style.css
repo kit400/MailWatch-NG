@@ -923,9 +923,46 @@ a:hover {
     color: #1d4ed8;
 }
 
-a.logo {
-    color: transparent;
+a.logo,
+a.link-transparent,
+a.link-icon,
+a:has(.mw-icon) {
     background-color: transparent;
+}
+
+a.logo:hover,
+a.link-transparent:hover,
+a.link-icon:hover,
+a:has(.mw-icon):hover,
+a:has(.mw-info-circle):hover,
+.link-transparent > a:hover {
+    background-color: transparent !important;
+}
+
+/* MailWatch Icons */
+.mw-icon {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.mw-info-circle {
+    background: url(images/info-circle.png) no-repeat center center;
+    background-size: contain;
+    height: 16px;
+    width: 16px;
+    display: inline-block;
+    vertical-align: middle;
+    transition: transform 0.15s ease;
+}
+
+.mw-info-circle:hover,
+a:hover .mw-info-circle {
+    background-image: url(images/info-circle-hover.png);
+    transform: scale(1.1);
+}
+
+.mw-logo {
+    text-align: center;
 }
 
 /* ==========================================================================
