@@ -411,7 +411,7 @@ function html_start($title, $refresh = 0, $cacheable = true, $report = false)
     echo '<body onload="updateClock(); setInterval(\'updateClock()\', 1000 )">' . "\n";
     echo '<table border="0" cellpadding="0" cellspacing="0" width="100%">' . "\n";
     echo '<tr class="noprint">' . "\n";
-    echo '<td colspan="' . ('A' === $_SESSION['user_type'] ? '5' : '4') . '" style="padding: 6px 8px 2px 8px;">' . "\n";
+    echo '<td colspan="' . ('A' === $_SESSION['user_type'] ? '5' : '4') . '" style="padding: 0;">' . "\n";
 
     $services = getServicesQuickStatus();
     $username = htmlspecialchars($_SESSION['fullname'] ?? $_SESSION['myusername'] ?? 'User');

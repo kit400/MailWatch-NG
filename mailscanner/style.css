@@ -483,7 +483,8 @@ table.colorcodes td.clean {
 .mw-header-container {
     width: 100%;
     position: relative;
-    margin-bottom: 2px;
+    margin: 6px 0 0 0;
+    box-sizing: border-box;
 }
 
 /* Default (Full View) */
