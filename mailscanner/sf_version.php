@@ -34,140 +34,227 @@ require __DIR__ . '/login.function.php';
 if ('A' !== $_SESSION['user_type']) {
     header('Location: index.php');
     audit_log(__('auditlog11', true));
-} else {
-    html_start(__('mwandmsversion11'), 0, false, false);
-    $mailwatch_version = mailwatch_version();
-    $mailscanner_version = get_conf_var('MailScannerVersionNumber');
-    $php_version = PHP_VERSION;
-    $mysql_version = database::getDatabaseVersion();
-    $geoip_version = false;
-    $geoip_database_file = __DIR__ . '/temp/GeoLite2-Country.mmdb';
-    if (file_exists($geoip_database_file)) {
-        require_once __DIR__ . '/lib/maxmind-db/reader/autoload.php';
-        $geoIpDbReader = new \MaxMind\Db\Reader($geoip_database_file);
-        $GeoIPDbMetadata = $geoIpDbReader->metadata();
-        $geoip_version = (isset($GeoIPDbMetadata->description['en']) ? $GeoIPDbMetadata->description['en'] : '') . ' ' . date('Y-m-d H:i:s', $GeoIPDbMetadata->buildEpoch);
-        $geoip_version = trim($geoip_version);
-    }
+    exit;
+}
 
-    echo '<table width="100%" class="boxtable">' . "\n";
-    echo '<tr><th>' . __('softver11') . '</th></tr>' . "\n";
-    echo '<tr>' . "\n";
-    echo '<td class="textdata">' . "\n";
+html_start(__('mwandmsversion11'), 0, false, false);
+dbconn();
 
-    echo '<a href="' . mailwatch_project_url() . '" target="_blank" rel="noopener noreferrer">' . htmlspecialchars(mailwatch_full_version()) . '</a><br>' . "\n";
-    echo '<br>' . "\n";
+$components = [];
 
-    // Add test for OS
-    if (0 === stripos(PHP_OS, 'linux')) {
-        $vars = [];
-        $files = glob('/etc/*-release');
+// MailWatch-NG
+$components[] = [
+    'name' => 'MailWatch-NG',
+    'url' => mailwatch_project_url(),
+    'version' => mailwatch_version(),
+];
+
+// eFa-Project
+$efa_ver = efa_version();
+if (!empty($efa_ver)) {
+    $components[] = [
+        'name' => 'eFa-Project',
+        'url' => 'https://efa-project.org',
+        'version' => $efa_ver,
+    ];
+}
+
+// Operating System
+$systemos = PHP_OS;
+$os_url = 'https://www.kernel.org';
+if (0 === stripos(PHP_OS, 'linux')) {
+    $vars = [];
+    $files = glob('/etc/*-release');
+    if (is_array($files)) {
         foreach ($files as $file) {
-            $lines = array_filter(array_map(function ($line) {
-                $parts = explode('=', $line);
-                if (2 !== count($parts)) {
-                    return false;
+            $lines = file($file);
+            if (is_array($lines)) {
+                foreach ($lines as $line) {
+                    if (strpos($line, '=') !== false) {
+                        list($k, $v) = explode('=', trim($line), 2);
+                        $vars[$k] = trim($v, "\"'");
+                    }
                 }
-                $parts[1] = str_replace(['"', "'"], '', $parts[1]);
-                $parts[1] = trim($parts[1]);
-
-                return $parts;
-            }, file($file)));
-            foreach ($lines as $line) {
-                $vars[$line[0]] = $line[1];
             }
         }
-
-        echo __('systemos11') . ' ';
-        $systemos = 'unknown linux';
-        if (isset($vars['ID']) && in_array(strtolower($vars['ID']), ['centos', 'debian'], true)) {
-            $systemos = $vars['PRETTY_NAME'];
-        }
-        else if (isset($vars['ID']) && 'ubuntu' === strtolower($vars['ID'])) {
-            $systemos = $vars['NAME'] . ' ' . $vars['VERSION'];
-        }
-        else if (isset($vars['ID'])) {
-            $systemos = $vars['ID'];
-        }
-        echo $systemos . '<br>' . "\n";
     }
-    if ('freebsd' === strtolower(PHP_OS)) {
-        echo __('systemos11') . ' ' . PHP_OS . ' ' . php_uname('r') . ' ' . php_uname('m') . '<br>' . "\n";
+    if (!empty($vars['PRETTY_NAME'])) {
+        $systemos = $vars['PRETTY_NAME'];
+    } elseif (!empty($vars['NAME'])) {
+        $systemos = $vars['NAME'] . (!empty($vars['VERSION']) ? ' ' . $vars['VERSION'] : '');
+    } elseif (!empty($vars['ID'])) {
+        $systemos = $vars['ID'];
     }
-
-    // Add test for MTA
-    $mta = get_conf_var('mta');
-    if ('postfix' === get_conf_var('MTA', true) || 'msmail' === get_conf_var('MTA', true)) {
-        echo '<br>' . "\n";
-        echo 'Postfix ' . __('version11') . ' ';
-        exec('which postconf', $postconf);
-        if (isset($postconf[0])) {
-            passthru("$postconf[0] -d | grep 'mail_version =' | cut -d' ' -f3");
-        } else {
-            echo 'postconf ' . __('notfound06');
-        }
-        echo '<br>' . "\n";
+    if (!empty($vars['HOME_URL'])) {
+        $os_url = $vars['HOME_URL'];
     }
-    if ('exim' === get_conf_var('MTA', true)) {
-        echo '<br>' . "\n";
-        echo 'Exim ' . __('version11') . ' ';
-        exec('which exim', $exim);
-        if (isset($exim[0])) {
-            passthru("$exim[0] -bV | grep 'Exim version' | cut -d' ' -f3");
-        } else {
-            echo 'exim ' . __('notfound06');
-        }
-        echo '<br>' . "\n";
-    }
-    if ('sendmail' === get_conf_var('MTA', true)) {
-        echo '<br>' . "\n";
-        echo 'Sendmail ' . __('version11') . ' ';
-        exec('which sendmail', $sendmail);
-        if (isset($sendmail[0])) {
-            passthru("$sendmail[0] -d0.4 -bv root | grep 'Version' | cut -d' ' -f2");
-        } else {
-            echo 'sendmail ' . __('notfound06');
-        }
-        echo '<br>' . "\n";
-    }
-
-    echo '<br>' . "\n";
-    echo 'MailScanner ' . __('version11') . ' ' . $mailscanner_version . '<br>' . "\n";
-    echo '<br>';
-    $virusScanner = get_conf_var('VirusScanners');
-
-    // Add test for other virus scanners.
-    if (false !== stripos($virusScanner, 'clam')) {
-        echo 'ClamAV ' . __('version11') . ' ';
-        exec('which clamscan', $clamscan);
-        if (isset($clamscan[0])) {
-            passthru("$clamscan[0] -V | cut -d/ -f1 | cut -d' ' -f2");
-        }
-        echo '<br>' . "\n";
-    }
-
-    echo '<br>' . "\n";
-    echo 'SpamAssassin ' . __('version11') . ' ';
-    passthru(SA_DIR . "spamassassin -V | tr '\\\n' ' ' | cut -d' ' -f3");
-    echo '<br>' . "\n";
-    echo '<br>' . "\n";
-    echo 'PHP ' . __('version11') . ' ' . $php_version . '<br>' . "\n";
-    echo '<br>' . "\n";
-    echo 'MySQL ' . __('version11') . ' ' . $mysql_version . '<br>' . "\n";
-    echo '<br>' . "\n";
-    echo 'GeoIP Database ' . __('version11') . ' ';
-    if (false !== $geoip_version) {
-        echo $geoip_version;
-    } else {
-        echo __('nodbdown11') . ' ';
-    }
-    echo "<br>\n<br>\n";
-    echo '</td>' . "\n";
-    echo '</tr>' . "\n";
-    echo '</table>' . "\n";
-
-    // Add footer
-    html_end();
-    // Close any open db connections
-    dbclose();
+    $systemos .= ' (' . php_uname('s') . ' ' . php_uname('r') . ' ' . php_uname('m') . ')';
+} elseif ('freebsd' === strtolower(PHP_OS)) {
+    $systemos = 'FreeBSD ' . php_uname('r') . ' (' . php_uname('m') . ')';
+    $os_url = 'https://www.freebsd.org';
 }
+$components[] = [
+    'name' => __('systemos11'),
+    'url' => $os_url,
+    'version' => $systemos,
+];
+
+// MailScanner
+$mailscanner_version = get_conf_var('MailScannerVersionNumber');
+$components[] = [
+    'name' => 'MailScanner',
+    'url' => 'https://www.mailscanner.info',
+    'version' => !empty($mailscanner_version) ? $mailscanner_version : 'Unknown',
+];
+
+// MTA
+$mta = strtolower((string) get_conf_var('MTA', true));
+if ('postfix' === $mta || 'msmail' === $mta || empty($mta)) {
+    $mta_version = 'Unknown';
+    exec('which postconf 2>/dev/null', $postconf);
+    if (!empty($postconf[0])) {
+        exec($postconf[0] . " -d 2>/dev/null | grep 'mail_version =' | cut -d' ' -f3", $out);
+        if (!empty($out[0])) {
+            $mta_version = trim($out[0]);
+        }
+    }
+    $components[] = [
+        'name' => 'Postfix (MTA)',
+        'url' => 'https://www.postfix.org',
+        'version' => $mta_version,
+    ];
+} elseif ('exim' === $mta) {
+    $mta_version = 'Unknown';
+    exec('which exim 2>/dev/null', $exim);
+    if (!empty($exim[0])) {
+        exec($exim[0] . " -bV 2>/dev/null | grep 'Exim version' | cut -d' ' -f3", $out);
+        if (!empty($out[0])) {
+            $mta_version = trim($out[0]);
+        }
+    }
+    $components[] = [
+        'name' => 'Exim (MTA)',
+        'url' => 'https://www.exim.org',
+        'version' => $mta_version,
+    ];
+} elseif ('sendmail' === $mta) {
+    $mta_version = 'Unknown';
+    exec('which sendmail 2>/dev/null', $sendmail);
+    if (!empty($sendmail[0])) {
+        exec($sendmail[0] . " -d0.4 -bv root 2>/dev/null | grep 'Version' | cut -d' ' -f2", $out);
+        if (!empty($out[0])) {
+            $mta_version = trim($out[0]);
+        }
+    }
+    $components[] = [
+        'name' => 'Sendmail (MTA)',
+        'url' => 'https://www.sendmail.com',
+        'version' => $mta_version,
+    ];
+}
+
+// Anti-Virus
+$virusScanner = get_conf_var('VirusScanners');
+if (false !== stripos($virusScanner, 'clam')) {
+    $clam_ver = 'Unknown';
+    exec('which clamscan 2>/dev/null', $clamscan);
+    if (!empty($clamscan[0])) {
+        exec($clamscan[0] . " -V 2>/dev/null | cut -d/ -f1 | cut -d' ' -f2", $out);
+        if (!empty($out[0])) {
+            $clam_ver = trim($out[0]);
+        }
+    }
+    $components[] = [
+        'name' => 'ClamAV',
+        'url' => 'https://www.clamav.net',
+        'version' => $clam_ver,
+    ];
+}
+if (false !== stripos($virusScanner, 'sophos')) {
+    $sophos_ver = 'Unknown';
+    exec('which sweep 2>/dev/null', $sweep);
+    if (!empty($sweep[0])) {
+        exec($sweep[0] . " -v 2>/dev/null | grep 'Product version' | cut -d: -f2", $out);
+        if (!empty($out[0])) {
+            $sophos_ver = trim($out[0]);
+        }
+    }
+    $components[] = [
+        'name' => 'Sophos',
+        'url' => 'https://www.sophos.com',
+        'version' => $sophos_ver,
+    ];
+}
+
+// SpamAssassin
+$sa_ver = 'Unknown';
+exec(SA_DIR . "spamassassin -V 2>/dev/null | tr '\\n' ' ' | cut -d' ' -f3", $sa_out);
+if (!empty($sa_out[0])) {
+    $sa_ver = trim($sa_out[0]);
+}
+$components[] = [
+    'name' => 'SpamAssassin',
+    'url' => 'https://spamassassin.apache.org',
+    'version' => $sa_ver,
+];
+
+// PHP
+$components[] = [
+    'name' => 'PHP',
+    'url' => 'https://www.php.net',
+    'version' => PHP_VERSION,
+];
+
+// Database (MySQL / MariaDB)
+$db_version = database::getDatabaseVersion();
+$is_mariadb = (false !== stripos($db_version, 'mariadb'));
+$components[] = [
+    'name' => $is_mariadb ? 'MariaDB Database' : 'MySQL Database',
+    'url' => $is_mariadb ? 'https://mariadb.org' : 'https://www.mysql.com',
+    'version' => !empty($db_version) ? $db_version : 'Unknown',
+];
+
+// GeoIP Database
+$geoip_version = false;
+$geoip_database_file = __DIR__ . '/temp/GeoLite2-Country.mmdb';
+if (file_exists($geoip_database_file)) {
+    require_once __DIR__ . '/lib/maxmind-db/reader/autoload.php';
+    try {
+        $geoIpDbReader = new \MaxMind\Db\Reader($geoip_database_file);
+        $GeoIPDbMetadata = $geoIpDbReader->metadata();
+        $desc = isset($GeoIPDbMetadata->description['en']) ? $GeoIPDbMetadata->description['en'] : '';
+        $epochDate = !empty($GeoIPDbMetadata->buildEpoch) ? date('Y-m-d H:i:s', $GeoIPDbMetadata->buildEpoch) : '';
+        $geoip_version = trim($desc . ' ' . $epochDate);
+    } catch (\Exception $e) {
+        $geoip_version = false;
+    }
+}
+$components[] = [
+    'name' => 'GeoIP Database (MaxMind)',
+    'url' => 'https://www.maxmind.com',
+    'version' => !empty($geoip_version) ? $geoip_version : __('nodbdown11'),
+];
+
+echo '<table width="100%" class="boxtable">' . "\n";
+echo '  <thead>' . "\n";
+echo '    <tr>' . "\n";
+echo '      <th style="width: 35%; text-align: left; padding: 8px 12px;">' . __('softver11') . '</th>' . "\n";
+echo '      <th style="width: 65%; text-align: left; padding: 8px 12px;">' . __('version11') . '</th>' . "\n";
+echo '    </tr>' . "\n";
+echo '  </thead>' . "\n";
+echo '  <tbody>' . "\n";
+
+foreach ($components as $c) {
+    echo '    <tr>' . "\n";
+    echo '      <td class="textdata" style="font-weight: 600; padding: 7px 12px;"><a href="' . htmlspecialchars($c['url']) . '" target="_blank" rel="noopener noreferrer">' . htmlspecialchars($c['name']) . '</a></td>' . "\n";
+    echo '      <td style="padding: 7px 12px; color: #1e293b;">' . htmlspecialchars($c['version']) . '</td>' . "\n";
+    echo '    </tr>' . "\n";
+}
+
+echo '  </tbody>' . "\n";
+echo '</table>' . "\n";
+
+// Add footer
+html_end();
+// Close any open db connections
+dbclose();
