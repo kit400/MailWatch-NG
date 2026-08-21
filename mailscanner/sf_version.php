@@ -49,12 +49,12 @@ $components[] = [
     'version' => mailwatch_version(),
 ];
 
-// eFa-Project
+// EFA-NG Project
 $efa_ver = efa_version();
 if (!empty($efa_ver)) {
     $components[] = [
-        'name' => 'eFa-Project',
-        'url' => 'https://efa-project.org',
+        'name' => 'EFA-NG',
+        'url' => 'https://efa-ng.space.ua',
         'version' => $efa_ver,
     ];
 }
