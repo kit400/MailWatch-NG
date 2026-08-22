@@ -66,7 +66,7 @@ body {
 }
 
 .login h1 {
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    background: linear-gradient(135deg, #1f6cb0 0%, #185890 100%);
     color: #ffffff;
     font-size: 20px;
     font-weight: 600;
@@ -126,32 +126,32 @@ body {
 }
 
 .login fieldset input[type="text"]:focus, .login fieldset input[type="password"]:focus {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+    border-color: #1f6cb0;
+    box-shadow: 0 0 0 2px rgba(31, 108, 176, 0.15);
 }
 
 .login fieldset button[type="submit"],
 .pwdresetform fieldset button[type="submit"] {
     font-size: 14px;
     font-weight: 500;
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    background: linear-gradient(135deg, #1f6cb0 0%, #185890 100%);
     color: #ffffff;
     display: block;
     margin: 8px auto 0 auto;
     padding: 8px 16px;
     width: 100%;
     border-radius: 6px;
-    border: 1px solid #2563eb;
+    border: 1px solid #1f6cb0;
     cursor: pointer;
-    box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
+    box-shadow: 0 1px 2px rgba(31, 108, 176, 0.2);
     transition: all 0.15s ease;
 }
 
 .login fieldset button[type="submit"]:hover,
 .pwdresetform fieldset button[type="submit"]:hover {
-    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
-    border-color: #1d4ed8;
-    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);
+    background: linear-gradient(135deg, #185890 0%, #134674 100%);
+    border-color: #185890;
+    box-shadow: 0 2px 4px rgba(31, 108, 176, 0.3);
 }
 
 .pwdresetButton {
@@ -179,7 +179,7 @@ body {
 }
 
 .pwdresetButton a {
-    color: #2563eb;
+    color: #1f6cb0;
     font-size: 13px;
     text-decoration: none;
 }
@@ -330,8 +330,8 @@ table.mail tr.highspam td {
 
 table.mail tr.mcp,
 table.mail tr.mcp td {
-    background-color: #eff6ff !important;
-    color: #1e40af !important;
+    background-color: #f0f7fc !important;
+    color: #134674 !important;
 }
 
 table.mail tr.highmcp,
@@ -397,7 +397,7 @@ table.mail td.mcp, td.colorcode-mcp {
 }
 
 table.mail td.highmcp, td.colorcode-highmcp {
-    background-color: #1d4ed8 !important;
+    background-color: #185890 !important;
     border-radius: 3px !important;
     border: none !important;
     width: 12px !important;
@@ -594,8 +594,8 @@ table.colorcodes td.clean {
 
 .compact-jump-input:focus {
     background: #ffffff;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+    border-color: #1f6cb0;
+    box-shadow: 0 0 0 2px rgba(31, 108, 176, 0.15);
 }
 
 /* Compact Services Status */
@@ -653,7 +653,7 @@ table.colorcodes td.clean {
 }
 
 .compact-user-link:hover {
-    color: #2563eb;
+    color: #1f6cb0;
     text-decoration: underline;
 }
 
@@ -822,7 +822,7 @@ table.colorcodes td.clean {
 }
 
 .jump-box input[type="text"]:focus {
-    border-color: #2563eb;
+    border-color: #1f6cb0;
     background: #ffffff;
 }
 
@@ -876,7 +876,7 @@ table.colorcodes td.clean {
 }
 
 .user-cabinet-name:hover {
-    color: #2563eb;
+    color: #1f6cb0;
     text-decoration: underline;
 }
 
@@ -1154,11 +1154,11 @@ span.no {
 }
 
 #menu li.active a, #menu.yellow li.active a, #menu li a:active {
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    background: linear-gradient(135deg, #1f6cb0 0%, #185890 100%);
     color: #ffffff;
     font-weight: 600;
-    border-color: #2563eb;
-    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
+    border-color: #1f6cb0;
+    box-shadow: 0 2px 4px rgba(31, 108, 176, 0.25);
 }
 
 .nav-icon {
@@ -1168,17 +1168,17 @@ span.no {
 
 a {
     text-decoration: none;
-    color: #2563eb;
+    color: #1f6cb0;
 }
 
 a:visited {
     text-decoration: none;
-    color: #2563eb;
+    color: #1f6cb0;
 }
 
 a:hover {
-    background-color: #eff6ff;
-    color: #1d4ed8;
+    background-color: #f0f7fc;
+    color: #185890;
 }
 
 a.logo,
@@ -1249,7 +1249,7 @@ ul:not(#menu) > li {
 
 ul:not(#menu) > li::before {
     content: "•";
-    color: #2563eb;
+    color: #1f6cb0;
     font-size: 15px;
     position: absolute;
     left: 0;
@@ -1297,8 +1297,8 @@ input[type="email"]:focus,
 input[type="number"]:focus,
 select:focus,
 textarea:focus {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+    border-color: #1f6cb0;
+    box-shadow: 0 0 0 2px rgba(31, 108, 176, 0.15);
 }
 
 input[type="submit"],
@@ -1307,9 +1307,9 @@ input[type="reset"],
 button[type="submit"],
 button[type="button"],
 button {
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    background: linear-gradient(135deg, #1f6cb0 0%, #185890 100%);
     color: #ffffff;
-    border: 1px solid #2563eb;
+    border: 1px solid #1f6cb0;
     border-radius: 6px;
     padding: 4px 12px;
     font-family: inherit;
@@ -1317,7 +1317,7 @@ button {
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s ease;
-    box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
+    box-shadow: 0 1px 2px rgba(31, 108, 176, 0.2);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1329,10 +1329,10 @@ input[type="button"]:hover,
 button[type="submit"]:hover,
 button[type="button"]:hover,
 button:hover {
-    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
-    border-color: #1d4ed8;
+    background: linear-gradient(135deg, #185890 0%, #134674 100%);
+    border-color: #185890;
     color: #ffffff;
-    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);
+    box-shadow: 0 2px 4px rgba(31, 108, 176, 0.3);
 }
 
 /* Lint Statuses */
@@ -1377,7 +1377,7 @@ p.center {
 
 span.status {
     font-size: 11px;
-    color: #2563eb;
+    color: #1f6cb0;
     font-weight: 500;
 }
 
@@ -1508,7 +1508,7 @@ div.table > .caption {
 }
 
 .autorelease h1 {
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    background: linear-gradient(135deg, #1f6cb0 0%, #185890 100%);
     color: #ffffff;
     font-size: 20px;
     font-weight: 600;
@@ -1571,7 +1571,7 @@ div.table > .caption {
 }
 
 .pwdreset h1 {
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    background: linear-gradient(135deg, #1f6cb0 0%, #185890 100%);
     color: #ffffff;
     font-size: 20px;
     font-weight: 600;
