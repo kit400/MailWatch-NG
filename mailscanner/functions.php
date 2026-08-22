@@ -2413,7 +2413,7 @@ function db_colorised_table($sql, $table_heading = false, $pager = false, $order
                 case 'id2':
                     $fieldname[$f] = '#';
                     $orderable[$f] = false;
-                    $align[$f] = 'center';
+                    $align[$f] = 'center" class="col-index';
                     break;
                 case 'size':
                     $fieldname[$f] = __('size03');
@@ -2533,7 +2533,8 @@ function db_colorised_table($sql, $table_heading = false, $pager = false, $order
                         . '&amp;orderdir=d' . subtract_multi_get_vars(['orderby', 'orderdir']) . "\">D</a>)\n";
                     echo "  </th>\n";
                 } else {
-                    echo '  <th>' . $fieldname[$f] . '</th>' . "\n";
+                    $thClass = ('#' === $fieldname[$f]) ? ' class="col-index"' : '';
+                    echo "  <th{$thClass}>" . $fieldname[$f] . "</th>\n";
                 }
             }
         }

@@ -234,15 +234,15 @@ td.titleReport,
 td.message {
     background: #f8fafc !important;
     color: #1e293b !important;
-    font-size: 11.5px !important;
+    font-size: 11px !important;
     font-weight: 600 !important;
-    padding: 7px 10px !important;
+    padding: 5px 6px !important;
     border-bottom: 1px solid #e2e8f0 !important;
     border-top: none !important;
     border-left: none !important;
     border-right: none !important;
     text-align: left !important;
-    letter-spacing: 0.2px !important;
+    letter-spacing: 0.1px !important;
 }
 
 th.center, th.aligncenter, td.heading.center {
@@ -269,14 +269,30 @@ table.sa_rule_report td,
 table.useredit td,
 table.maildetail td.detail,
 table.boxtable td.textdata {
-    padding: 6px 10px !important;
+    padding: 4px 6px !important;
     border-bottom: 1px solid #f1f5f9 !important;
     border-top: none !important;
     border-left: none !important;
     border-right: none !important;
-    font-size: 11.5px !important;
+    font-size: 11px !important;
     color: #334155 !important;
-    line-height: 1.4 !important;
+    line-height: 1.35 !important;
+}
+
+/* Compact Index Column (#) */
+th.col-index,
+td.col-index,
+table.mail th.col-index,
+table.mail td.col-index,
+table.mail td:has(> a > .mw-info-circle),
+table.mail td:has(> .mw-info-circle) {
+    width: 1% !important;
+    min-width: 20px !important;
+    max-width: 26px !important;
+    padding-left: 2px !important;
+    padding-right: 2px !important;
+    text-align: center !important;
+    white-space: nowrap !important;
 }
 
 table.mail tr:last-child td,
