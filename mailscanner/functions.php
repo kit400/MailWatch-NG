@@ -425,6 +425,7 @@ function html_start($title, $refresh = 0, $cacheable = true, $report = false)
     echo '        <img src=".' . IMAGES_DIR . 'favicon.png" alt="EFA-NG" class="compact-brand-icon">' . "\n";
     echo '        <span class="compact-brand-name">EFA<span class="compact-brand-ng">-NG</span></span>' . "\n";
     echo '      </a>' . "\n";
+    echo '      <button type="button" class="header-toggle-btn header-toggle-expand" onclick="toggleHeaderWidgets()" title="Expand full widgets">▼</button>' . "\n";
     echo '      <span class="compact-vdiv">|</span>' . "\n";
     echo '      <div class="compact-jump-box">' . "\n";
     echo '        <form action="./detail.php" method="get" class="compact-jump-form">' . "\n";
@@ -450,7 +451,6 @@ function html_start($title, $refresh = 0, $cacheable = true, $report = false)
     echo '      <a href="user_manager.php" class="compact-user-link" title="' . __('usermgnt12') . '">👤 ' . $username . '</a>' . "\n";
     echo '      <span class="compact-vdiv">|</span>' . "\n";
     echo '      <a href="logout.php" class="compact-logout-link" title="' . __('logout03') . '">🚪 ' . __('logout03') . '</a>' . "\n";
-    echo '      <button type="button" class="header-toggle-btn header-toggle-expand" onclick="toggleHeaderWidgets()" title="' . __('status03') . '">▼ ' . __('status03') . '</button>' . "\n";
     echo '    </div>' . "\n";
     echo '  </div>' . "\n";
 
