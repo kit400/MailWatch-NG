@@ -2321,3 +2321,221 @@ p.footer {
     margin-top: auto;
     padding-top: 4px;
 }
+
+/* ==========================================================================
+   Message Operations (Options: S H F R color badges and inputs)
+   ========================================================================== */
+.col-ops {
+    width: 1% !important;
+    min-width: 110px !important;
+    text-align: center !important;
+    padding: 4px 6px !important;
+    white-space: nowrap !important;
+}
+
+.ops-header-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 2px 0;
+    text-align: center;
+}
+
+.ops-header-title {
+    font-weight: 700;
+    font-size: 11px;
+    color: #1e293b;
+    letter-spacing: 0.2px;
+}
+
+.ops-header-cols {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+.ops-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    font-weight: 800;
+    font-size: 11px;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    line-height: 1;
+    box-sizing: border-box;
+    cursor: pointer;
+}
+
+/* S = Spam (Red) */
+.ops-badge-s {
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fca5a5;
+}
+.ops-badge-s:hover {
+    background: #dc2626;
+    color: #ffffff;
+    border-color: #dc2626;
+    transform: scale(1.12);
+}
+
+/* H = Ham (Green) */
+.ops-badge-h {
+    background: #dcfce7;
+    color: #16a34a;
+    border: 1px solid #86efac;
+}
+.ops-badge-h:hover {
+    background: #16a34a;
+    color: #ffffff;
+    border-color: #16a34a;
+    transform: scale(1.12);
+}
+
+/* F = Forget (Amber) */
+.ops-badge-f {
+    background: #fef3c7;
+    color: #d97706;
+    border: 1px solid #fde047;
+}
+.ops-badge-f:hover {
+    background: #d97706;
+    color: #ffffff;
+    border-color: #d97706;
+    transform: scale(1.12);
+}
+
+/* R = Release (Blue) */
+.ops-badge-r {
+    background: #e0f0fe;
+    color: #1f6cb0;
+    border: 1px solid #bae6fd;
+}
+.ops-badge-r:hover {
+    background: #1f6cb0;
+    color: #ffffff;
+    border-color: #1f6cb0;
+    transform: scale(1.12);
+}
+
+/* Data Row Inputs Alignment */
+.ops-row-cols {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+.ops-cell {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    margin: 0;
+    padding: 0;
+}
+
+.ops-input {
+    cursor: pointer;
+    margin: 0;
+    width: 14px;
+    height: 14px;
+}
+
+.ops-radio-s {
+    accent-color: #dc2626;
+}
+
+.ops-radio-h {
+    accent-color: #16a34a;
+}
+
+.ops-radio-f {
+    accent-color: #d97706;
+}
+
+.ops-check-r {
+    accent-color: #1f6cb0;
+}
+
+/* Footer Actions */
+.ops-footer-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 8px 14px;
+    margin-top: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.ops-footer-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    font-size: 11px;
+}
+
+.ops-footer-label {
+    font-weight: 700;
+    color: #475569;
+}
+
+.ops-footer-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11px;
+    font-weight: 700;
+    text-decoration: none;
+    padding: 3px 8px;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+}
+
+.ops-badge-clear {
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #cbd5e1;
+}
+
+.ops-badge-clear:hover {
+    background: #fee2e2;
+    color: #b91c1c;
+    border-color: #fca5a5;
+}
+
+.ops-submit-btn {
+    background: linear-gradient(135deg, #1f6cb0 0%, #185890 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 16px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(31, 108, 176, 0.25);
+    transition: all 0.15s ease;
+}
+
+.ops-submit-btn:hover {
+    background: #134674;
+    box-shadow: 0 4px 8px rgba(31, 108, 176, 0.35);
+    transform: translateY(-1px);
+}

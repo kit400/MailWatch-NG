@@ -2393,9 +2393,8 @@ function db_colorised_table($sql, $table_heading = false, $pager = false, $order
                 // Set up display for operations form elements
                 $display[$f] = true;
                 $orderable[$f] = false;
-                // Set it up not to wrap - tricky way to leach onto the align field
-                $align[$f] = 'center" style="white-space:nowrap';
-                $fieldname[$f] = __('ops03') . '<br><a href="javascript:SetRadios(\'S\')">' . __('radiospam203') . '</a>&nbsp;&nbsp;&nbsp;<a href="javascript:SetRadios(\'H\')">' . __('radioham03') . '</a>&nbsp;&nbsp;&nbsp;<a href="javascript:SetRadios(\'F\')">' . __('radioforget03') . '</a>&nbsp;&nbsp;&nbsp;<a href="javascript:SetRadios(\'R\')">' . __('radiorelease03') . '</a>';
+                $align[$f] = 'center" class="col-ops';
+                $fieldname[$f] = '<div class="ops-header-container"><div class="ops-header-title">' . __('ops03') . '</div><div class="ops-header-cols"><a href="javascript:SetRadios(\'S\')" class="ops-badge ops-badge-s" title="' . __('spam203') . '">S</a><a href="javascript:SetRadios(\'H\')" class="ops-badge ops-badge-h" title="' . __('ham03') . '">H</a><a href="javascript:SetRadios(\'F\')" class="ops-badge ops-badge-f" title="' . __('forget03') . '">F</a><a href="javascript:SetRadios(\'R\')" class="ops-badge ops-badge-r" title="' . __('release03') . '">R</a></div></div>';
                 continue;
             }
             $display[$f] = true;
@@ -2572,7 +2571,12 @@ function db_colorised_table($sql, $table_heading = false, $pager = false, $order
                 // Prepend operations elements - later on, replace REPLACEME w/ message id
                 array_unshift(
                     $row,
-                    '<input name="OPT-REPLACEME" type="RADIO" value="S">&nbsp;<input name="OPT-REPLACEME" type="RADIO" value="H">&nbsp;<input name="OPT-REPLACEME" type="RADIO" value="F">&nbsp;<input name="OPTRELEASE-REPLACEME" type="checkbox" value="R">'
+                    '<div class="ops-row-cols">' .
+                    '<label class="ops-cell ops-cell-s"><input name="OPT-REPLACEME" type="RADIO" value="S" class="ops-input ops-radio-s" title="' . __('spam203') . '"></label>' .
+                    '<label class="ops-cell ops-cell-h"><input name="OPT-REPLACEME" type="RADIO" value="H" class="ops-input ops-radio-h" title="' . __('ham03') . '"></label>' .
+                    '<label class="ops-cell ops-cell-f"><input name="OPT-REPLACEME" type="RADIO" value="F" class="ops-input ops-radio-f" title="' . __('forget03') . '"></label>' .
+                    '<label class="ops-cell ops-cell-r"><input name="OPTRELEASE-REPLACEME" type="checkbox" value="R" class="ops-input ops-check-r" title="' . __('release03') . '"></label>' .
+                    '</div>'
                 );
             }
             // Work out field colourings and modify the incoming data as necessary
@@ -2831,13 +2835,13 @@ function db_colorised_table($sql, $table_heading = false, $pager = false, $order
         echo '</table>' . "\n";
         // Javascript function to clear radio buttons
         if (false !== $operations) {
-            echo "
-<script type='text/javascript'>
+            echo '
+<script type="text/javascript">
     function ClearRadios() {
-        var e=document.operations.elements;
-        for(i=0; i<e.length; i++) {
-            if (e[i].type=='radio' || e[i].type=='checkbox') {
-                e[i].checked=false;
+        var e = document.operations.elements;
+        for (var i = 0; i < e.length; i++) {
+            if (e[i].type == "radio" || e[i].type == "checkbox") {
+                e[i].checked = false;
             }
         }
     }
@@ -2845,22 +2849,22 @@ function db_colorised_table($sql, $table_heading = false, $pager = false, $order
     function SetRadios(p) {
         var val;
         var values = {
-            'S'  : 0,
-            'H'  : 1,
-            'F'  : 2,
-            'R'  : 3
+            "S": 0,
+            "H": 1,
+            "F": 2,
+            "R": 3
         };
         switch (p) {
-            case 'S':
-            case 'H':
-            case 'F':
+            case "S":
+            case "H":
+            case "F":
                 val = values[p];
-                $jsRadioCheck
+                ' . $jsRadioCheck . '
                 break;
-            case 'R':
-                $jsReleaseCheck
+            case "R":
+                ' . $jsReleaseCheck . '
                 break;
-            case 'C':
+            case "C":
                 ClearRadios();
                 break;
             default:
@@ -2868,14 +2872,20 @@ function db_colorised_table($sql, $table_heading = false, $pager = false, $order
         }
     }
 </script>
-   <p>&nbsp; <a href=\"javascript:SetRadios('S')\">" . __('radiospam203') . "</a>
-   &nbsp; <a href=\"javascript:SetRadios('H')\">" . __('radioham03') . "</a>
-   &nbsp; <a href=\"javascript:SetRadios('F')\">" . __('radioforget03') . "</a>
-   &nbsp; <a href=\"javascript:SetRadios('R')\">" . __('radiorelease03') . '</a>
-   &nbsp; ' . __('or03') . " <a href=\"javascript:SetRadios('C')\">" . __('clear03') . "</p>
-   <p><input type='SUBMIT' name='SUBMIT' value='" . __('learn03') . "'></p>
-   </form>
-   <p><b>" . __('spam203') . ' &nbsp; <b>' . __('ham03') . ' &nbsp; <b>' . __('forget03') . ' &nbsp; <b>' . __('release03') . '' . "\n";
+<div class="ops-footer-container">
+  <div class="ops-footer-actions">
+    <span class="ops-footer-label">Quick Select:</span>
+    <a href="javascript:SetRadios(\'S\')" class="ops-footer-btn ops-badge-s">🔴 ' . __('radiospam203') . ' (' . __('spam203') . ')</a>
+    <a href="javascript:SetRadios(\'H\')" class="ops-footer-btn ops-badge-h">🟢 ' . __('radioham03') . ' (' . __('ham03') . ')</a>
+    <a href="javascript:SetRadios(\'F\')" class="ops-footer-btn ops-badge-f">🟡 ' . __('radioforget03') . ' (' . __('forget03') . ')</a>
+    <a href="javascript:SetRadios(\'R\')" class="ops-footer-btn ops-badge-r">🔵 ' . __('radiorelease03') . ' (' . __('release03') . ')</a>
+    <a href="javascript:SetRadios(\'C\')" class="ops-footer-btn ops-badge-clear">✕ ' . __('clear03') . '</a>
+  </div>
+  <div class="ops-footer-submit">
+    <button type="submit" name="SUBMIT" value="' . __('learn03') . '" class="ops-submit-btn">⚡ ' . __('learn03') . '</button>
+  </div>
+</div>
+</form>' . "\n";
         }
         echo '<br>' . "\n";
         if ($pager) {
