@@ -457,40 +457,103 @@ table.mail td.clean, td.colorcode-clean {
     height: 12px !important;
 }
 
-/* Color Legend Table */
+/* Table Header with Embedded Inline Legend */
+table.mail th.table-heading-th,
+th.table-heading-th {
+    padding: 6px 10px !important;
+    background: #f8fafc !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.table-heading-wrap {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    box-sizing: border-box;
+    flex-wrap: wrap;
+}
+
+.table-heading-title {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #1e293b;
+    white-space: nowrap;
+    letter-spacing: 0.1px;
+}
+
+/* Legend Inline List */
+.legend-inline-list {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-size: 10.5px;
+    font-weight: 500;
+    color: #475569;
+    margin-left: auto;
+}
+
+.legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    line-height: 1;
+}
+
+.legend-pill {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    min-width: 9px;
+    border-radius: 2px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.legend-pill.infected {
+    background-color: #ef4444;
+}
+
+.legend-pill.spam {
+    background-color: #f59e0b;
+}
+
+.legend-pill.highspam {
+    background-color: #dc2626;
+}
+
+.legend-pill.mcp {
+    background-color: #1f6cb0;
+}
+
+.legend-pill.highmcp {
+    background-color: #134674;
+}
+
+.legend-pill.whitelisted {
+    background-color: #16a34a;
+}
+
+.legend-pill.blacklisted {
+    background-color: #0f172a;
+}
+
+.legend-pill.notscanned {
+    background-color: #9333ea;
+}
+
+.legend-pill.clean {
+    background-color: #94a3b8;
+}
+
+/* Legacy colorcodes support */
 table.colorcodes {
-    background: #ffffff !important;
-    border: 1px solid #e2e8f0 !important;
-    border-radius: 6px !important;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04) !important;
-    padding: 2px 8px !important;
-    margin: 4px auto 8px auto !important;
-    font-size: 10.5px !important;
-    line-height: 1.2 !important;
-    width: auto !important;
-}
-
-table.colorcodes td {
-    padding: 1px 4px !important;
-    border: none !important;
-    font-size: 10.5px !important;
-    white-space: nowrap !important;
-}
-
-table.colorcodes td.infected,
-table.colorcodes td.spam,
-table.colorcodes td.highspam,
-table.colorcodes td.mcp,
-table.colorcodes td.highmcp,
-table.colorcodes td.whitelisted,
-table.colorcodes td.blacklisted,
-table.colorcodes td.notscanned,
-table.colorcodes td.clean {
-    width: 9px !important;
-    min-width: 9px !important;
-    height: 9px !important;
-    border-radius: 2px !important;
-    padding: 0 !important;
+    display: none !important;
 }
 
 /* ==========================================================================

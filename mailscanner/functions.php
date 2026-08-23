@@ -557,21 +557,28 @@ function toggleHeaderWidgets() {
     return $return_items;
 }
 
+function getColorCodesHtml()
+{
+    $html = '<div class="legend-inline-list">';
+    $html .= '<span class="legend-item"><span class="legend-pill infected"></span> ' . __('badcontentinfected03') . '</span>';
+    $html .= '<span class="legend-item"><span class="legend-pill spam"></span> ' . __('spam103') . '</span>';
+    $html .= '<span class="legend-item"><span class="legend-pill highspam"></span> ' . __('highspam03') . '</span>';
+    if (get_conf_truefalse('mcpchecks')) {
+        $html .= '<span class="legend-item"><span class="legend-pill mcp"></span> ' . __('mcp03') . '</span>';
+        $html .= '<span class="legend-item"><span class="legend-pill highmcp"></span> ' . __('highmcp03') . '</span>';
+    }
+    $html .= '<span class="legend-item"><span class="legend-pill whitelisted"></span> ' . __('whitelisted03') . '</span>';
+    $html .= '<span class="legend-item"><span class="legend-pill blacklisted"></span> ' . __('blacklisted03') . '</span>';
+    $html .= '<span class="legend-item"><span class="legend-pill notscanned"></span> ' . __('notverified03') . '</span>';
+    $html .= '<span class="legend-item"><span class="legend-pill clean"></span> ' . __('clean03') . '</span>';
+    $html .= '</div>';
+
+    return $html;
+}
+
 function printColorCodes()
 {
-    echo '   <table border="0" cellpadding="0" cellspacing="2" align="center" class="mail colorcodes">' . "\n";
-    echo '    <tr><td class="infected"></td> <td>' . __('badcontentinfected03') . '</td>' . "\n";
-    echo '    <td class="spam"></td> <td>' . __('spam103') . ' </td>' . "\n";
-    echo '    <td class="highspam"></td> <td>' . __('highspam03') . '</td>' . "\n";
-    if (get_conf_truefalse('mcpchecks')) {
-        echo '    <td class="mcp"></td> <td>' . __('mcp03') . '</td>' . "\n";
-        echo '    <td class="highmcp"></td> <td>' . __('highmcp03') . '</td>' . "\n";
-    }
-    echo '    <td class="whitelisted"></td> <td>' . __('whitelisted03') . '</td>' . "\n";
-    echo '    <td class="blacklisted"></td> <td>' . __('blacklisted03') . '</td>' . "\n";
-    echo '    <td class="notscanned"></td> <td>' . __('notverified03') . '</td>' . "\n";
-    echo '    <td class="clean"></td> <td>' . __('clean03') . '</td></tr>' . "\n";
-    echo '   </table>' . "\n";
+    echo getColorCodesHtml();
 }
 
 function getServicesQuickStatus()
@@ -2359,12 +2366,10 @@ function db_colorised_table($sql, $table_heading = false, $pager = false, $order
 
     if ($rows > 0) {
         if (false !== $operations) {
-            // Start form for operations
             echo '<form name="operations" action="./do_message_ops.php" method="POST">' . "\n";
             echo '<input type="hidden" name="token" value="' . $_SESSION['token'] . '">' . "\n";
             echo '<INPUT TYPE="HIDDEN" NAME="formtoken" VALUE="' . generateFormToken('/do_message_ops.php form token') . '">' . "\n";
         }
-        printColorCodes();
         echo '<table cellspacing="1" width="100%" class="mail rowhover">' . "\n";
         // Work out which columns to display
         $display = [];
@@ -2500,7 +2505,7 @@ function db_colorised_table($sql, $table_heading = false, $pager = false, $order
                     break;
             }
         }
-        // Table heading
+        // Table heading with embedded legend on the right
         if (isset($table_heading) && '' !== $table_heading) {
             // Work out how many columns are going to be displayed
             $column_headings = 0;
@@ -2509,8 +2514,13 @@ function db_colorised_table($sql, $table_heading = false, $pager = false, $order
                     ++$column_headings;
                 }
             }
-            echo ' <tr class="nohover"">' . "\n";
-            echo '  <th colspan="' . $column_headings . '">' . $table_heading . '</th>' . "\n";
+            echo ' <tr class="nohover table-heading-row">' . "\n";
+            echo '  <th colspan="' . $column_headings . '" class="table-heading-th">' . "\n";
+            echo '    <div class="table-heading-wrap">' . "\n";
+            echo '      <span class="table-heading-title">' . $table_heading . '</span>' . "\n";
+            echo '      ' . getColorCodesHtml() . "\n";
+            echo '    </div>' . "\n";
+            echo '  </th>' . "\n";
             echo ' </tr>' . "\n";
         }
         // Column headings
