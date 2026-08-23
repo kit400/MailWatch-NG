@@ -137,7 +137,15 @@ class Filter
      */
     public function GetCompactBarHtml()
     {
-        $hasFilters = count($this->item) > 0;
+        $hasFilters = (is_array($this->item) && count($this->item) > 0);
+        $currentPage = basename($_SERVER['PHP_SELF']);
+        $queryString = isset($_SERVER['QUERY_STRING']) ? $_SERVER['QUERY_STRING'] : '';
+        $returnToParam = '';
+        if (0 === strpos($currentPage, 'rep_')) {
+            $returnToUrl = $currentPage . (!empty($queryString) ? '?' . $queryString : '');
+            $returnToParam = '&amp;return_to=' . urlencode($returnToUrl);
+        }
+
         $html = '<div class="active-filter-bar' . ($hasFilters ? ' has-active-filters' : '') . '">' . "\n";
         $html .= '  <div class="filter-bar-left">' . "\n";
         $html .= '    <span class="filter-bar-icon">🔍</span>' . "\n";
@@ -150,7 +158,7 @@ class Filter
                 $opName = $this->TranslateOperator($val[1]);
                 $valStr = htmlspecialchars(stripslashes($val[2]));
                 $tokenStr = isset($_SESSION['token']) ? $_SESSION['token'] : '';
-                $removeUrl = 'reports.php?token=' . $tokenStr . '&amp;action=remove&amp;column=' . $key;
+                $removeUrl = 'reports.php?token=' . $tokenStr . '&amp;action=remove&amp;column=' . $key . $returnToParam;
 
                 $html .= '      <span class="filter-chip">';
                 $html .= '<span class="chip-col">' . $colName . '</span> ';
@@ -160,7 +168,7 @@ class Filter
                 $html .= '</span>' . "\n";
             }
             $html .= '    </div>' . "\n";
-            $clearUrl = 'reports.php?token=' . (isset($_SESSION['token']) ? $_SESSION['token'] : '') . '&amp;action=clear';
+            $clearUrl = 'reports.php?token=' . (isset($_SESSION['token']) ? $_SESSION['token'] : '') . '&amp;action=clear' . $returnToParam;
             $html .= '    <a href="' . $clearUrl . '" class="filter-bar-clear-btn" title="Reset all filters">🗑️ ' . __('reset08', false) . '</a>' . "\n";
         } else {
             $html .= '    <span class="filter-bar-empty">' . __('none09') . ' (' . __('allmessages03', false) . ')</span>' . "\n";

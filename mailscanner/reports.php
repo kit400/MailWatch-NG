@@ -33,17 +33,14 @@ require_once __DIR__ . '/functions.php';
 require __DIR__ . '/login.function.php';
 
 // Checking to see if there are any filters
-if (!isset($_SESSION['filter']) || !is_object($_SESSION['filter'])) {
+if (!isset($_SESSION['filter']) || !($_SESSION['filter'] instanceof Filter)) {
     $filter = new Filter();
     $_SESSION['filter'] = $filter;
 } else {
     $filter = $_SESSION['filter'];
 }
 
-// add the header information such as the logo, search, menu, ....
-html_start(__('reports14'), 0, false, false);
-
-// Add filters and save them
+// Add filters, remove filters, clear filters, and save/load them BEFORE html_start()
 if (isset($_POST['action']) || isset($_GET['action'])) {
     if (isset($_POST['token'])) {
         if (false === checkToken($_POST['token'])) {
@@ -112,10 +109,25 @@ if (isset($_POST['action']) || isset($_GET['action'])) {
             $filter->Delete(sanitizeInput($_POST['filter']));
             break;
     }
+
+    // add the session filters to the variables
+    $_SESSION['filter'] = $filter;
+
+    // If return_to parameter is set and safe, redirect back immediately
+    if (isset($_GET['return_to']) && !empty($_GET['return_to'])) {
+        $returnTo = deepSanitizeInput($_GET['return_to'], 'url');
+        if (preg_match('/^rep_[a-z0-9_]+\.php/i', $returnTo)) {
+            header('Location: ' . $returnTo);
+            exit;
+        }
+    }
 }
 
 // add the session filters to the variables
 $_SESSION['filter'] = $filter;
+
+// add the header information such as the logo, search, menu, ....
+html_start(__('reports14'), 0, false, false);
 
 $filter->AddReport('rep_message_listing.php', __('messlisting14'), true);
 $filter->AddReport('rep_message_ops.php', __('messop14'), true);
