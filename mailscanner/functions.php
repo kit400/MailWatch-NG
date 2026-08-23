@@ -48,6 +48,7 @@ if (!file_exists(__DIR__ . '/conf.php') || !is_readable(__DIR__ . '/conf.php')) 
 }
 require_once __DIR__ . '/conf.php';
 require_once __DIR__ . '/database.php';
+require_once __DIR__ . '/filter.inc.php';
 
 // more secure session cookies
 ini_set('session.use_cookies', '1');
@@ -550,11 +551,15 @@ function toggleHeaderWidgets() {
 
     $currentPage = basename($_SERVER['PHP_SELF']);
     $isReportsPage = ($report || 'reports.php' === $currentPage || 0 === strpos($currentPage, 'rep_'));
-    $hasActiveFilters = (isset($_SESSION['filter']) && is_object($_SESSION['filter']) && count($_SESSION['filter']->item) > 0);
+    $hasActiveFilters = (
+        isset($_SESSION['filter']) &&
+        ($_SESSION['filter'] instanceof Filter) &&
+        is_array($_SESSION['filter']->item) &&
+        count($_SESSION['filter']->item) > 0
+    );
 
     if ($isReportsPage || $hasActiveFilters) {
-        if (!isset($_SESSION['filter']) || !is_object($_SESSION['filter'])) {
-            require_once __DIR__ . '/filter.inc.php';
+        if (!isset($_SESSION['filter']) || !($_SESSION['filter'] instanceof Filter)) {
             $_SESSION['filter'] = new Filter();
         }
         echo $_SESSION['filter']->GetCompactBarHtml();
