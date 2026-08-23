@@ -319,59 +319,59 @@ table.rowhover tr:hover {
     filter: none !important;
 }
 
-/* Status Color Highlights (Soft modern tints) */
+/* Status Color Highlights (20% Brighter & Saturated) */
 table.mail tr.clean,
 table.mail tr.clean td {
     background-color: #ffffff;
-    color: #334155;
+    color: #1e293b;
 }
 
 table.mail tr.infected,
 table.mail tr.infected td {
-    background-color: #fef2f2 !important;
+    background-color: #fee2e2 !important;
     color: #991b1b !important;
 }
 
 table.mail tr.spam,
 table.mail tr.spam td {
-    background-color: #fffbeb !important;
-    color: #92400e !important;
+    background-color: #fef3c7 !important;
+    color: #854d0e !important;
 }
 
 table.mail tr.highspam,
 table.mail tr.highspam td {
-    background-color: #fff1f2 !important;
-    color: #be123c !important;
+    background-color: #ffe4e6 !important;
+    color: #9f1239 !important;
 }
 
 table.mail tr.mcp,
 table.mail tr.mcp td {
-    background-color: #f0f7fc !important;
-    color: #134674 !important;
+    background-color: #e0f0fe !important;
+    color: #0c4a6e !important;
 }
 
 table.mail tr.highmcp,
 table.mail tr.highmcp td {
-    background-color: #eef2ff !important;
+    background-color: #e0e7ff !important;
     color: #3730a3 !important;
 }
 
 table.mail tr.whitelisted,
 table.mail tr.whitelisted td {
-    background-color: #f0fdf4 !important;
-    color: #166534 !important;
+    background-color: #dcfce7 !important;
+    color: #15803d !important;
 }
 
 table.mail tr.blacklisted,
 table.mail tr.blacklisted td {
-    background-color: #f1f5f9 !important;
+    background-color: #e2e8f0 !important;
     color: #0f172a !important;
     font-weight: 500;
 }
 
 table.mail tr.notscanned,
 table.mail tr.notscanned td {
-    background-color: #faf5ff !important;
+    background-color: #f3e8ff !important;
     color: #6b21a8 !important;
 }
 
