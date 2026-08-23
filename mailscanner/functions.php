@@ -546,7 +546,19 @@ function toggleHeaderWidgets() {
     printNavBar();
     echo '
  <tr>
-  <td colspan="' . ('A' === $_SESSION['user_type'] ? '5' : '4') . '">';
+  <td colspan="' . ('A' === $_SESSION['user_type'] ? '5' : '4') . '" style="padding: 0;">';
+
+    $currentPage = basename($_SERVER['PHP_SELF']);
+    $isReportsPage = ($report || 'reports.php' === $currentPage || 0 === strpos($currentPage, 'rep_'));
+    $hasActiveFilters = (isset($_SESSION['filter']) && is_object($_SESSION['filter']) && count($_SESSION['filter']->item) > 0);
+
+    if ($isReportsPage || $hasActiveFilters) {
+        if (!isset($_SESSION['filter']) || !is_object($_SESSION['filter'])) {
+            require_once __DIR__ . '/filter.inc.php';
+            $_SESSION['filter'] = new Filter();
+        }
+        echo $_SESSION['filter']->GetCompactBarHtml();
+    }
 
     if ($report) {
         $return_items = $filter;

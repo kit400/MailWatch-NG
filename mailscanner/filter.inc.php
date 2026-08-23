@@ -133,55 +133,229 @@ class Filter
     }
 
     /**
+     * @return string
+     */
+    public function GetCompactBarHtml()
+    {
+        $hasFilters = count($this->item) > 0;
+        $html = '<div class="active-filter-bar' . ($hasFilters ? ' has-active-filters' : '') . '">' . "\n";
+        $html .= '  <div class="filter-bar-left">' . "\n";
+        $html .= '    <span class="filter-bar-icon">🔍</span>' . "\n";
+        $html .= '    <span class="filter-bar-label">' . __('activefilters09') . ':</span>' . "\n";
+
+        if ($hasFilters) {
+            $html .= '    <div class="filter-chips-list">' . "\n";
+            foreach ($this->item as $key => $val) {
+                $colName = $this->TranslateColumn($val[0]);
+                $opName = $this->TranslateOperator($val[1]);
+                $valStr = htmlspecialchars(stripslashes($val[2]));
+                $tokenStr = isset($_SESSION['token']) ? $_SESSION['token'] : '';
+                $removeUrl = 'reports.php?token=' . $tokenStr . '&amp;action=remove&amp;column=' . $key;
+
+                $html .= '      <span class="filter-chip">';
+                $html .= '<span class="chip-col">' . $colName . '</span> ';
+                $html .= '<span class="chip-op">' . $opName . '</span> ';
+                $html .= '<span class="chip-val">"' . $valStr . '"</span>';
+                $html .= '<a href="' . $removeUrl . '" class="chip-remove" title="' . __('remove09') . '">✕</a>';
+                $html .= '</span>' . "\n";
+            }
+            $html .= '    </div>' . "\n";
+            $clearUrl = 'reports.php?token=' . (isset($_SESSION['token']) ? $_SESSION['token'] : '') . '&amp;action=clear';
+            $html .= '    <a href="' . $clearUrl . '" class="filter-bar-clear-btn" title="Reset all filters">🗑️ ' . __('reset08', false) . '</a>' . "\n";
+        } else {
+            $html .= '    <span class="filter-bar-empty">' . __('none09') . ' (' . __('allmessages03', false) . ')</span>' . "\n";
+        }
+        $html .= '  </div>' . "\n";
+
+        $html .= '  <div class="filter-bar-right">' . "\n";
+        $html .= '    <a href="reports.php" class="filter-bar-action-btn">⚙️ ' . __('addfilter09') . ' / 📋 ' . __('reports09') . '</a>' . "\n";
+        $html .= '  </div>' . "\n";
+        $html .= '</div>' . "\n";
+
+        return $html;
+    }
+
+    /**
      * @param string $token
      */
     public function Display($token)
     {
-        echo '<table width="600" border="0" class="boxtable">' . "\n";
-        echo ' <tr><th colspan="2">' . __('activefilters09') . '</th></tr>' . "\n";
-        if (count($this->item) > 0) {
-            foreach ($this->item as $key => $val) {
-                echo '<tr><td>' .
-                    $this->TranslateColumn($val[0]) . ' ' . $this->TranslateOperator($val[1]) .
-                    ' "' . stripslashes(
-                        $val[2]
-                    ) . '"</td><td align="right"><a href="' . sanitizeInput($_SERVER['PHP_SELF']) . '?token=' . $_SESSION['token'] . '&amp;action=remove&amp;column=' . $key . '">' . __('remove09') . '</a></td></tr>' . "\n";
-            }
-        } else {
-            echo '<tr><td colspan="2">' . __('none09') . '</td></tr>' . "\n";
-        }
-
-        // Add filter
-        echo ' <tr><th colspan="2">' . __('addfilter09') . '</th></tr>' . "\n";
-        echo ' <tr><td colspan="2">' . $this->DisplayForm() . '</td></tr>' . "\n";
-        echo ' <tr><th colspan="2">' . __('stats09') . '</th></tr>' . "\n";
         $query = "
 SELECT
  DATE_FORMAT(MIN(date),'" . DATE_FORMAT . "') AS oldest,
  DATE_FORMAT(MAX(date),'" . DATE_FORMAT . "') AS newest,
- COUNT(date) AS messages
+ COUNT(date) AS messages,
+ SUM(CASE WHEN virusinfected>0 THEN 1 ELSE 0 END) AS infected,
+ SUM(CASE WHEN isspam>0 THEN 1 ELSE 0 END) AS spam
 FROM
  maillog
 WHERE
  1=1
 " . $this->CreateSQL();
         $sth = dbquery($query);
-        while ($row = $sth->fetch_object()) {
-            echo ' <tr><td>' . __('oldrecord09') . '</td><td align="right">' . $row->oldest . '</td></tr>' . "\n";
-            echo ' <tr><td>' . __('newrecord09') . '</td><td align="right">' . $row->newest . '</td></tr>' . "\n";
-            echo ' <tr><td>' . __('messagecount09') . '</td><td align="right">' . number_format($row->messages) . '</td></tr>' . "\n";
-        }
-        echo '<tr><th colspan="2">' . __('reports09') . '</th></tr>' . "\n";
-        echo '<tr><td colspan="2"><ul>' . "\n";
+        $stats = $sth ? $sth->fetch_object() : null;
+        $totalMsgs = $stats ? number_format($stats->messages) : '0';
+        $oldestDate = ($stats && $stats->oldest) ? $stats->oldest : 'N/A';
+        $newestDate = ($stats && $stats->newest) ? $stats->newest : 'N/A';
+        $infectedCount = ($stats && $stats->infected) ? number_format($stats->infected) : '0';
+        $spamCount = ($stats && $stats->spam) ? number_format($stats->spam) : '0';
+
+        echo '<div class="reports-layout" id="reportsLayout">' . "\n";
+
+        // Expand Rail (visible when sidebar is minimized)
+        echo '  <div class="sidebar-expand-rail" onclick="toggleReportsSidebar()" title="Expand Sidebar">' . "\n";
+        echo '    <button type="button" class="rail-btn">▶</button>' . "\n";
+        echo '    <span class="rail-label">📋 ' . __('reports09') . ' &amp; ' . __('search03', false) . '</span>' . "\n";
+        echo '  </div>' . "\n";
+
+        // 1. Collapsible Sidebar
+        echo '  <aside class="reports-sidebar" id="reportsSidebar">' . "\n";
+        echo '    <div class="sidebar-header">' . "\n";
+        echo '      <div class="sidebar-title">' . "\n";
+        echo '        <span class="sidebar-icon">📊</span>' . "\n";
+        echo '        <span>' . __('reports09') . ' &amp; ' . __('search03', false) . '</span>' . "\n";
+        echo '      </div>' . "\n";
+        echo '      <button type="button" class="sidebar-toggle-btn" onclick="toggleReportsSidebar()" title="Minimize sidebar">◀</button>' . "\n";
+        echo '    </div>' . "\n";
+
+        echo '    <div class="sidebar-content">' . "\n";
+        // Section A: Reports List
+        echo '      <div class="sidebar-section">' . "\n";
+        echo '        <div class="sidebar-section-title">📋 ' . __('reports09') . '</div>' . "\n";
+        echo '        <ul class="sidebar-reports-menu">' . "\n";
         foreach ($this->reports as $report) {
             $url = $report['url'];
             if ($report['useToken']) {
                 $url .= '?token=' . $token;
             }
-            echo '<li><a href="' . $url . '">' . $report['description'] . '</a>' . "\n";
+            $icon = '📄';
+            if (strpos($url, 'message_listing') !== false) {
+                $icon = '📨';
+            } elseif (strpos($url, 'message_ops') !== false) {
+                $icon = '⚙️';
+            } elseif (strpos($url, 'total_mail') !== false || strpos($url, 'previous_day') !== false) {
+                $icon = '📈';
+            } elseif (strpos($url, 'virus') !== false) {
+                $icon = '🦠';
+            } elseif (strpos($url, 'sender') !== false || strpos($url, 'recipient') !== false || strpos($url, 'relay') !== false) {
+                $icon = '👥';
+            } elseif (strpos($url, 'sa_') !== false || strpos($url, 'mcp_') !== false) {
+                $icon = '🎯';
+            } elseif (strpos($url, 'audit') !== false) {
+                $icon = '📜';
+            }
+
+            echo '          <li class="sidebar-report-item"><a href="' . $url . '" class="sidebar-report-link"><span class="rep-icon">' . $icon . '</span> <span class="rep-title">' . $report['description'] . '</span></a></li>' . "\n";
         }
-        echo '</ul></td></tr>' . "\n";
-        echo '</table>' . "\n";
+        echo '        </ul>' . "\n";
+        echo '      </div>' . "\n";
+
+        // Section B: Filter Builder
+        echo '      <div class="sidebar-section">' . "\n";
+        echo '        <div class="sidebar-section-title">🔍 ' . __('addfilter09') . '</div>' . "\n";
+        echo $this->DisplayForm();
+        echo '      </div>' . "\n";
+        echo '    </div>' . "\n"; // End sidebar-content
+        echo '  </aside>' . "\n";
+
+        // 2. Main Content Dashboard
+        echo '  <main class="reports-main-content">' . "\n";
+
+        // Dashboard Stats Bar
+        echo '    <div class="reports-stats-grid">' . "\n";
+        echo '      <div class="report-stat-card stat-total">' . "\n";
+        echo '        <div class="stat-card-icon">📬</div>' . "\n";
+        echo '        <div class="stat-card-data">' . "\n";
+        echo '          <span class="stat-card-num">' . $totalMsgs . '</span>' . "\n";
+        echo '          <span class="stat-card-label">' . __('messagecount09') . '</span>' . "\n";
+        echo '        </div>' . "\n";
+        echo '      </div>' . "\n";
+
+        echo '      <div class="report-stat-card stat-dates">' . "\n";
+        echo '        <div class="stat-card-icon">📅</div>' . "\n";
+        echo '        <div class="stat-card-data">' . "\n";
+        echo '          <span class="stat-card-range">' . $oldestDate . ' &rarr; ' . $newestDate . '</span>' . "\n";
+        echo '          <span class="stat-card-label">' . __('date09') . '</span>' . "\n";
+        echo '        </div>' . "\n";
+        echo '      </div>' . "\n";
+
+        echo '      <div class="report-stat-card stat-threats">' . "\n";
+        echo '        <div class="stat-card-icon">🛡️</div>' . "\n";
+        echo '        <div class="stat-card-data">' . "\n";
+        echo '          <span class="stat-card-num">' . $spamCount . ' <span class="sub-stat">/ ' . $infectedCount . ' 🦠</span></span>' . "\n";
+        echo '          <span class="stat-card-label">' . __('spam103') . ' / ' . __('virusinfected09') . '</span>' . "\n";
+        echo '        </div>' . "\n";
+        echo '      </div>' . "\n";
+        echo '    </div>' . "\n";
+
+        // Quick Launch Report Cards Grid
+        echo '    <div class="reports-portal-grid">' . "\n";
+        foreach ($this->reports as $report) {
+            $url = $report['url'];
+            if ($report['useToken']) {
+                $url .= '?token=' . $token;
+            }
+            $icon = '📄';
+            $badge = 'Report';
+            if (strpos($url, 'message_listing') !== false) {
+                $icon = '📨';
+                $badge = 'Messages';
+            } elseif (strpos($url, 'message_ops') !== false) {
+                $icon = '⚙️';
+                $badge = 'Operations';
+            } elseif (strpos($url, 'total_mail') !== false || strpos($url, 'previous_day') !== false) {
+                $icon = '📈';
+                $badge = 'Traffic';
+            } elseif (strpos($url, 'virus') !== false) {
+                $icon = '🦠';
+                $badge = 'Threats';
+            } elseif (strpos($url, 'sender') !== false || strpos($url, 'recipient') !== false || strpos($url, 'relay') !== false) {
+                $icon = '👥';
+                $badge = 'Statistics';
+            } elseif (strpos($url, 'sa_') !== false || strpos($url, 'mcp_') !== false) {
+                $icon = '🎯';
+                $badge = 'Rules';
+            } elseif (strpos($url, 'audit') !== false) {
+                $icon = '📜';
+                $badge = 'Security';
+            }
+
+            echo '      <a href="' . $url . '" class="portal-card">' . "\n";
+            echo '        <div class="portal-card-top">' . "\n";
+            echo '          <span class="portal-card-icon">' . $icon . '</span>' . "\n";
+            echo '          <span class="portal-card-badge">' . $badge . '</span>' . "\n";
+            echo '        </div>' . "\n";
+            echo '        <div class="portal-card-title">' . $report['description'] . '</div>' . "\n";
+            echo '        <div class="portal-card-arrow">View &rarr;</div>' . "\n";
+            echo '      </a>' . "\n";
+        }
+        echo '    </div>' . "\n";
+
+        echo '  </main>' . "\n";
+        echo '</div>' . "\n";
+
+        // JavaScript for persistence & collapse
+        echo '<script type="text/javascript">
+function toggleReportsSidebar() {
+    var l = document.getElementById("reportsLayout");
+    if (!l) return;
+    if (l.classList.contains("sidebar-minimized")) {
+        l.classList.remove("sidebar-minimized");
+        try { localStorage.setItem("mw_reports_sidebar_minimized", "0"); } catch(e) {}
+    } else {
+        l.classList.add("sidebar-minimized");
+        try { localStorage.setItem("mw_reports_sidebar_minimized", "1"); } catch(e) {}
+    }
+}
+(function() {
+    try {
+        if (localStorage.getItem("mw_reports_sidebar_minimized") === "1") {
+            var l = document.getElementById("reportsLayout");
+            if (l) l.classList.add("sidebar-minimized");
+        }
+    } catch(e) {}
+})();
+</script>' . "\n";
     }
 
     public function CreateMtalogSQL()
@@ -234,7 +408,7 @@ WHERE
      */
     public function TranslateColumn($column)
     {
-        return $this->columns[$column];
+        return isset($this->columns[$column]) ? $this->columns[$column] : $column;
     }
 
     /**
@@ -242,61 +416,68 @@ WHERE
      */
     public function TranslateOperator($operator)
     {
-        return $this->operators[$operator];
+        return isset($this->operators[$operator]) ? $this->operators[$operator] : $operator;
     }
 
     public function DisplayForm()
     {
         // Form
-        $return = '<form method="post" action="' . sanitizeInput($_SERVER['PHP_SELF']) . '">' . "\n";
+        $return = '<form method="post" action="' . sanitizeInput($_SERVER['PHP_SELF']) . '" class="filter-builder-form">' . "\n";
 
-        // Table
-        $return .= '<table width="100%">' . "\n";
-
-        // Columns
-        $return .= '<tr><td colspan="2">' . "\n";
-        $return .= '<select name="column">' . "\n";
+        $return .= '<div class="filter-field-group">' . "\n";
+        $return .= '  <label class="filter-label">' . __('column09', false) . ':</label>' . "\n";
+        $return .= '  <select name="column" class="filter-select">' . "\n";
         foreach ($this->columns as $key => $val) {
             $return .= ' <option value="' . $key . '"';
-            //  Use the last value as the default
             if ($this->display_last && $key === $this->last_column) {
                 $return .= ' SELECTED';
             }
             $return .= '>' . $val . '</option>' . "\n";
         }
-        $return .= '</select>' . "\n";
-        $return .= '</td></tr>' . "\n";
+        $return .= '  </select>' . "\n";
+        $return .= '</div>' . "\n";
 
-        // Operators
-        $return .= '<tr><td colspan="2">' . "\n";
-        $return .= '<select name="operator">' . "\n";
+        $return .= '<div class="filter-field-group">' . "\n";
+        $return .= '  <label class="filter-label">' . __('operator09', false) . ':</label>' . "\n";
+        $return .= '  <select name="operator" class="filter-select">' . "\n";
         foreach ($this->operators as $key => $val) {
             $return .= ' <option value="' . $key . '"';
-            //  Use the last value as the default
             if ($this->display_last && $key === $this->last_operator) {
                 $return .= ' SELECTED';
             }
             $return .= '>' . $val . '</option>' . "\n";
         }
-        $return .= '</select><br>' . "\n";
-        $return .= '</td></tr>' . "\n";
+        $return .= '  </select>' . "\n";
+        $return .= '</div>' . "\n";
 
-        // Input
-        $return .= '<tr><td>' . "\n";
-        $return .= '<input type="text" size="50" name="value"';
+        $return .= '<div class="filter-field-group">' . "\n";
+        $return .= '  <label class="filter-label">' . __('value09', false) . ':</label>' . "\n";
+        $return .= '  <div class="filter-input-row">' . "\n";
+        $return .= '    <input type="text" name="value" class="filter-input" placeholder="' . __('value09', false) . '..."';
         if ($this->display_last) {
-            //  Use the last value as the default
             $return .= ' value="' . htmlentities(stripslashes($this->last_value)) . '"';
         }
-        $return .= ">\n";
-        $return .= '</td><td align="right"><button type="submit" name="action" value="add">' . __('add09') . '</button></td></tr>' . "\n";
-        $return .= '<tr><td align="left">' . __('tosetdate09') . '</td>' . "\n" . ' <td></td></tr>' . "\n";
-        $return .= '<tr><th colspan="2">' . __('loadsavef09') . '</th></tr>' . "\n";
-        $return .= '<tr><td><input type="text" size="50" name="save_as"></td><td align="right"><button type="submit" name="action" value="save">' . __('save09') . '</button></td></tr>' . "\n";
-        $return .= '<tr><td>' . "\n";
-        $return .= $this->ListSaved();
-        $return .= '</td><td class="filterbuttons"><button type="submit" name="action" value="load">' . __('load09') . '</button>&nbsp;<button type="submit" name="action" value="save">' . __('save09') . '</button>&nbsp;<button type="submit" name="action" value="delete">' . __('delete09') . '</button></td></tr>' . "\n";
-        $return .= '</table>' . "\n";
+        $return .= '>' . "\n";
+        $return .= '    <button type="submit" name="action" value="add" class="filter-btn filter-btn-add">➕ ' . __('add09') . '</button>' . "\n";
+        $return .= '  </div>' . "\n";
+        $return .= '  <span class="filter-help-text">' . __('tosetdate09') . '</span>' . "\n";
+        $return .= '</div>' . "\n";
+
+        $return .= '<div class="filter-saved-section">' . "\n";
+        $return .= '  <div class="filter-saved-title">💾 ' . __('loadsavef09') . '</div>' . "\n";
+        $return .= '  <div class="filter-save-row">' . "\n";
+        $return .= '    <input type="text" name="save_as" placeholder="Save filter name..." class="filter-input">' . "\n";
+        $return .= '    <button type="submit" name="action" value="save" class="filter-btn">💾 ' . __('save09') . '</button>' . "\n";
+        $return .= '  </div>' . "\n";
+        $return .= '  <div class="filter-load-row">' . "\n";
+        $return .= '    ' . $this->ListSaved() . "\n";
+        $return .= '    <div class="filter-saved-actions">' . "\n";
+        $return .= '      <button type="submit" name="action" value="load" class="filter-btn filter-btn-load">📂 ' . __('load09') . '</button>' . "\n";
+        $return .= '      <button type="submit" name="action" value="delete" class="filter-btn filter-btn-del" onclick="return confirm(\'Delete saved filter?\');">🗑️</button>' . "\n";
+        $return .= '    </div>' . "\n";
+        $return .= '  </div>' . "\n";
+        $return .= '</div>' . "\n";
+
         $return .= '<input type="hidden" name="token" value="' . $_SESSION['token'] . '">' . "\n";
         $return .= '<input type="hidden" name="formtoken" value="' . generateFormToken('/filter.inc.php form token') . '">' . "\n";
         $return .= '</form>' . "\n";

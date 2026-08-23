@@ -74,6 +74,10 @@ if (isset($_POST['action']) || isset($_GET['action'])) {
         case 'remove':
             $filter->Remove(sanitizeInput($_GET['column']));
             break;
+        case 'clear':
+            $filter->item = [];
+            $filter->display_last = 0;
+            break;
         case 'destroy':
             session_destroy();
             echo "Session destroyed\n";
