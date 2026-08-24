@@ -2449,20 +2449,17 @@ function generatePager($sql)
     // then we fetch the relevant records for the current page
     list($from, $to) = $pager->getOffsetByPageId();
 
-    echo '<table cellspacing="1" class="mail" >
-<tr>
-<th colspan="5">' . __('disppage03') . ' ' . $pager->getCurrentPageID() . ' ' . __('of03') . ' ' . $pager->numPages() . ' - ' . __('records03') . ' ' . $from . ' ' . __('to0203') . ' ' . $to . ' ' . __('of03') . ' ' . $pager->numItems() . '</th>
-</tr>
-<tr>
-<td align="center">' . "\n";
+    echo '<table cellspacing="1" class="mail pager-table">' . "\n";
+    echo '<tr>' . "\n";
+    echo '<th colspan="5">' . __('disppage03') . ' ' . $pager->getCurrentPageID() . ' ' . __('of03') . ' ' . $pager->numPages() . ' - ' . __('records03') . ' ' . $from . ' ' . __('to0203') . ' ' . $to . ' ' . __('of03') . ' ' . $pager->numItems() . '</th>' . "\n";
+    echo '</tr>' . "\n";
+    echo '<tr>' . "\n";
+    echo '<td align="center">' . "\n";
     // show the links
     echo $pager->links;
-    echo '</td>
-            </tr>
-      </table>
-</tr>
-<tr>
-  <td colspan="' . ('A' === $_SESSION['user_type'] ? '5' : '4') . '">';
+    echo '</td>' . "\n";
+    echo '</tr>' . "\n";
+    echo '</table>' . "\n";
 
     return $from;
 }
@@ -3116,20 +3113,17 @@ function dbtable($sql, $title = null, $pager = false, $operations = false)
         // then we fetch the relevant records for the current page
         list($from, $to) = $pager->getOffsetByPageId();
 
-        echo '<table cellspacing="1" class="mail" >
-    <tr>
-   <th colspan="5">' . __('disppage03') . ' ' . $pager->getCurrentPageID() . ' ' . __('of03') . ' ' . $pager->numPages() . ' - ' . __('records03') . ' ' . $from . ' ' . __('to0203') . ' ' . $to . ' ' . __('of03') . ' ' . $pager->numItems() . '</th>
-  </tr>
-  <tr>
-  <td align="center">' . "\n";
+        echo '<table cellspacing="1" class="mail pager-table">' . "\n";
+        echo '  <tr>' . "\n";
+        echo '    <th colspan="5">' . __('disppage03') . ' ' . $pager->getCurrentPageID() . ' ' . __('of03') . ' ' . $pager->numPages() . ' - ' . __('records03') . ' ' . $from . ' ' . __('to0203') . ' ' . $to . ' ' . __('of03') . ' ' . $pager->numItems() . '</th>' . "\n";
+        echo '  </tr>' . "\n";
+        echo '  <tr>' . "\n";
+        echo '    <td align="center">' . "\n";
         // show the links
         echo $pager->links;
-        echo '</td>
-                </tr>
-          </table>
-</tr>
-<tr>
-  <td colspan="' . ('A' === $_SESSION['user_type'] ? '5' : '4') . '">';
+        echo '    </td>' . "\n";
+        echo '  </tr>' . "\n";
+        echo '</table>' . "\n";
 
         // Re-run the original query and limit the rows
         $sql .= ' LIMIT ' . ($from - 1) . ',' . MAX_RESULTS;
@@ -3211,20 +3205,17 @@ function dbtable($sql, $title = null, $pager = false, $operations = false)
         // then we fetch the relevant records for the current page
         list($from, $to) = $pager->getOffsetByPageId();
 
-        echo '<table cellspacing="1" class="mail" >
-    <tr>
-   <th colspan="5">' . __('disppage03') . ' ' . $pager->getCurrentPageID() . ' ' . __('of03') . ' ' . $pager->numPages() . ' - ' . __('records03') . ' ' . $from . ' ' . __('to0203') . ' ' . $to . ' ' . __('of03') . ' ' . $pager->numItems() . '</th>
-  </tr>
-  <tr>
-  <td align="center">' . "\n";
+        echo '<table cellspacing="1" class="mail pager-table">' . "\n";
+        echo '  <tr>' . "\n";
+        echo '    <th colspan="5">' . __('disppage03') . ' ' . $pager->getCurrentPageID() . ' ' . __('of03') . ' ' . $pager->numPages() . ' - ' . __('records03') . ' ' . $from . ' ' . __('to0203') . ' ' . $to . ' ' . __('of03') . ' ' . $pager->numItems() . '</th>' . "\n";
+        echo '  </tr>' . "\n";
+        echo '  <tr>' . "\n";
+        echo '    <td align="center">' . "\n";
         // show the links
         echo $pager->links;
-        echo '</td>
-                </tr>
-          </table>
-</tr>
-<tr>
-  <td colspan="' . ('A' === $_SESSION['user_type'] ? '5' : '4') . '">';
+        echo '    </td>' . "\n";
+        echo '  </tr>' . "\n";
+        echo '</table>' . "\n";
     }
 }
 

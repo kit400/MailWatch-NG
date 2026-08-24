@@ -33,7 +33,7 @@ require_once __DIR__ . '/functions.php';
 require __DIR__ . '/login.function.php';
 
 // add the header information such as the logo, search, menu, ....
-$filter = html_start(__('messlisting16'), 0, false, false);
+$filter = html_start(__('messlisting16'), 0, false, true);
 
 if (false === checkToken($_GET['token'])) {
     header('Location: login.php?error=pagetimeout');
