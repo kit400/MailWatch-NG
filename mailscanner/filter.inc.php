@@ -258,7 +258,7 @@ WHERE
         // Expand Rail (visible when sidebar is minimized)
         echo '  <div class="sidebar-expand-rail" onclick="toggleReportsSidebar()" title="Expand Sidebar">' . "\n";
         echo '    <button type="button" class="rail-btn">▶</button>' . "\n";
-        echo '    <span class="rail-label">📋 ' . __('reports09') . ' &amp; ' . __('search03', false) . '</span>' . "\n";
+        echo '    <span class="rail-label">📋 ' . __('reports03') . '</span>' . "\n";
         echo '  </div>' . "\n";
 
         // 1. Collapsible Sidebar
@@ -266,7 +266,7 @@ WHERE
         echo '    <div class="sidebar-header">' . "\n";
         echo '      <div class="sidebar-title">' . "\n";
         echo '        <span class="sidebar-icon">📊</span>' . "\n";
-        echo '        <span>' . __('reports09') . ' &amp; ' . __('search03', false) . '</span>' . "\n";
+        echo '        <span>' . __('reports03') . '</span>' . "\n";
         echo '      </div>' . "\n";
         echo '      <button type="button" class="sidebar-toggle-btn" onclick="toggleReportsSidebar()" title="Minimize sidebar">◀</button>' . "\n";
         echo '    </div>' . "\n";
