@@ -229,53 +229,88 @@ class Filter
     }
 
     /**
+     * Ensure default standard reports list is populated
+     *
      * @param string $token
+     * @return void
      */
-    public function Display($token)
+    public function ensureReportsPopulated($token = '')
     {
-        $query = "
-SELECT
- DATE_FORMAT(MIN(date),'" . DATE_FORMAT . "') AS oldest,
- DATE_FORMAT(MAX(date),'" . DATE_FORMAT . "') AS newest,
- COUNT(date) AS messages,
- SUM(CASE WHEN virusinfected>0 THEN 1 ELSE 0 END) AS infected,
- SUM(CASE WHEN isspam>0 THEN 1 ELSE 0 END) AS spam
-FROM
- maillog
-WHERE
- 1=1
-" . $this->CreateSQL();
-        $sth = dbquery($query);
-        $stats = $sth ? $sth->fetch_object() : null;
-        $totalMsgs = $stats ? number_format($stats->messages) : '0';
-        $oldestDate = ($stats && $stats->oldest) ? $stats->oldest : 'N/A';
-        $newestDate = ($stats && $stats->newest) ? $stats->newest : 'N/A';
-        $infectedCount = ($stats && $stats->infected) ? number_format($stats->infected) : '0';
-        $spamCount = ($stats && $stats->spam) ? number_format($stats->spam) : '0';
+        if (!empty($this->reports)) {
+            return;
+        }
+        $this->AddReport('rep_message_listing.php', __('messlisting14', false) ?: 'Message Listing', true);
+        $this->AddReport('rep_message_ops.php', __('messop14', false) ?: 'Message Operations', true);
+        $this->AddReport('rep_total_mail_by_date.php', __('messdate14', false) ?: 'Total Mail by Date');
+        $this->AddReport('rep_previous_day.php', __('messhours14', false) ?: 'Total Mail by Hour');
+        $this->AddReport('rep_top_mail_relays.php', __('topmailrelay14', false) ?: 'Top Mail Relays');
+        $this->AddReport('rep_top_viruses.php', __('topvirus14', false) ?: 'Top Viruses');
+        $this->AddReport('rep_viruses.php', __('virusrepor14', false) ?: 'Virus Report');
+        $this->AddReport('rep_top_senders_by_quantity.php', __('topsendersqt14', false) ?: 'Top Senders by Quantity');
+        $this->AddReport('rep_top_senders_by_volume.php', __('topsendersvol14', false) ?: 'Top Senders by Volume');
+        $this->AddReport('rep_top_recipients_by_quantity.php', __('toprecipqt14', false) ?: 'Top Recipients by Quantity');
+        $this->AddReport('rep_top_recipients_by_volume.php', __('toprecipvol14', false) ?: 'Top Recipients by Volume');
+        $this->AddReport('rep_top_sender_domains_by_quantity.php', __('topsendersdomqt14', false) ?: 'Top Sender Domains by Quantity');
+        $this->AddReport('rep_top_sender_domains_by_volume.php', __('topsendersdomvol14', false) ?: 'Top Sender Domains by Volume');
+        $this->AddReport('rep_top_recipient_domains_by_quantity.php', __('toprecipdomqt14', false) ?: 'Top Recipient Domains by Quantity');
+        $this->AddReport('rep_top_recipient_domains_by_volume.php', __('toprecipdomvol14', false) ?: 'Top Recipient Domains by Volume');
 
-        echo '<div class="reports-layout" id="reportsLayout">' . "\n";
+        if (true === get_conf_truefalse('UseSpamAssassin')) {
+            $this->AddReport('rep_sa_score_dist.php', __('assassinscoredist14', false) ?: 'SpamAssassin Score Distribution');
+            $this->AddReport('rep_sa_rule_hits.php', __('assassinrulhit14', false) ?: 'SpamAssassin Rule Hits');
+        }
+        if (true === get_conf_truefalse('MCPChecks')) {
+            $this->AddReport('rep_mcp_score_dist.php', __('mcpscoredist14', false) ?: 'MCP Score Distribution');
+            $this->AddReport('rep_mcp_rule_hits.php', __('mcprulehit14', false) ?: 'MCP Rule Hits');
+        }
+        if (isset($_SESSION['user_type']) && 'A' === $_SESSION['user_type']) {
+            $this->AddReport('rep_audit_log.php', __('auditlog14', false) ?: 'Audit Log', true);
+        }
+    }
 
-        // Expand Rail (visible when sidebar is minimized)
-        echo '  <div class="sidebar-expand-rail" onclick="toggleReportsSidebar()" title="Expand Sidebar">' . "\n";
-        echo '    <button type="button" class="rail-btn">▶</button>' . "\n";
-        echo '    <span class="rail-label">📋 ' . __('reports03') . '</span>' . "\n";
-        echo '  </div>' . "\n";
+    /**
+     * Render the reports sidebar HTML (Mini rail + Full panel with hover overlay)
+     *
+     * @param string $token
+     * @return string
+     */
+    public function DisplaySidebarHtml($token = '')
+    {
+        $this->ensureReportsPopulated($token);
 
-        // 1. Collapsible Sidebar
-        echo '  <aside class="reports-sidebar" id="reportsSidebar">' . "\n";
-        echo '    <div class="sidebar-header">' . "\n";
-        echo '      <div class="sidebar-title">' . "\n";
-        echo '        <span class="sidebar-icon">📊</span>' . "\n";
-        echo '        <span>' . __('reports03') . '</span>' . "\n";
-        echo '      </div>' . "\n";
-        echo '      <button type="button" class="sidebar-toggle-btn" onclick="toggleReportsSidebar()" title="Minimize sidebar">◀</button>' . "\n";
-        echo '    </div>' . "\n";
+        $html = '  <aside class="reports-sidebar" id="reportsSidebar">' . "\n";
 
-        echo '    <div class="sidebar-content">' . "\n";
+        // 1. Narrow icon rail (visible when collapsed/minimized)
+        $html .= '    <div class="sidebar-mini-rail" onclick="toggleReportsSidebar()" title="Expand Sidebar">' . "\n";
+        $html .= '      <button type="button" class="mini-rail-btn" title="Expand Sidebar">▶</button>' . "\n";
+        $html .= '      <div class="mini-rail-icons">' . "\n";
+        $html .= '        <span class="mini-icon" title="' . __('reports03') . '">📊</span>' . "\n";
+        $html .= '        <span class="mini-icon" title="' . __('reports09') . '">📋</span>' . "\n";
+        $html .= '        <span class="mini-icon" title="' . __('addfilter09') . '">🔍</span>' . "\n";
+        if (isset($_SESSION['filter_history']) && count($_SESSION['filter_history']) > 0) {
+            $html .= '        <span class="mini-icon" title="' . __('filterhistory09') . '">🕒</span>' . "\n";
+        }
+        $html .= '      </div>' . "\n";
+        $html .= '    </div>' . "\n";
+
+        // 2. Full Sidebar Panel (rendered normally or as overlay on hover in minimized mode)
+        $html .= '    <div class="sidebar-full-panel">' . "\n";
+        $html .= '      <div class="sidebar-header">' . "\n";
+        $html .= '        <div class="sidebar-title">' . "\n";
+        $html .= '          <span class="sidebar-icon">📊</span>' . "\n";
+        $html .= '          <span>' . __('reports03') . '</span>' . "\n";
+        $html .= '        </div>' . "\n";
+        $html .= '        <button type="button" class="sidebar-toggle-btn" onclick="toggleReportsSidebar()" title="Collapse sidebar">◀</button>' . "\n";
+        $html .= '      </div>' . "\n";
+
+        $html .= '      <div class="sidebar-content">' . "\n";
+
         // Section A: Reports List
-        echo '      <div class="sidebar-section">' . "\n";
-        echo '        <div class="sidebar-section-title">📋 ' . __('reports09') . '</div>' . "\n";
-        echo '        <ul class="sidebar-reports-menu">' . "\n";
+        $html .= '        <div class="sidebar-section">' . "\n";
+        $html .= '          <div class="sidebar-section-title">📋 ' . __('reports09') . '</div>' . "\n";
+        $html .= '          <ul class="sidebar-reports-menu">' . "\n";
+        $currentPage = basename($_SERVER['PHP_SELF']);
+
         foreach ($this->reports as $report) {
             $url = $report['url'];
             if ($report['useToken']) {
@@ -298,24 +333,58 @@ WHERE
                 $icon = '📜';
             }
 
-            echo '          <li class="sidebar-report-item"><a href="' . $url . '" class="sidebar-report-link"><span class="rep-icon">' . $icon . '</span> <span class="rep-title">' . $report['description'] . '</span></a></li>' . "\n";
+            $isActiveRep = ($currentPage === explode('?', $report['url'])[0]);
+            $activeClass = $isActiveRep ? ' is-active' : '';
+
+            $html .= '            <li class="sidebar-report-item"><a href="' . $url . '" class="sidebar-report-link' . $activeClass . '"><span class="rep-icon">' . $icon . '</span> <span class="rep-title">' . $report['description'] . '</span></a></li>' . "\n";
         }
-        echo '        </ul>' . "\n";
-        echo '      </div>' . "\n";
+        $html .= '          </ul>' . "\n";
+        $html .= '        </div>' . "\n";
 
         // Section B: Filter Builder
-        echo '      <div class="sidebar-section">' . "\n";
-        echo '        <div class="sidebar-section-title">🔍 ' . __('addfilter09') . '</div>' . "\n";
-        echo $this->DisplayForm();
-        echo '      </div>' . "\n";
+        $html .= '        <div class="sidebar-section">' . "\n";
+        $html .= '          <div class="sidebar-section-title">🔍 ' . __('addfilter09') . '</div>' . "\n";
+        $html .= '          ' . $this->DisplayForm() . "\n";
+        $html .= '        </div>' . "\n";
 
         // Section C: Filter History
-        echo $this->DisplayHistoryHtml($token);
-        echo '    </div>' . "\n"; // End sidebar-content
-        echo '  </aside>' . "\n";
+        $html .= $this->DisplayHistoryHtml($token);
 
-        // 2. Main Content Dashboard
-        echo '  <main class="reports-main-content">' . "\n";
+        $html .= '      </div>' . "\n"; // End sidebar-content
+        $html .= '    </div>' . "\n"; // End sidebar-full-panel
+        $html .= '  </aside>' . "\n";
+
+        return $html;
+    }
+
+    /**
+     * Render the reports dashboard main content (Stats + Portal Grid)
+     *
+     * @param string $token
+     * @return void
+     */
+    public function DisplayDashboardHtml($token = '')
+    {
+        $this->ensureReportsPopulated($token);
+
+        // Fetch quick summary numbers
+        $query = "
+SELECT
+ COUNT(date) AS messages,
+ SUM(CASE WHEN virusinfected>0 THEN 1 ELSE 0 END) AS infected,
+ SUM(CASE WHEN isspam>0 THEN 1 ELSE 0 END) AS spam
+FROM
+ maillog
+WHERE
+ 1=1
+" . $this->CreateSQL();
+        $sth = dbquery($query);
+        $stats = $sth ? $sth->fetch_object() : null;
+        $totalMsgs = $stats ? number_format($stats->messages) : '0';
+        $oldestDate = ($stats && $stats->oldest) ? $stats->oldest : 'N/A';
+        $newestDate = ($stats && $stats->newest) ? $stats->newest : 'N/A';
+        $infectedCount = ($stats && $stats->infected) ? number_format($stats->infected) : '0';
+        $spamCount = ($stats && $stats->spam) ? number_format($stats->spam) : '0';
 
         // Dashboard Stats Bar
         echo '    <div class="reports-stats-grid">' . "\n";
@@ -386,74 +455,14 @@ WHERE
             echo '      </a>' . "\n";
         }
         echo '    </div>' . "\n";
-
-        echo '  </main>' . "\n";
-        echo '</div>' . "\n";
-
-        // JavaScript for persistence & collapse & history saving
-        echo '<script type="text/javascript">
-function toggleReportsSidebar() {
-    var l = document.getElementById("reportsLayout");
-    if (!l) return;
-    if (l.classList.contains("sidebar-minimized")) {
-        l.classList.remove("sidebar-minimized");
-        try { localStorage.setItem("mw_reports_sidebar_minimized", "0"); } catch(e) {}
-    } else {
-        l.classList.add("sidebar-minimized");
-        try { localStorage.setItem("mw_reports_sidebar_minimized", "1"); } catch(e) {}
     }
-}
-function promptSaveHistory(idx, defaultName) {
-    var cleanName = defaultName.replace(/[\"\\\']/g, "").substring(0, 25);
-    var name = prompt("Enter a preset name to save this filter:", cleanName);
-    if (name && name.trim() !== "") {
-        var form = document.createElement("form");
-        form.method = "POST";
-        form.action = "reports.php";
 
-        var fToken = document.createElement("input");
-        fToken.type = "hidden";
-        fToken.name = "formtoken";
-        fToken.value = "' . generateFormToken('/filter.inc.php form token') . '";
-        form.appendChild(fToken);
-
-        var token = document.createElement("input");
-        token.type = "hidden";
-        token.name = "token";
-        token.value = "' . $token . '";
-        form.appendChild(token);
-
-        var act = document.createElement("input");
-        act.type = "hidden";
-        act.name = "action";
-        act.value = "save_history";
-        form.appendChild(act);
-
-        var hIdx = document.createElement("input");
-        hIdx.type = "hidden";
-        hIdx.name = "history_index";
-        hIdx.value = idx;
-        form.appendChild(hIdx);
-
-        var sName = document.createElement("input");
-        sName.type = "hidden";
-        sName.name = "save_as";
-        sName.value = name.trim();
-        form.appendChild(sName);
-
-        document.body.appendChild(form);
-        form.submit();
-    }
-}
-(function() {
-    try {
-        if (localStorage.getItem("mw_reports_sidebar_minimized") === "1") {
-            var l = document.getElementById("reportsLayout");
-            if (l) l.classList.add("sidebar-minimized");
-        }
-    } catch(e) {}
-})();
-</script>' . "\n";
+    /**
+     * @param string $token
+     */
+    public function Display($token = '')
+    {
+        $this->DisplayDashboardHtml($token);
     }
 
     /**

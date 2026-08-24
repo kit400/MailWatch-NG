@@ -585,6 +585,16 @@ function toggleHeaderWidgets() {
         echo SystemNotifications::renderNotificationModalHtml($_SESSION['myusername'] ?? '', $_SESSION['user_type'] ?? 'U', $_SESSION['token'] ?? '');
     }
 
+    if ($isReportsPage) {
+        if (!isset($_SESSION['filter']) || !($_SESSION['filter'] instanceof Filter)) {
+            $_SESSION['filter'] = new Filter();
+        }
+        $_SESSION['filter']->ensureReportsPopulated($_SESSION['token'] ?? '');
+        echo '<div class="reports-layout" id="reportsLayout">' . "\n";
+        echo $_SESSION['filter']->DisplaySidebarHtml($_SESSION['token'] ?? '');
+        echo '  <main class="reports-main-content" id="reportsMainContent">' . "\n";
+    }
+
     if ($report) {
         $return_items = $filter;
     } else {
@@ -1256,6 +1266,86 @@ function updateClock() {
  */
 function html_end($footer = '')
 {
+    $currentPage = basename($_SERVER['PHP_SELF']);
+    $isReportsPage = ('reports.php' === $currentPage || 0 === strpos($currentPage, 'rep_'));
+    if ($isReportsPage) {
+        echo '  </main>' . "\n";
+        echo '</div>' . "\n";
+        echo '<script type="text/javascript">
+function toggleReportsSidebar() {
+    var l = document.getElementById("reportsLayout");
+    if (!l) return;
+    l.classList.toggle("sidebar-minimized");
+    var isMin = l.classList.contains("sidebar-minimized");
+    try {
+        localStorage.setItem("mw_reports_sidebar_minimized", isMin ? "1" : "0");
+    } catch(e) {}
+    setTimeout(function() {
+        if (window.echarts) {
+            document.querySelectorAll(".chart-echarts, #trafficgraph, .reportGraph, .lineGraph").forEach(function(el) {
+                var inst = echarts.getInstanceByDom(el);
+                if (inst) inst.resize();
+            });
+        }
+        window.dispatchEvent(new Event("resize"));
+    }, 150);
+    setTimeout(function() {
+        window.dispatchEvent(new Event("resize"));
+    }, 350);
+}
+function promptSaveHistory(idx, defaultName) {
+    var cleanName = defaultName.replace(/[\"\\\']/g, "").substring(0, 25);
+    var name = prompt("Enter a preset name to save this filter:", cleanName);
+    if (name && name.trim() !== "") {
+        var form = document.createElement("form");
+        form.method = "POST";
+        form.action = "reports.php";
+
+        var fToken = document.createElement("input");
+        fToken.type = "hidden";
+        fToken.name = "formtoken";
+        fToken.value = "' . generateFormToken('/filter.inc.php form token') . '";
+        form.appendChild(fToken);
+
+        var token = document.createElement("input");
+        token.type = "hidden";
+        token.name = "token";
+        token.value = "' . ($_SESSION['token'] ?? '') . '";
+        form.appendChild(token);
+
+        var act = document.createElement("input");
+        act.type = "hidden";
+        act.name = "action";
+        act.value = "save_history";
+        form.appendChild(act);
+
+        var hIdx = document.createElement("input");
+        hIdx.type = "hidden";
+        hIdx.name = "history_index";
+        hIdx.value = idx;
+        form.appendChild(hIdx);
+
+        var sName = document.createElement("input");
+        sName.type = "hidden";
+        sName.name = "save_as";
+        sName.value = name.trim();
+        form.appendChild(sName);
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+(function() {
+    try {
+        if (localStorage.getItem("mw_reports_sidebar_minimized") === "1") {
+            var l = document.getElementById("reportsLayout");
+            if (l) l.classList.add("sidebar-minimized");
+        }
+    } catch(e) {}
+})();
+</script>' . "\n";
+    }
+
     echo '</td>' . "\n";
     echo '</tr>' . "\n";
     echo '</table>' . "\n";

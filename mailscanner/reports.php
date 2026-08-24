@@ -186,7 +186,7 @@ if (true === get_conf_truefalse('MCPChecks')) {
 if ('A' === $_SESSION['user_type']) {
     $filter->AddReport('rep_audit_log.php', __('auditlog14'), true);
 }
-$filter->Display($_SESSION['token']);
+$filter->DisplayDashboardHtml($_SESSION['token']);
 
 // Add footer
 html_end();

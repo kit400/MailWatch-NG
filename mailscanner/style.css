@@ -1924,7 +1924,7 @@ p.footer {
 }
 
 /* ==========================================================================
-   Reports Section: Collapsible Sidebar & Modern Dashboard
+   Reports Section: Collapsible Sidebar & Hover Overlay
    ========================================================================== */
 .reports-layout {
     display: flex;
@@ -1934,26 +1934,38 @@ p.footer {
     align-items: stretch;
     box-sizing: border-box;
     position: relative;
-    margin-top: 2px;
+    margin-top: 4px;
 }
 
-.sidebar-expand-rail {
-    display: none;
-}
-
+/* Sidebar in default expanded state */
 .reports-sidebar {
     width: 290px;
     min-width: 290px;
     max-width: 290px;
+    flex: 0 0 290px;
+    position: relative;
+    z-index: 100;
+    transition: width 0.2s cubic-bezier(0.16, 1, 0.3, 1), 
+                min-width 0.2s cubic-bezier(0.16, 1, 0.3, 1), 
+                max-width 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                flex 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-sizing: border-box;
+}
+
+.sidebar-mini-rail {
+    display: none;
+}
+
+.sidebar-full-panel {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    transition: all 0.2s ease;
     box-sizing: border-box;
+    overflow: hidden;
 }
 
 .sidebar-header {
@@ -2001,6 +2013,8 @@ p.footer {
     flex-direction: column;
     gap: 14px;
     box-sizing: border-box;
+    max-height: calc(100vh - 160px);
+    overflow-y: auto;
 }
 
 .sidebar-section-title {
@@ -2045,6 +2059,13 @@ p.footer {
     background: #f0f7fc;
     color: #1f6cb0;
     font-weight: 600;
+}
+
+.sidebar-report-link.is-active {
+    background: #e0f0fe;
+    color: #0369a1;
+    font-weight: 700;
+    border-left: 3px solid #1f6cb0;
 }
 
 .rep-icon {
@@ -2165,55 +2186,124 @@ p.footer {
     align-items: center;
 }
 
-/* Sidebar Minimized / Collapsed State */
+/* ==========================================================================
+   Sidebar Minimized State (Narrow Rail + Hover Overlay)
+   ========================================================================== */
 .reports-layout.sidebar-minimized .reports-sidebar {
-    display: none;
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    flex: 0 0 44px;
+    overflow: visible;
 }
 
-.reports-layout.sidebar-minimized .sidebar-expand-rail {
-    display: inline-flex;
+.reports-layout.sidebar-minimized .sidebar-mini-rail {
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
+    gap: 12px;
+    width: 44px;
+    min-height: 400px;
+    height: 100%;
+    padding: 8px 0;
     background: #ffffff;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    box-sizing: border-box;
     cursor: pointer;
-    height: fit-content;
-    font-size: 11.5px;
-    font-weight: 600;
-    color: #1f6cb0;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    transition: all 0.15s;
-    white-space: nowrap;
+    transition: background 0.15s, border-color 0.15s;
 }
 
-.reports-layout.sidebar-minimized .sidebar-expand-rail:hover {
-    background: #f0f7fc;
+.reports-layout.sidebar-minimized .sidebar-mini-rail:hover {
+    background: #f8fafc;
     border-color: #1f6cb0;
 }
 
-.rail-btn {
+.mini-rail-btn {
     background: #1f6cb0;
     color: #ffffff;
     border: none;
-    border-radius: 3px;
-    width: 18px;
-    height: 18px;
+    border-radius: 4px;
+    width: 26px;
+    height: 26px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 9px;
+    font-size: 11px;
     cursor: pointer;
+    transition: background 0.15s;
 }
 
-/* Reports Main Content & Dashboard */
+.mini-rail-btn:hover {
+    background: #185890;
+}
+
+.mini-rail-icons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    margin-top: 6px;
+}
+
+.mini-icon {
+    font-size: 16px;
+    line-height: 1;
+    opacity: 0.75;
+    transition: opacity 0.15s, transform 0.15s;
+}
+
+.mini-icon:hover {
+    opacity: 1;
+    transform: scale(1.15);
+}
+
+.reports-layout.sidebar-minimized .sidebar-full-panel {
+    display: none;
+}
+
+/* Hover-to-expand Overlay in Minimized Mode */
+.reports-layout.sidebar-minimized .reports-sidebar:hover .sidebar-full-panel {
+    display: flex !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 300px;
+    max-height: calc(100vh - 120px);
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22), 0 2px 8px rgba(0, 0, 0, 0.08);
+    z-index: 9999;
+    animation: sidebarHoverSlideIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes sidebarHoverSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Main Content Area */
 .reports-main-content {
     flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 12px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-sizing: border-box;
+    width: calc(100% - 304px);
+}
+
+.reports-layout.sidebar-minimized .reports-main-content {
+    width: calc(100% - 58px);
 }
 
 .reports-stats-grid {
