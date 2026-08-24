@@ -3734,23 +3734,274 @@ th.col-sortable.is-sorted {
     transition: opacity 0.15s ease, color 0.15s ease;
 }
 
-.sort-arrow.sort-asc,
+.sort-arrow.sort-asc {
+    color: #1f6cb0;
+}
+
 .sort-arrow.sort-desc {
     color: #1f6cb0;
-    font-weight: 800;
-    opacity: 1;
 }
 
 .sort-arrow.sort-neutral {
-    color: #cbd5e1;
+    color: #94a3b8;
+    opacity: 0.5;
+}
+
+.sort-header-link:hover .sort-arrow.sort-neutral {
+    opacity: 1;
+    color: #1f6cb0;
+}
+
+/* ==========================================================================
+   Quarantine Monthly Calendar View
+   ========================================================================== */
+.quarantine-calendar-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    margin: 4px 0 14px 0;
+    box-sizing: border-box;
+}
+
+.quarantine-kpi-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 8px;
+}
+
+.quarantine-kpi-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 7px 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.quarantine-kpi-icon {
+    font-size: 20px;
+    line-height: 1;
+}
+
+.quarantine-kpi-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.quarantine-kpi-label {
     font-size: 10px;
-    opacity: 0;
-}
-
-th.col-sortable:hover .sort-arrow.sort-neutral {
-    opacity: 0.7;
+    font-weight: 600;
     color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
 }
 
+.quarantine-kpi-value {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+}
 
+.quarantine-calendar-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 7px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
 
+.quarantine-calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 12px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.quarantine-month-title {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.quarantine-nav-controls {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.quarantine-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px 8px;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #334155;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+
+.quarantine-nav-btn:hover {
+    background: #f1f5f9;
+    border-color: #1f6cb0;
+    color: #1f6cb0;
+}
+
+.quarantine-nav-btn.today-btn {
+    background: #1f6cb0;
+    color: #ffffff;
+    border-color: #1f6cb0;
+}
+
+.quarantine-nav-btn.today-btn:hover {
+    background: #185890;
+}
+
+/* 7-column Calendar Grid */
+.quarantine-calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    width: 100%;
+    box-sizing: border-box;
+    background: #e2e8f0;
+    gap: 1px;
+}
+
+.quarantine-day-header {
+    background: #f1f5f9;
+    padding: 5px 3px;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.quarantine-day-header.weekend {
+    color: #94a3b8;
+}
+
+.quarantine-day-cell {
+    background: #ffffff;
+    min-height: 64px;
+    padding: 4px 5px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-sizing: border-box;
+    position: relative;
+    transition: background 0.12s ease;
+}
+
+.quarantine-day-cell:hover {
+    background: #f8fafc;
+}
+
+.quarantine-day-cell.other-month {
+    background: #fafbfc;
+    opacity: 0.4;
+}
+
+.quarantine-day-cell.today {
+    background: #f0f9ff;
+    box-shadow: inset 0 0 0 1.5px #0284c7;
+}
+
+.quarantine-day-cell.selected {
+    background: #e0f2fe;
+    box-shadow: inset 0 0 0 2px #1f6cb0;
+}
+
+.quarantine-cell-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.quarantine-day-num {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #334155;
+    line-height: 1;
+}
+
+.quarantine-day-cell.today .quarantine-day-num {
+    color: #0284c7;
+    background: #e0f2fe;
+    padding: 1px 4px;
+    border-radius: 3px;
+}
+
+.quarantine-cell-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 3px;
+}
+
+.quarantine-count-badge {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 4px;
+    border-radius: 3px;
+    background: #fee2e2;
+    color: #991b1b;
+    font-size: 9.5px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.12s ease;
+}
+
+.quarantine-count-badge:hover {
+    background: #fca5a5;
+    color: #7f1d1d;
+    transform: translateY(-1px);
+}
+
+.quarantine-sub-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+}
+
+.quarantine-sub-tag {
+    font-size: 8.5px;
+    font-weight: 600;
+    padding: 1px 3px;
+    border-radius: 3px;
+    line-height: 1;
+}
+
+.quarantine-sub-tag.virus { background: #fee2e2; color: #b91c1c; }
+.quarantine-sub-tag.spam { background: #fef3c7; color: #b45309; }
+.quarantine-sub-tag.mcp { background: #ede9fe; color: #6d28d9; }
+
+.quarantine-date-view-header {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 7px 12px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
