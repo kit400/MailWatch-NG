@@ -330,6 +330,9 @@ return [
     // 09-filter.inc.php
     'activefilters09' => 'Active Filters',
     'addfilter09' => 'Add Filter',
+    'column09' => 'Field',
+    'operator09' => 'Condition',
+    'value09' => 'Value',
     'loadsavef09' => 'Load/Save Filter',
     'tosetdate09' => 'To set date you must use YYYY-mm-dd format',
     'oldrecord09' => 'Oldest record:',
