@@ -537,6 +537,11 @@ return [
     'auditlog13' => 'Ran SpamAssassin Rules Description Update',
 
     // 14-reports.php
+    'traffic14' => 'Traffic & Volumes',
+    'senders14' => 'Senders & Relays',
+    'recipients14' => 'Recipients & Domains',
+    'security14' => 'Security & Threat Rules',
+    'messagelisting14' => 'Message Log & Audit',
     'messlisting14' => 'Message Listing',
     'messop14' => 'Message Operations',
     'messdate14' => 'Total Messages by Date',
