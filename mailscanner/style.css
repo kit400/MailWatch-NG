@@ -2008,27 +2008,126 @@ p.footer {
 }
 
 .sidebar-content {
-    padding: 10px 12px;
+    padding: 8px 10px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 8px;
     box-sizing: border-box;
     max-height: calc(100vh - 160px);
     overflow-y: auto;
 }
 
-.sidebar-section-title {
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-    color: #64748b;
-    margin-bottom: 6px;
-    border-bottom: 1px solid #f1f5f9;
-    padding-bottom: 4px;
+/* Sidebar Nav List & Accordion Dropdowns matching kit4mail (111.html) */
+.sidebar-nav-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
 }
 
-.sidebar-reports-menu {
+.sidebar-nav-item {
+    margin: 0;
+    padding: 0;
+}
+
+.sidebar-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    text-decoration: none;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.15s ease;
+}
+
+.sidebar-nav-link:hover,
+.sidebar-nav-item.is-active .sidebar-nav-link {
+    background: #e0f2fe;
+    color: #0284c7;
+}
+
+.nav-icon {
+    font-size: 14px;
+    line-height: 1;
+    font-style: normal;
+}
+
+/* Sidebar Dropdown Accordion */
+.sidebar-dropdown {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.sidebar-dropdown > a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    text-decoration: none;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 600;
+    background: #f8fafc;
+    border: 1px solid #f1f5f9;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.sidebar-dropdown > a:hover {
+    background: #f1f5f9;
+    color: #1f6cb0;
+    border-color: #e2e8f0;
+}
+
+.sidebar-dropdown.active > a {
+    background: #edf5fc;
+    color: #1f6cb0;
+    border-color: #cbd5e1;
+}
+
+/* Chevron arrow on right */
+.sidebar-dropdown > a:after {
+    content: "▶";
+    font-size: 8px;
+    margin-left: auto;
+    color: #94a3b8;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sidebar-dropdown.active > a:after {
+    transform: rotate(90deg);
+    color: #1f6cb0;
+}
+
+.sidebar-submenu {
+    display: none;
+    background: #ffffff;
+    border-left: 2px solid #1f6cb0;
+    margin-left: 14px;
+    padding: 4px 0 6px 0;
+}
+
+.sidebar-dropdown.active .sidebar-submenu {
+    display: block;
+    animation: submenuFadeIn 0.2s ease;
+}
+
+@keyframes submenuFadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.sidebar-submenu ul {
     list-style: none;
     padding: 0;
     margin: 0;
@@ -2037,40 +2136,76 @@ p.footer {
     gap: 2px;
 }
 
-.sidebar-report-item {
+.sidebar-submenu li {
     margin: 0;
     padding: 0;
 }
 
-.sidebar-report-link {
+.sidebar-submenu li a {
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 8px;
+    padding: 4px 8px 4px 10px;
     border-radius: 4px;
     text-decoration: none;
-    color: #334155;
+    color: #475569;
     font-size: 11.5px;
     font-weight: 500;
-    transition: all 0.12s;
+    transition: all 0.12s ease;
 }
 
-.sidebar-report-link:hover {
+.sidebar-submenu li a:hover {
     background: #f0f7fc;
     color: #1f6cb0;
     font-weight: 600;
+    padding-left: 13px;
 }
 
-.sidebar-report-link.is-active {
+.sidebar-submenu li.is-active a {
     background: #e0f0fe;
     color: #0369a1;
     font-weight: 700;
-    border-left: 3px solid #1f6cb0;
 }
 
-.rep-icon {
-    font-size: 13px;
+.sub-icon {
+    font-size: 12px;
     line-height: 1;
+}
+
+.sub-text {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Badges */
+.badge {
+    display: inline-block;
+    padding: 2px 6px;
+    font-size: 9.5px;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 10px;
+    margin-left: 4px;
+}
+
+.badge-pill {
+    padding-right: 7px;
+    padding-left: 7px;
+    border-radius: 10rem;
+}
+
+.badge-primary { background-color: #1f6cb0; color: #fff; }
+.badge-info { background-color: #0284c7; color: #fff; }
+.badge-warning { background-color: #d97706; color: #fff; }
+.badge-secondary { background-color: #64748b; color: #fff; }
+
+.sidebar-filter-wrapper {
+    padding: 6px 4px;
 }
 
 /* Filter Builder Form inside Sidebar */

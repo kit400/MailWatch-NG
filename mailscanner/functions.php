@@ -1343,6 +1343,37 @@ function promptSaveHistory(idx, defaultName) {
         }
     } catch(e) {}
 })();
+
+// Modern Accordion & Dropdown Controller matching kit4mail
+document.addEventListener("DOMContentLoaded", function() {
+    var dropdownToggles = document.querySelectorAll(".sidebar-dropdown-toggle");
+    dropdownToggles.forEach(function(btn) {
+        btn.addEventListener("click", function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var parent = this.closest(".sidebar-dropdown");
+            if (!parent) return;
+            var submenu = parent.querySelector(".sidebar-submenu");
+            var isActive = parent.classList.contains("active");
+
+            if (isActive) {
+                parent.classList.remove("active");
+                if (submenu) submenu.style.display = "none";
+            } else {
+                // Accordion behavior: close other open dropdowns
+                document.querySelectorAll(".sidebar-dropdown.active").forEach(function(item) {
+                    if (item !== parent) {
+                        item.classList.remove("active");
+                        var sub = item.querySelector(".sidebar-submenu");
+                        if (sub) sub.style.display = "none";
+                    }
+                });
+                parent.classList.add("active");
+                if (submenu) submenu.style.display = "block";
+            }
+        });
+    });
+});
 </script>' . "\n";
     }
 

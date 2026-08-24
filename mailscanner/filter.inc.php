@@ -269,26 +269,103 @@ class Filter
     }
 
     /**
-     * Render the reports sidebar HTML (Mini rail + Full panel with hover overlay)
+     * Get categorized reports mapping for modern accordion sidebar
+     *
+     * @param string $token
+     * @return array
+     */
+    public function getCategorizedReports($token = '')
+    {
+        $this->ensureReportsPopulated($token);
+
+        $categories = [
+            'traffic' => [
+                'title' => __('traffic14', false) ?: 'Traffic & Volumes',
+                'icon' => '📊',
+                'items' => [
+                    ['url' => 'rep_total_mail_by_date.php', 'title' => __('messdate14', false) ?: 'Total Mail by Date', 'icon' => '📈'],
+                    ['url' => 'rep_previous_day.php', 'title' => __('messhours14', false) ?: 'Total Mail by Hour', 'icon' => '🕒'],
+                    ['url' => 'rep_message_ops.php' . ($token ? '?token=' . $token : ''), 'title' => __('messop14', false) ?: 'Message Operations', 'icon' => '⚙️'],
+                ],
+            ],
+            'senders' => [
+                'title' => __('senders14', false) ?: 'Senders & Relays',
+                'icon' => '📤',
+                'items' => [
+                    ['url' => 'rep_top_mail_relays.php', 'title' => __('topmailrelay14', false) ?: 'Top Mail Relays', 'icon' => '🌐'],
+                    ['url' => 'rep_top_senders_by_quantity.php', 'title' => __('topsendersqt14', false) ?: 'Top Senders by Quantity', 'icon' => '👥'],
+                    ['url' => 'rep_top_senders_by_volume.php', 'title' => __('topsendersvol14', false) ?: 'Top Senders by Volume', 'icon' => '📦'],
+                    ['url' => 'rep_top_sender_domains_by_quantity.php', 'title' => __('topsendersdomqt14', false) ?: 'Top Sender Domains by Qty', 'icon' => '🏢'],
+                    ['url' => 'rep_top_sender_domains_by_volume.php', 'title' => __('topsendersdomvol14', false) ?: 'Top Sender Domains by Vol', 'icon' => '📊'],
+                ],
+            ],
+            'recipients' => [
+                'title' => __('recipients14', false) ?: 'Recipients & Domains',
+                'icon' => '📥',
+                'items' => [
+                    ['url' => 'rep_top_recipients_by_quantity.php', 'title' => __('toprecipqt14', false) ?: 'Top Recipients by Quantity', 'icon' => '👥'],
+                    ['url' => 'rep_top_recipients_by_volume.php', 'title' => __('toprecipvol14', false) ?: 'Top Recipients by Volume', 'icon' => '📦'],
+                    ['url' => 'rep_top_recipient_domains_by_quantity.php', 'title' => __('toprecipdomqt14', false) ?: 'Top Recipient Domains by Qty', 'icon' => '🏢'],
+                    ['url' => 'rep_top_recipient_domains_by_volume.php', 'title' => __('toprecipdomvol14', false) ?: 'Top Recipient Domains by Vol', 'icon' => '📊'],
+                ],
+            ],
+            'security' => [
+                'title' => __('security14', false) ?: 'Security & Threat Rules',
+                'icon' => '🛡️',
+                'items' => [
+                    ['url' => 'rep_viruses.php', 'title' => __('virusrepor14', false) ?: 'Virus Report', 'icon' => '🦠'],
+                    ['url' => 'rep_top_viruses.php', 'title' => __('topvirus14', false) ?: 'Top Viruses', 'icon' => '☣️'],
+                ],
+            ],
+            'logs' => [
+                'title' => __('messagelisting14', false) ?: 'Message Log & Audit',
+                'icon' => '📜',
+                'items' => [
+                    ['url' => 'rep_message_listing.php' . ($token ? '?token=' . $token : ''), 'title' => __('messlisting14', false) ?: 'Message Listing', 'icon' => '📨'],
+                ],
+            ],
+        ];
+
+        if (true === get_conf_truefalse('UseSpamAssassin')) {
+            $categories['security']['items'][] = ['url' => 'rep_sa_score_dist.php', 'title' => __('assassinscoredist14', false) ?: 'SpamAssassin Scores', 'icon' => '🎯'];
+            $categories['security']['items'][] = ['url' => 'rep_sa_rule_hits.php', 'title' => __('assassinrulhit14', false) ?: 'SpamAssassin Rule Hits', 'icon' => '⚡'];
+        }
+        if (true === get_conf_truefalse('MCPChecks')) {
+            $categories['security']['items'][] = ['url' => 'rep_mcp_score_dist.php', 'title' => __('mcpscoredist14', false) ?: 'MCP Scores', 'icon' => '🔒'];
+            $categories['security']['items'][] = ['url' => 'rep_mcp_rule_hits.php', 'title' => __('mcprulehit14', false) ?: 'MCP Rule Hits', 'icon' => '🚨'];
+        }
+        if (isset($_SESSION['user_type']) && 'A' === $_SESSION['user_type']) {
+            $categories['logs']['items'][] = ['url' => 'rep_audit_log.php' . ($token ? '?token=' . $token : ''), 'title' => __('auditlog14', false) ?: 'Audit Log', 'icon' => '📋'];
+        }
+
+        return $categories;
+    }
+
+    /**
+     * Render the reports sidebar HTML (Mini rail + Full panel with dropdown accordion matching kit4mail)
      *
      * @param string $token
      * @return string
      */
     public function DisplaySidebarHtml($token = '')
     {
-        $this->ensureReportsPopulated($token);
+        $categories = $this->getCategorizedReports($token);
+        $currentPage = basename($_SERVER['PHP_SELF']);
 
-        $html = '  <aside class="reports-sidebar" id="reportsSidebar">' . "\n";
+        $html = '  <aside class="reports-sidebar sidebar" id="reportsSidebar">' . "\n";
 
         // 1. Narrow icon rail (visible when collapsed/minimized)
         $html .= '    <div class="sidebar-mini-rail" onclick="toggleReportsSidebar()" title="Expand Sidebar">' . "\n";
-        $html .= '      <button type="button" class="mini-rail-btn" title="Expand Sidebar">▶</button>' . "\n";
+        $html .= '      <button type="button" class="mini-rail-btn btn-sidebar-show" title="Expand Sidebar">▶</button>' . "\n";
         $html .= '      <div class="mini-rail-icons">' . "\n";
-        $html .= '        <span class="mini-icon" title="' . __('reports03') . '">📊</span>' . "\n";
-        $html .= '        <span class="mini-icon" title="' . __('reports09') . '">📋</span>' . "\n";
-        $html .= '        <span class="mini-icon" title="' . __('addfilter09') . '">🔍</span>' . "\n";
+        $html .= '        <span class="mini-icon" title="Traffic & Volumes">📊</span>' . "\n";
+        $html .= '        <span class="mini-icon" title="Senders & Relays">📤</span>' . "\n";
+        $html .= '        <span class="mini-icon" title="Recipients & Domains">📥</span>' . "\n";
+        $html .= '        <span class="mini-icon" title="Security & Threat Rules">🛡️</span>' . "\n";
+        $html .= '        <span class="mini-icon" title="Message Log & Audit">📜</span>' . "\n";
+        $html .= '        <span class="mini-icon" title="Filter Builder">🔍</span>' . "\n";
         if (isset($_SESSION['filter_history']) && count($_SESSION['filter_history']) > 0) {
-            $html .= '        <span class="mini-icon" title="' . __('filterhistory09') . '">🕒</span>' . "\n";
+            $html .= '        <span class="mini-icon" title="Filter History">🕒</span>' . "\n";
         }
         $html .= '      </div>' . "\n";
         $html .= '    </div>' . "\n";
@@ -298,58 +375,85 @@ class Filter
         $html .= '      <div class="sidebar-header">' . "\n";
         $html .= '        <div class="sidebar-title">' . "\n";
         $html .= '          <span class="sidebar-icon">📊</span>' . "\n";
-        $html .= '          <span>' . __('reports03') . '</span>' . "\n";
+        $html .= '          <span class="sidebar-brand-text">' . __('reports03') . '</span>' . "\n";
         $html .= '        </div>' . "\n";
-        $html .= '        <button type="button" class="sidebar-toggle-btn" onclick="toggleReportsSidebar()" title="Collapse sidebar">◀</button>' . "\n";
+        $html .= '        <button type="button" class="btn-sidebar-close sidebar-toggle-btn" onclick="toggleReportsSidebar()" title="Collapse sidebar">◀</button>' . "\n";
         $html .= '      </div>' . "\n";
 
         $html .= '      <div class="sidebar-content">' . "\n";
+        $html .= '        <ul class="sidebar-nav-list">' . "\n";
 
-        // Section A: Reports List
-        $html .= '        <div class="sidebar-section">' . "\n";
-        $html .= '          <div class="sidebar-section-title">📋 ' . __('reports09') . '</div>' . "\n";
-        $html .= '          <ul class="sidebar-reports-menu">' . "\n";
-        $currentPage = basename($_SERVER['PHP_SELF']);
+        // Hub / Dashboard Link
+        $isHubActive = ('reports.php' === $currentPage);
+        $html .= '          <li class="sidebar-nav-item' . ($isHubActive ? ' is-active' : '') . '">' . "\n";
+        $html .= '            <a href="reports.php" class="sidebar-nav-link">' . "\n";
+        $html .= '              <i class="nav-icon">📊</i>' . "\n";
+        $html .= '              <span class="menu-text">' . (__('reports14', false) ?: 'Reports Overview') . '</span>' . "\n";
+        $html .= '              <span class="badge badge-pill badge-primary">Hub</span>' . "\n";
+        $html .= '            </a>' . "\n";
+        $html .= '          </li>' . "\n";
 
-        foreach ($this->reports as $report) {
-            $url = $report['url'];
-            if ($report['useToken']) {
-                $url .= '?token=' . $token;
+        // Render each category dropdown accordion
+        foreach ($categories as $catKey => $cat) {
+            $hasActiveChild = false;
+            foreach ($cat['items'] as $item) {
+                if ($currentPage === explode('?', $item['url'])[0]) {
+                    $hasActiveChild = true;
+                    break;
+                }
             }
-            $icon = '📄';
-            if (strpos($url, 'message_listing') !== false) {
-                $icon = '📨';
-            } elseif (strpos($url, 'message_ops') !== false) {
-                $icon = '⚙️';
-            } elseif (strpos($url, 'total_mail') !== false || strpos($url, 'previous_day') !== false) {
-                $icon = '📈';
-            } elseif (strpos($url, 'virus') !== false) {
-                $icon = '🦠';
-            } elseif (strpos($url, 'sender') !== false || strpos($url, 'recipient') !== false || strpos($url, 'relay') !== false) {
-                $icon = '👥';
-            } elseif (strpos($url, 'sa_') !== false || strpos($url, 'mcp_') !== false) {
-                $icon = '🎯';
-            } elseif (strpos($url, 'audit') !== false) {
-                $icon = '📜';
+            $activeClass = $hasActiveChild ? ' active' : '';
+
+            $html .= '          <li class="sidebar-dropdown' . $activeClass . '">' . "\n";
+            $html .= '            <a href="javascript:void(0);" class="sidebar-dropdown-toggle">' . "\n";
+            $html .= '              <i class="nav-icon">' . $cat['icon'] . '</i>' . "\n";
+            $html .= '              <span class="menu-text">' . $cat['title'] . '</span>' . "\n";
+            $html .= '              <span class="badge badge-pill badge-info">' . count($cat['items']) . '</span>' . "\n";
+            $html .= '            </a>' . "\n";
+            $html .= '            <div class="sidebar-submenu"' . ($hasActiveChild ? ' style="display:block;"' : '') . '>' . "\n";
+            $html .= '              <ul>' . "\n";
+            foreach ($cat['items'] as $item) {
+                $isItemActive = ($currentPage === explode('?', $item['url'])[0]);
+                $itemClass = $isItemActive ? ' class="is-active"' : '';
+                $html .= '                <li' . $itemClass . '><a href="' . $item['url'] . '"><span class="sub-icon">' . $item['icon'] . '</span> <span class="sub-text">' . $item['title'] . '</span></a></li>' . "\n";
             }
-
-            $isActiveRep = ($currentPage === explode('?', $report['url'])[0]);
-            $activeClass = $isActiveRep ? ' is-active' : '';
-
-            $html .= '            <li class="sidebar-report-item"><a href="' . $url . '" class="sidebar-report-link' . $activeClass . '"><span class="rep-icon">' . $icon . '</span> <span class="rep-title">' . $report['description'] . '</span></a></li>' . "\n";
+            $html .= '              </ul>' . "\n";
+            $html .= '            </div>' . "\n";
+            $html .= '          </li>' . "\n";
         }
-        $html .= '          </ul>' . "\n";
-        $html .= '        </div>' . "\n";
 
-        // Section B: Filter Builder
-        $html .= '        <div class="sidebar-section">' . "\n";
-        $html .= '          <div class="sidebar-section-title">🔍 ' . __('addfilter09') . '</div>' . "\n";
-        $html .= '          ' . $this->DisplayForm() . "\n";
-        $html .= '        </div>' . "\n";
+        // Section B: Filter Builder dropdown
+        $hasActiveFilter = (count($this->item) > 0);
+        $html .= '          <li class="sidebar-dropdown sidebar-filter-builder' . ($hasActiveFilter ? ' active' : '') . '">' . "\n";
+        $html .= '            <a href="javascript:void(0);" class="sidebar-dropdown-toggle">' . "\n";
+        $html .= '              <i class="nav-icon">🔍</i>' . "\n";
+        $html .= '              <span class="menu-text">' . __('addfilter09') . '</span>' . "\n";
+        if ($hasActiveFilter) {
+            $html .= '              <span class="badge badge-pill badge-warning">' . count($this->item) . '</span>' . "\n";
+        }
+        $html .= '            </a>' . "\n";
+        $html .= '            <div class="sidebar-submenu"' . ($hasActiveFilter ? ' style="display:block;"' : '') . '>' . "\n";
+        $html .= '              <div class="sidebar-filter-wrapper">' . "\n";
+        $html .= '                ' . $this->DisplayForm() . "\n";
+        $html .= '              </div>' . "\n";
+        $html .= '            </div>' . "\n";
+        $html .= '          </li>' . "\n";
 
-        // Section C: Filter History
-        $html .= $this->DisplayHistoryHtml($token);
+        // Section C: Filter History dropdown (if present)
+        if (isset($_SESSION['filter_history']) && count($_SESSION['filter_history']) > 0) {
+            $html .= '          <li class="sidebar-dropdown sidebar-filter-history">' . "\n";
+            $html .= '            <a href="javascript:void(0);" class="sidebar-dropdown-toggle">' . "\n";
+            $html .= '              <i class="nav-icon">🕒</i>' . "\n";
+            $html .= '              <span class="menu-text">' . (__('filterhistory09', false) ?: 'Filter History') . '</span>' . "\n";
+            $html .= '              <span class="badge badge-pill badge-secondary">' . count($_SESSION['filter_history']) . '</span>' . "\n";
+            $html .= '            </a>' . "\n";
+            $html .= '            <div class="sidebar-submenu">' . "\n";
+            $html .= '              ' . $this->DisplayHistoryHtml($token) . "\n";
+            $html .= '            </div>' . "\n";
+            $html .= '          </li>' . "\n";
+        }
 
+        $html .= '        </ul>' . "\n";
         $html .= '      </div>' . "\n"; // End sidebar-content
         $html .= '    </div>' . "\n"; // End sidebar-full-panel
         $html .= '  </aside>' . "\n";
