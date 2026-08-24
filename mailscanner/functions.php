@@ -2560,12 +2560,31 @@ function db_colorised_table($sql, $table_heading = false, $pager = false, $order
                         $colnum = $f;
                     }
                     $fieldInfo = $sth->fetch_field_direct($colnum);
-                    echo "  <th>\n";
-                    echo "  $fieldname[$f] (<a href=\"?orderby=" . $fieldInfo->name
-                        . '&amp;orderdir=a' . subtract_multi_get_vars(
-                            ['orderby', 'orderdir']
-                        ) . '">A</a>/<a href="?orderby=' . $fieldInfo->name
-                        . '&amp;orderdir=d' . subtract_multi_get_vars(['orderby', 'orderdir']) . "\">D</a>)\n";
+
+                    $isCurrentSort = (isset($_GET['orderby']) && $_GET['orderby'] === $fieldInfo->name);
+                    $currentDir = isset($_GET['orderdir']) ? strtolower($_GET['orderdir']) : '';
+                    $nextDir = ($isCurrentSort && $currentDir === 'a') ? 'd' : 'a';
+                    $sortUrl = '?orderby=' . urlencode($fieldInfo->name)
+                        . '&amp;orderdir=' . $nextDir
+                        . subtract_multi_get_vars(['orderby', 'orderdir']);
+
+                    $arrowHtml = '';
+                    if ($isCurrentSort) {
+                        if ($currentDir === 'a') {
+                            $arrowHtml = '<span class="sort-arrow sort-asc" title="Sorted Ascending">▲</span>';
+                        } elseif ($currentDir === 'd') {
+                            $arrowHtml = '<span class="sort-arrow sort-desc" title="Sorted Descending">▼</span>';
+                        }
+                    } else {
+                        $arrowHtml = '<span class="sort-arrow sort-neutral">↕</span>';
+                    }
+
+                    $thClass = ' class="col-sortable' . ($isCurrentSort ? ' is-sorted' : '') . '"';
+                    echo "  <th{$thClass}>\n";
+                    echo "    <a href=\"{$sortUrl}\" class=\"sort-header-link\" title=\"Sort by {$fieldname[$f]}\">\n";
+                    echo "      <span class=\"sort-title\">{$fieldname[$f]}</span>\n";
+                    echo "      {$arrowHtml}\n";
+                    echo "    </a>\n";
                     echo "  </th>\n";
                 } else {
                     $thClass = ('#' === $fieldname[$f]) ? ' class="col-index"' : '';
