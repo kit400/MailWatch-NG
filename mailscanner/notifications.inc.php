@@ -129,6 +129,26 @@ class SystemNotifications
         $isActive = isset($data['is_active']) && $data['is_active'] ? 1 : 0;
         $expiresAt = !empty($data['expires_at']) ? "'" . safe_value($data['expires_at']) . "'" : "NULL";
 
+        // De-duplicate: If active notification with same title & type exists, update it
+        $dupCheck = "SELECT id FROM system_notifications WHERE title = '$title' AND type = '$type' AND is_active = 1 LIMIT 1";
+        $dupRes = dbquery($dupCheck);
+        if ($dupRes && $dupRes->num_rows > 0) {
+            $dupRow = $dupRes->fetch_assoc();
+            $existingId = (int)$dupRow['id'];
+            $updateSql = "UPDATE system_notifications SET 
+                          short_description = '$shortDesc',
+                          version = $version,
+                          changelog_url = $changelogUrl,
+                          full_content = $fullContent,
+                          target_role = '$targetRole',
+                          is_banner = $isBanner,
+                          created_at = NOW(),
+                          expires_at = $expiresAt
+                          WHERE id = $existingId";
+            dbquery($updateSql);
+            return $existingId;
+        }
+
         $sql = "INSERT INTO system_notifications
                 (type, title, version, short_description, changelog_url, full_content, target_role, is_banner, is_active, created_at, expires_at)
                 VALUES
