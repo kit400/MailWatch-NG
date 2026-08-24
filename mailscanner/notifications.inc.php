@@ -135,8 +135,10 @@ class SystemNotifications
                 ('$type', '$title', $version, '$shortDesc', $changelogUrl, $fullContent, '$targetRole', $isBanner, $isActive, NOW(), $expiresAt)";
 
         dbquery($sql);
-        global $link;
-        return $link ? mysqli_insert_id($link) : 0;
+        if (isset(database::$link) && database::$link instanceof mysqli) {
+            return (int)database::$link->insert_id;
+        }
+        return 0;
     }
 
     /**
