@@ -1,207 +1,195 @@
 /**
- * This customizes a line chart for ChartJs. This files requires that the variables chartTitle, chartId, chartFormattedData and chartNumericData, fillBelowLine, COLON are already set.
+ * Modern ECharts Line/Area/Bar Chart Implementation
+ * Matching https://ip.space.ua/info.php & EFA-NG Design
  */
 
-/******modify the colors here****/
-var mailColor   = '#4973f7'; // blue
-var virusColor  = '#B22222'; // dark red
-var spamColor   = '#EE6262'; // red
-var volumeColor = '#f5d932'; // yellow
-var mcpColor    = '#b9e3f9'; // light blue
-/*******************************/
-
-var defaultColors= [
-  mailColor,
-  virusColor,
-  spamColor,
-  volumeColor,
-  mcpColor
-];
-
-function getColor(axisid, lineid, datasetid, customColors) {
-  if (typeof customColors !== 'undefined') {
-    var color = customColors[axisid][lineid];
-    if (typeof color !== 'undefined' && typeof window[color] !== 'undefined') {
-      return window[color];
-    }
-  }
-  return defaultColors[datasetid];
-}
-
-// see https://stackoverflow.com/questions/15900485/correct-way-to-convert-size-in-bytes-to-kb-mb-gb-in-javascript
-function formatBytes(a,i,v){if(0==a)return"0B";var c=1e3,e=["Bytes","KB","MB","GB","TB","PB","EB","ZB","YB"],f=Math.floor(Math.log(a)/Math.log(c));return parseFloat((a/Math.pow(c,f)).toFixed(0))+" "+e[f]}
-
-function findBestTickCount(valueCount, minCount, maxCount) {
-  var bestMatch = Number.MAX_VALUE;
-  var bestValue = minCount;
-  for(i=Math.ceil(valueCount/maxCount); i<= Math.floor(valueCount/minCount);i++) {
-    var val = valueCount/i;
-    var diff = Math.abs(Math.round(val)-val);
-    if(diff < bestMatch) {
-      bestMatch = diff;
-      bestValue = i;
-    }
-  }
-  return {val: bestValue, match: bestMatch};
-}
-
-function autoSkipTick(value, index, valueCount, bestTick, gridFactor) {
-  //second condition is to prevent ticks close to the end overlapping
-  if((index % bestTick.val <= bestTick.match && valueCount-bestTick.val-index >= 0)|| index == valueCount-1) {
-  console.log(index);
-    //label and grid line
-    return value;
-  } else {
-    if(bestTick.val/gridFactor == Math.round(bestTick.val/gridFactor) && (index % Math.ceil(bestTick.val/gridFactor) <= bestTick.match || index == valueCount-1)) {
-      //no label but grid lines
-      return "";
-    } else {
-      //no label, no grid line
-      return;
-    }
-  }
-}
-
-function getBestGridFactor(bestTick, valueCount, maxGridCount) {
-  var gridFactor =1;
-  for(; gridFactor<=bestTick.val && gridFactor * valueCount/bestTick.val <= maxGridCount; gridFactor*=2) {
-    if(bestTick.val/gridFactor % 2 != 0)  {
-      break;
-    }
-  }
-  return gridFactor;
-}
+var lineColors = {
+  mailColor: '#1f6cb0',   // Primary Blue
+  spamColor: '#f59e0b',   // Amber
+  virusColor: '#dc2626',  // Red
+  volumeColor: '#0284c7', // Sky Blue
+  mcpColor: '#8b5cf6',    // Purple
+  hamColor: '#10b981'     // Green
+};
 
 function printLineGraph(chartId, settings) {
-  var ctx = document.getElementById(chartId);
-  var bestTick = findBestTickCount(settings.chartLabels.length-1, 2, settings.maxTicks);
-  var bestGridFactor = getBestGridFactor(bestTick, settings.chartLabels.length - 1, settings.maxTicks * 3);
-  var myChart = new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels: settings.chartLabels,
-      datasets: (function() {
-        datasetsTmp=[];
-        for(i=0;i<settings.chartNumericData.length;i++) {
-          //each yaxe
-          for(j=0;j<settings.chartNumericData[i].length;j++) {
-            datasetsTmp.push({
-              label: (typeof settings.chartDataLabels !== 'undefined' ? settings.chartDataLabels[i][j] : ''),
-              data: settings.chartNumericData[i][j],
-              backgroundColor: getColor(i, j, datasetsTmp.length, settings.colors),
-              borderColor: getColor(i, j, datasetsTmp.length, settings.colors),
-              fill: settings.fillBelowLine[i],
-              yAxisID: "y-axis-"+i,
-              type: (typeof settings.types !== 'undefined' ? settings.types[i][j] : "line"),
-              showLine: (typeof settings.types === 'undefined' || settings.fillBelowLine[i] ? true :
-                          (typeof settings.drawLines === 'undefined' ? false : settings.drawLines)),
-              pointRadius: 0,
-              borderWidth: 1.5          
-            });
-          }
-        }
-        return datasetsTmp;
-      })()
-    },
-    options: {
-      title: {
-        display: (typeof settings.plainGraph === 'undefined' ? true : !settings.plainGraph),
-        fontSize: 18,
-        text: settings.chartTitle
-      },
-      legend: {
-        display: (typeof settings.chartDataLabels === 'undefined' ? false : true),
-      },
-      elements: {
-        line: {
-          tension: 0, // disables bezier curves
-        }
-      },
-      scales: {
-        yAxes: (function() {
-          axes = [];
-          for(i=0;i<settings.yAxeDescriptions.length;i++) {
-            //get max for all of yaxis to set the axis max
-            var max = 0;
-            for(j=0;j<settings.chartFormattedData[i].length;j++) {
-              max = Math.max(
-                max,
-                Math.max.apply(null, settings.chartNumericData[i][j])
-              );
-            }
-            axes.push({
-              id: "y-axis-"+i,
-              position: (i%2 == 0 ? "left" : "right" ),
-              scaleLabel: {
-                display: (typeof settings.plainGraph === 'undefined' ? true : !settings.plainGraph),
-                labelString: settings.yAxeDescriptions[i]
-              },
-              ticks: {
-                suggestedMax: max * 1.05,
-                min: 0,
-                callback: ((typeof settings.valueTypes === 'undefined' || settings.valueTypes[i] == 'plain') ? 
-                            Chart.Ticks.formatters.linear :
-                            formatBytes
-                          
-                )
-              },
-            });
-          }
-          return axes;
-        })(),
-        xAxes: [{
-          maxBarThickness: 7,
-          gridLines: {offsetGridLines: false},
-          scaleLabel: {
-            display: (typeof settings.plainGraph === 'undefined' ? true : !settings.plainGraph),
-            labelString: settings.xAxeDescription,
-          },
-          ticks: {
-                callback: function(tick, index, values) { 
-                  return autoSkipTick(tick, index, values.length, bestTick, bestGridFactor)
-                },
-                stepSize: 1,
-                autoSkip: false,
-                maxRotation: 0,
-          },
-          type: 'category',
-        }]
-      },
-      responsive: false,
-      tooltips: {
-        callbacks: {
-          label: function(tooltipItem, data) {
-            var dataset = data.datasets[tooltipItem.datasetIndex];
-            var tooltipLabel = data.labels[tooltipItem.index];
-            var itemData = dataset.data[tooltipItem.index];
-            var total = 0;
-            for (var i in dataset.data) {
-              if (dataset._meta[0].data[i].hidden === false) {
-                total += dataset.data[i];
-              }
-            }
-            var tooltipPercentage = Math.round((itemData / total) * 100);
-            // get id of y-axis to get the corresponding label
-            var axisId = dataset.yAxisID.replace("y-axis-","");
-            var count = 0;
-            var formattedData = null;
-            for (i=0;i<settings.chartFormattedData.length && formattedData == null;i++) {
-              for (j=0;j<settings.chartFormattedData[i].length && formattedData == null; j++) {
-                if (count == tooltipItem.datasetIndex) {
-                  formattedData = settings.chartFormattedData[i][j][tooltipItem.index];
-                } else {
-                  count++;
-                }
-              }
-            }
-            //COLON specified on main page via php __('colon99')
-            var tooltipOutput = " " + settings.yAxeDescriptions[axisId] + COLON + " " + formattedData;
+  var chartDom = document.getElementById(chartId);
+  if (!chartDom) return;
 
-            return tooltipOutput;
+  if (typeof echarts === 'undefined') {
+    console.error('ECharts library not loaded');
+    return;
+  }
+
+  var existingChart = echarts.getInstanceByDom(chartDom);
+  if (existingChart) {
+    existingChart.dispose();
+  }
+
+  var myChart = echarts.init(chartDom);
+
+  var isHeaderTraffic = (chartId === 'trafficgraph');
+  var labels = settings.chartLabels || [];
+  var seriesList = [];
+  var legendData = [];
+
+  var palette = ['#1f6cb0', '#f59e0b', '#dc2626', '#10b981', '#8b5cf6', '#06b6d4'];
+
+  if (settings.chartNumericData && settings.chartNumericData.length > 0) {
+    var colorIdx = 0;
+    for (var axis = 0; axis < settings.chartNumericData.length; axis++) {
+      var axisData = settings.chartNumericData[axis];
+      for (var s = 0; s < axisData.length; s++) {
+        var sName = (settings.chartDataLabels && settings.chartDataLabels[axis] && settings.chartDataLabels[axis][s]) 
+                    ? settings.chartDataLabels[axis][s] 
+                    : ('Series ' + (s + 1));
+        legendData.push(sName);
+
+        var sType = (settings.types && settings.types[axis] && settings.types[axis][s]) 
+                    ? settings.types[axis][s] 
+                    : 'line';
+        if (sType !== 'bar') {
+          sType = 'line';
+        }
+
+        var colKey = '';
+        if (settings.colors && settings.colors[axis] && settings.colors[axis][s]) {
+          colKey = settings.colors[axis][s];
+        }
+        var color = lineColors[colKey] || palette[colorIdx % palette.length];
+        colorIdx++;
+
+        var isFilled = (settings.fillBelowLine && settings.fillBelowLine[axis]);
+
+        var seriesConfig = {
+          name: sName,
+          type: sType,
+          data: axisData[s],
+          smooth: 0.35,
+          showSymbol: !isHeaderTraffic && (sType === 'line'),
+          symbolSize: 4,
+          itemStyle: {
+            color: color,
+            borderRadius: sType === 'bar' ? [4, 4, 0, 0] : 0
+          },
+          lineStyle: {
+            color: color,
+            width: isHeaderTraffic ? 2 : 2.5
           }
+        };
+
+        if (isFilled || isHeaderTraffic) {
+          seriesConfig.areaStyle = {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: hexToRgba(color, 0.45) },
+              { offset: 1, color: hexToRgba(color, 0.02) }
+            ])
+          };
+        }
+
+        seriesList.push(seriesConfig);
+      }
+    }
+  }
+
+  var option = {
+    title: {
+      text: settings.chartTitle || '',
+      left: 'center',
+      top: 6,
+      textStyle: {
+        fontSize: 15,
+        fontWeight: 700,
+        color: '#0f172a'
+      }
+    },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'cross',
+        label: {
+          backgroundColor: '#1f6cb0'
+        },
+        lineStyle: {
+          color: '#94a3b8',
+          type: 'dashed'
         }
       },
-      hover: { animationDuration: 0 }
-    }
+      backgroundColor: 'rgba(15, 23, 42, 0.92)',
+      borderColor: '#334155',
+      borderWidth: 1,
+      padding: [8, 12],
+      textStyle: {
+        color: '#f8fafc',
+        fontSize: 12
+      }
+    },
+    legend: {
+      show: !isHeaderTraffic && legendData.length > 1,
+      data: legendData,
+      top: settings.chartTitle ? 32 : 10,
+      right: 15,
+      textStyle: {
+        color: '#475569',
+        fontSize: 11
+      }
+    },
+    grid: {
+      left: isHeaderTraffic ? 28 : 45,
+      right: isHeaderTraffic ? 12 : 25,
+      bottom: isHeaderTraffic ? 22 : (labels.length > 20 ? 38 : 28),
+      top: isHeaderTraffic ? 15 : (settings.chartTitle ? 55 : 35),
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      boundaryGap: seriesList.some(function(s) { return s.type === 'bar'; }),
+      data: labels,
+      axisLine: {
+        lineStyle: { color: '#cbd5e1' }
+      },
+      axisLabel: {
+        color: '#64748b',
+        fontSize: isHeaderTraffic ? 9.5 : 10.5,
+        rotate: labels.length > 24 ? 45 : 0
+      }
+    },
+    yAxis: {
+      type: 'value',
+      axisLine: {
+        show: false
+      },
+      axisTick: {
+        show: false
+      },
+      splitLine: {
+        lineStyle: {
+          color: '#f1f5f9',
+          type: 'dashed'
+        }
+      },
+      axisLabel: {
+        color: '#64748b',
+        fontSize: isHeaderTraffic ? 9.5 : 10.5
+      }
+    },
+    series: seriesList
+  };
+
+  myChart.setOption(option);
+
+  window.addEventListener('resize', function() {
+    myChart.resize();
   });
+}
+
+function hexToRgba(hex, opacity) {
+  hex = hex.replace('#', '');
+  if (hex.length === 3) {
+    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+  }
+  var r = parseInt(hex.substring(0, 2), 16) || 0;
+  var g = parseInt(hex.substring(2, 4), 16) || 0;
+  var b = parseInt(hex.substring(4, 6), 16) || 0;
+  return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + opacity + ')';
 }

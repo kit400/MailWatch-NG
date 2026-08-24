@@ -60,12 +60,11 @@ class GraphGenerator
         }
 
         $chartId = (isset($this->settings['chartId']) ? $this->settings['chartId'] : 'reportGraph');
-        // create canvas graph
-        echo '<canvas id="' . $chartId . '" class="reportGraph"></canvas>
-      <script src="js/Chart.js/Chart.min.js"></script>
+        // create ECharts graph container
+        echo '<div id="' . $chartId . '" class="reportGraph chart-echarts"></div>
+      <script src="js/echarts.min.js"></script>
       <script src="js/pieConfig.js"></script>
       <script>
-        COLON = "' . __('colon99') . '";
         printPieGraph("' . $chartId . '", {
           chartTitle :  "' . $this->graphTitle . '",
           chartId : "' . $chartId . '",
@@ -127,11 +126,10 @@ class GraphGenerator
             $graphTypes .= '],' . "\n";
         }
         $chartId = (isset($this->settings['chartId']) ? $this->settings['chartId'] : 'reportGraph');
-        echo '<canvas id="' . $chartId . '" class="lineGraph"></canvas>
-      <script src="js/Chart.js/Chart.bundle.min.js"></script>
+        echo '<div id="' . $chartId . '" class="lineGraph chart-echarts"></div>
+      <script src="js/echarts.min.js"></script>
       <script src="js/lineConfig.js"></script>
       <script>
-        COLON = "' . __('colon99') . '";
         printLineGraph("' . $chartId . '",  {
           chartTitle : "' . $this->graphTitle . '",
           chartId : "' . $chartId . '",

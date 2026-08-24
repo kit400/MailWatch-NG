@@ -1103,10 +1103,18 @@ table.colorcodes {
     box-sizing: border-box;
 }
 
-.card-chart-content canvas {
+.card-chart-content canvas,
+.card-chart-content #trafficgraph,
+.card-chart-content .chart-echarts {
     width: 100% !important;
     height: 100% !important;
+    min-height: 120px !important;
     max-height: 150px;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
 }
 
 .card-table {
@@ -1604,21 +1612,22 @@ div.table > .caption {
     color: #475569;
 }
 
-/* Reports */
-.reportGraph {
+/* Reports ECharts Containers */
+.reportGraph,
+.lineGraph,
+.chart-echarts {
     text-align: center;
-    height: auto;
-    width: 600px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.lineGraph {
-    text-align: center;
-    height: auto;
-    width: 800px;
-    margin-left: auto;
-    margin-right: auto;
+    width: 100% !important;
+    max-width: 850px;
+    height: 380px !important;
+    min-height: 380px;
+    margin: 15px auto 20px auto;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    box-sizing: border-box;
+    padding: 10px;
 }
 
 .reportTable {

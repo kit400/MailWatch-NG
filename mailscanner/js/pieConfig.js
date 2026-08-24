@@ -1,125 +1,148 @@
 /**
- * This customizes a pie chart for ChartJs. This files requires that the variables chartTitle, chartId, chartFormattedData and chartNumericData, COLON are already set.
+ * Modern ECharts Pie/Donut Chart Implementation
+ * Inspired by https://ip.space.ua/info.php & EFA-NG Design
  */
 
-var pieBackgroundColors= [
-  '#61a9f3', //blue
-  '#f381b9', //red
-  '#61E3A9', //green
-  //'#D56DE2',
-  '#85eD82',
-  '#F7b7b7',
-  '#CFDF49',
-  '#88d8f2',
-  '#07AF7B',
-  '#B9E3F9',
-  '#FFF3AD',
-  '#EF606A',
-  '#EC8833',
-  '#FFF100',
-  '#87C9A5'
+var piePalette = [
+  '#1f6cb0', // EFA Primary Blue
+  '#10b981', // Emerald Green
+  '#f59e0b', // Amber
+  '#ef4444', // Red
+  '#8b5cf6', // Purple
+  '#06b6d4', // Cyan
+  '#ec4899', // Pink
+  '#3b82f6', // Blue
+  '#14b8a6', // Teal
+  '#f97316', // Orange
+  '#6366f1', // Indigo
+  '#84cc16', // Lime
+  '#a855f7', // Violet
+  '#d97706', // Ochre
+  '#0284c7', // Sky Blue
+  '#e11d48'  // Rose
 ];
 
-function drawPersistentPercentValues() {
-  var ctx = this.chart.ctx;
-  ctx.font = Chart.helpers.fontString(Chart.defaults.global.defaultFontSize, "normal", Chart.defaults.global.defaultFontFamily);
-  ctx.fillStyle = this.chart.config.options.defaultFontColor;
-  this.data.datasets.forEach(function (dataset) {
-    var sum =0;
-    for (var i = 0; i < dataset.data.length; i++) {
-      if(dataset.hidden === true || dataset._meta[0].data[i].hidden === true){ continue; }
-      sum += dataset.data[i];
-    }
-    var curr= 0;
-    for (var i = 0; i < dataset.data.length; i++) {
-      if(dataset.hidden === true || dataset._meta[0].data[i].hidden === true){ continue; }
-      var part = dataset.data[i]/sum;
-      if(dataset.data[i] !== null && part*100 > 2) {
-        var model = dataset._meta[Object.keys(dataset._meta)[0]].data[i]._model;
-        var radius = model.outerRadius-10; //where to place the text around the center
-        var x = Math.sin((curr+part/2)*2*Math.PI)*radius;
-        var y = Math.cos((curr+part/2)*2*Math.PI)*radius;
-        ctx.fillText((part<0.1?" ":"")+(part*100).toFixed(0)+"%",model.x + x * 0.95 - 15, model.y - y * 0.96 - 8);
-        curr += part;
-      }
-    }
-  });
-}
-
-function getChartBgColors(count) {
-  var bgColors = [];
-  for (var i=0; bgColors.length < count; i++) {
-    bgColors.push(pieBackgroundColors[i]);
-  }
-  return bgColors;
-}
-
 function printPieGraph(chartId, settings) {
-  var ctx = document.getElementById(chartId);
-  var myChart = new Chart(ctx, {
-    type: "pie",
-    data: {
-      labels: settings.chartLabels,
-      datasets: [{
-        label: settings.chartTitle,
-        data: settings.chartNumericData,
-        backgroundColor: getChartBgColors(settings.chartNumericData.length)
-      }]
+  var chartDom = document.getElementById(chartId);
+  if (!chartDom) return;
+
+  if (typeof echarts === 'undefined') {
+    console.error('ECharts library not loaded');
+    return;
+  }
+
+  // Dispose previous instance if re-rendering
+  var existingChart = echarts.getInstanceByDom(chartDom);
+  if (existingChart) {
+    existingChart.dispose();
+  }
+
+  var myChart = echarts.init(chartDom);
+
+  var chartData = [];
+  var labels = settings.chartLabels || [];
+  var numericData = settings.chartNumericData || [];
+  var formattedData = settings.chartFormattedData || [];
+
+  for (var i = 0; i < labels.length; i++) {
+    var val = (typeof numericData[i] !== 'undefined') ? numericData[i] : 0;
+    var formattedVal = (typeof formattedData[i] !== 'undefined') ? formattedData[i] : val;
+    chartData.push({
+      name: labels[i],
+      value: val,
+      formattedValue: formattedVal
+    });
+  }
+
+  var option = {
+    title: {
+      text: settings.chartTitle || '',
+      left: 'center',
+      top: 6,
+      textStyle: {
+        fontSize: 15,
+        fontWeight: 700,
+        color: '#0f172a',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+      }
     },
-    options: {
-      title: {
-        display: true,
-        fontSize: 18,
-        text: settings.chartTitle
+    tooltip: {
+      trigger: 'item',
+      backgroundColor: 'rgba(15, 23, 42, 0.92)',
+      borderColor: '#334155',
+      borderWidth: 1,
+      padding: [8, 12],
+      textStyle: {
+        color: '#f8fafc',
+        fontSize: 12
       },
-      legend: {
-        display: true,
-        labels: {
-          generateLabels: function(graph) {
-            var defaultLabels = Chart.defaults.doughnut.legend.labels.generateLabels(graph);
-            /* uncomment this to additionally add the percentage to the labels
-            var graphData = graph.data.datasets[0].data;
-            var total = 0;
-            for(var i=0; i<graphData.length; i++) {
-              total += graphData[i];
-            };
-            for(var i=0; i<defaultLabels.length; i++) {
-              var label = defaultLabels[i];
-              var percentage = Math.round((graphData[i] / total) * 100);
-              defaultLabels[i].text += " (" + percentage +"%)";
-            }*/
-            return defaultLabels;
+      formatter: function(params) {
+        var raw = params.data || {};
+        var displayVal = raw.formattedValue || params.value;
+        return '<div style="font-weight: 700; margin-bottom: 2px;">' + params.marker + ' ' + params.name + '</div>' +
+               '<div>Count: <b>' + displayVal + '</b> (' + params.percent + '%)</div>';
+      }
+    },
+    legend: {
+      type: 'scroll',
+      orient: 'vertical',
+      right: 15,
+      top: 'middle',
+      itemGap: 8,
+      itemWidth: 12,
+      itemHeight: 12,
+      textStyle: {
+        color: '#475569',
+        fontSize: 11
+      },
+      formatter: function(name) {
+        return echarts.format.truncateText(name, 160, '11px sans-serif', '…');
+      }
+    },
+    color: piePalette,
+    series: [
+      {
+        name: settings.chartTitle || '',
+        type: 'pie',
+        radius: ['38%', '70%'],
+        center: ['40%', '54%'],
+        avoidLabelOverlap: true,
+        padAngle: 3,
+        itemStyle: {
+          borderRadius: 6,
+          borderColor: '#ffffff',
+          borderWidth: 2
+        },
+        label: {
+          show: false,
+          position: 'center'
+        },
+        emphasis: {
+          label: {
+            show: true,
+            fontSize: 14,
+            fontWeight: 'bold',
+            color: '#0f172a',
+            formatter: '{b}\n{d}%'
+          },
+          itemStyle: {
+            shadowBlur: 10,
+            shadowOffsetX: 0,
+            shadowColor: 'rgba(0, 0, 0, 0.15)'
           }
-        }
-      },
-      responsive: false,
-      tooltips: {
-        callbacks: {
-          label: function(tooltipItem, data) {
-            var dataset = data.datasets[tooltipItem.datasetIndex];
-            var tooltipLabel = data.labels[tooltipItem.index];
-            var itemData = dataset.data[tooltipItem.index];
-            var total = 0;
-            for (var i in dataset.data) {
-              if (dataset._meta[0].data[i].hidden === false) { 
-                total += dataset.data[i];
-              }
-            }
-            var tooltipPercentage = Math.round((itemData / total) * 100);
-            //COLON specified on main page via php __('colon99')
-            var tooltipOutput = " " + tooltipLabel + COLON + " " + settings.chartFormattedData[tooltipItem.index];
-            if (tooltipPercentage < 3) {
-              tooltipOutput += " (" + tooltipPercentage + "%)";
-            }
-            return tooltipOutput;
-          }
-        }
-      },
-      animation: {
-        onProgress: drawPersistentPercentValues,
-        onComplete: drawPersistentPercentValues
-      },
-      hover: { animationDuration: 0 }
-    }
+        },
+        labelLine: {
+          show: false
+        },
+        data: chartData
+      }
+    ]
+  };
+
+  myChart.setOption(option);
+
+  // Auto-resize on window change
+  window.addEventListener('resize', function() {
+    myChart.resize();
   });
 }
