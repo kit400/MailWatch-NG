@@ -135,10 +135,10 @@ function printLineGraph(chartId, settings) {
       }
     },
     grid: {
-      left: isHeaderTraffic ? 28 : 45,
-      right: isHeaderTraffic ? 12 : 25,
-      bottom: isHeaderTraffic ? 22 : (labels.length > 20 ? 38 : 28),
-      top: isHeaderTraffic ? 15 : (settings.chartTitle ? 55 : 35),
+      left: isHeaderTraffic ? 8 : 45,
+      right: isHeaderTraffic ? 8 : 25,
+      bottom: isHeaderTraffic ? 6 : (labels.length > 20 ? 38 : 28),
+      top: isHeaderTraffic ? 8 : (settings.chartTitle ? 55 : 35),
       containLabel: true
     },
     xAxis: {
@@ -150,12 +150,14 @@ function printLineGraph(chartId, settings) {
       },
       axisLabel: {
         color: '#64748b',
-        fontSize: isHeaderTraffic ? 9.5 : 10.5,
-        rotate: labels.length > 24 ? 45 : 0
+        fontSize: isHeaderTraffic ? 9 : 10.5,
+        interval: isHeaderTraffic ? 'auto' : (labels.length > 24 ? 'auto' : 0),
+        rotate: !isHeaderTraffic && labels.length > 24 ? 45 : 0
       }
     },
     yAxis: {
       type: 'value',
+      minInterval: 1,
       axisLine: {
         show: false
       },
@@ -170,7 +172,7 @@ function printLineGraph(chartId, settings) {
       },
       axisLabel: {
         color: '#64748b',
-        fontSize: isHeaderTraffic ? 9.5 : 10.5
+        fontSize: isHeaderTraffic ? 9 : 10.5
       }
     },
     series: seriesList
@@ -178,9 +180,19 @@ function printLineGraph(chartId, settings) {
 
   myChart.setOption(option);
 
-  window.addEventListener('resize', function() {
-    myChart.resize();
-  });
+  function triggerResize() {
+    if (myChart && chartDom) {
+      myChart.resize();
+    }
+  }
+
+  setTimeout(triggerResize, 50);
+  setTimeout(triggerResize, 200);
+  setTimeout(triggerResize, 500);
+
+  window.addEventListener('resize', triggerResize);
+  window.addEventListener('load', triggerResize);
+  document.addEventListener('DOMContentLoaded', triggerResize);
 }
 
 function hexToRgba(hex, opacity) {

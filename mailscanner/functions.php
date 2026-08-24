@@ -528,6 +528,20 @@ function toggleHeaderWidgets() {
     if (c.classList.contains("is-collapsed")) {
         c.classList.remove("is-collapsed");
         try { localStorage.setItem("mw_header_collapsed", "0"); } catch(e) {}
+        setTimeout(function() {
+            var tg = document.getElementById("trafficgraph");
+            if (tg && window.echarts) {
+                var inst = echarts.getInstanceByDom(tg);
+                if (inst) inst.resize();
+            }
+        }, 150);
+        setTimeout(function() {
+            var tg = document.getElementById("trafficgraph");
+            if (tg && window.echarts) {
+                var inst = echarts.getInstanceByDom(tg);
+                if (inst) inst.resize();
+            }
+        }, 400);
     } else {
         c.classList.add("is-collapsed");
         try { localStorage.setItem("mw_header_collapsed", "1"); } catch(e) {}
