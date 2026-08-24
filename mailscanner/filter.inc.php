@@ -117,6 +117,7 @@ class Filter
         }
 
         $this->item[] = [$column, $operator, $value];
+        $this->RecordHistory();
     }
 
     /**
@@ -130,6 +131,50 @@ class Filter
         $this->last_value = $this->item[$item][2];
         $this->display_last = 1;
         unset($this->item[$item]);
+        if (count($this->item) > 0) {
+            $this->RecordHistory();
+        }
+    }
+
+    /**
+     * Records current filter set in session filter history
+     */
+    public function RecordHistory()
+    {
+        if (!is_array($this->item) || 0 === count($this->item)) {
+            return;
+        }
+        if (!isset($_SESSION['filter_history']) || !is_array($_SESSION['filter_history'])) {
+            $_SESSION['filter_history'] = [];
+        }
+
+        $hash = md5(json_encode($this->item));
+
+        // Build human readable summary
+        $summaryParts = [];
+        foreach ($this->item as $val) {
+            $col = $this->TranslateColumn($val[0]);
+            $op = $this->TranslateOperator($val[1]);
+            $summaryParts[] = $col . ' ' . $op . ' "' . stripslashes($val[2]) . '"';
+        }
+        $summary = implode(' AND ', $summaryParts);
+
+        // Remove if already in history so we move it to top
+        foreach ($_SESSION['filter_history'] as $k => $h) {
+            if (isset($h['hash']) && $h['hash'] === $hash) {
+                unset($_SESSION['filter_history'][$k]);
+            }
+        }
+
+        array_unshift($_SESSION['filter_history'], [
+            'hash' => $hash,
+            'items' => $this->item,
+            'summary' => $summary,
+            'time' => time(),
+        ]);
+
+        // Keep last 10
+        $_SESSION['filter_history'] = array_values(array_slice($_SESSION['filter_history'], 0, 10));
     }
 
     /**
@@ -169,7 +214,7 @@ class Filter
             }
             $html .= '    </div>' . "\n";
             $clearUrl = 'reports.php?token=' . (isset($_SESSION['token']) ? $_SESSION['token'] : '') . '&amp;action=clear' . $returnToParam;
-            $html .= '    <a href="' . $clearUrl . '" class="filter-bar-clear-btn" title="Reset all filters">🗑️ ' . __('reset08', false) . '</a>' . "\n";
+            $html .= '    <a href="' . $clearUrl . '" class="filter-bar-clear-btn" title="Reset all filters">🗑️ ' . __('reset07') . '</a>' . "\n";
         } else {
             $html .= '    <span class="filter-bar-empty">' . __('none09') . ' (' . __('allmessages03', false) . ')</span>' . "\n";
         }
@@ -263,6 +308,9 @@ WHERE
         echo '        <div class="sidebar-section-title">🔍 ' . __('addfilter09') . '</div>' . "\n";
         echo $this->DisplayForm();
         echo '      </div>' . "\n";
+
+        // Section C: Filter History
+        echo $this->DisplayHistoryHtml($token);
         echo '    </div>' . "\n"; // End sidebar-content
         echo '  </aside>' . "\n";
 
@@ -342,7 +390,7 @@ WHERE
         echo '  </main>' . "\n";
         echo '</div>' . "\n";
 
-        // JavaScript for persistence & collapse
+        // JavaScript for persistence & collapse & history saving
         echo '<script type="text/javascript">
 function toggleReportsSidebar() {
     var l = document.getElementById("reportsLayout");
@@ -355,6 +403,48 @@ function toggleReportsSidebar() {
         try { localStorage.setItem("mw_reports_sidebar_minimized", "1"); } catch(e) {}
     }
 }
+function promptSaveHistory(idx, defaultName) {
+    var cleanName = defaultName.replace(/[\"\\\']/g, "").substring(0, 25);
+    var name = prompt("Enter a preset name to save this filter:", cleanName);
+    if (name && name.trim() !== "") {
+        var form = document.createElement("form");
+        form.method = "POST";
+        form.action = "reports.php";
+
+        var fToken = document.createElement("input");
+        fToken.type = "hidden";
+        fToken.name = "formtoken";
+        fToken.value = "' . generateFormToken('/filter.inc.php form token') . '";
+        form.appendChild(fToken);
+
+        var token = document.createElement("input");
+        token.type = "hidden";
+        token.name = "token";
+        token.value = "' . $token . '";
+        form.appendChild(token);
+
+        var act = document.createElement("input");
+        act.type = "hidden";
+        act.name = "action";
+        act.value = "save_history";
+        form.appendChild(act);
+
+        var hIdx = document.createElement("input");
+        hIdx.type = "hidden";
+        hIdx.name = "history_index";
+        hIdx.value = idx;
+        form.appendChild(hIdx);
+
+        var sName = document.createElement("input");
+        sName.type = "hidden";
+        sName.name = "save_as";
+        sName.value = name.trim();
+        form.appendChild(sName);
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
 (function() {
     try {
         if (localStorage.getItem("mw_reports_sidebar_minimized") === "1") {
@@ -364,6 +454,51 @@ function toggleReportsSidebar() {
     } catch(e) {}
 })();
 </script>' . "\n";
+    }
+
+    /**
+     * @param string $token
+     * @return string
+     */
+    public function DisplayHistoryHtml($token)
+    {
+        if (!isset($_SESSION['filter_history']) || !is_array($_SESSION['filter_history']) || 0 === count($_SESSION['filter_history'])) {
+            return '';
+        }
+
+        $currentPage = basename($_SERVER['PHP_SELF']);
+        $queryString = isset($_SERVER['QUERY_STRING']) ? $_SERVER['QUERY_STRING'] : '';
+        $returnToParam = '';
+        if (0 === strpos($currentPage, 'rep_')) {
+            $returnToUrl = $currentPage . (!empty($queryString) ? '?' . $queryString : '');
+            $returnToParam = '&amp;return_to=' . urlencode($returnToUrl);
+        }
+
+        $html = '      <div class="sidebar-section filter-history-section">' . "\n";
+        $html .= '        <div class="sidebar-section-title history-title-row">' . "\n";
+        $html .= '          <span>🕒 ' . (__('filterhistory09', false) ?: 'Filter History') . '</span>' . "\n";
+        $clearHistoryUrl = 'reports.php?token=' . $token . '&amp;action=clear_history' . $returnToParam;
+        $html .= '          <a href="' . $clearHistoryUrl . '" class="history-clear-btn" title="' . __('reset07') . '">🗑️ ' . __('reset07') . '</a>' . "\n";
+        $html .= '        </div>' . "\n";
+        $html .= '        <div class="filter-history-list">' . "\n";
+
+        foreach ($_SESSION['filter_history'] as $idx => $hist) {
+            $summary = htmlspecialchars($hist['summary']);
+            $applyUrl = 'reports.php?token=' . $token . '&amp;action=apply_history&amp;history_index=' . $idx . $returnToParam;
+
+            $html .= '          <div class="history-item-card">' . "\n";
+            $html .= '            <div class="history-item-summary" title="' . $summary . '">' . $summary . '</div>' . "\n";
+            $html .= '            <div class="history-item-actions">' . "\n";
+            $html .= '              <a href="' . $applyUrl . '" class="history-action-btn history-btn-apply" title="' . (__('apply09', false) ?: 'Apply') . '">⚡ ' . (__('apply09', false) ?: 'Apply') . '</a>' . "\n";
+            $html .= '              <button type="button" class="history-action-btn history-btn-save" onclick="promptSaveHistory(' . $idx . ', \'' . addslashes($hist['summary']) . '\')" title="' . __('save09') . '">💾 ' . __('save09') . '</button>' . "\n";
+            $html .= '            </div>' . "\n";
+            $html .= '          </div>' . "\n";
+        }
+
+        $html .= '        </div>' . "\n";
+        $html .= '      </div>' . "\n";
+
+        return $html;
     }
 
     public function CreateMtalogSQL()
@@ -550,6 +685,9 @@ function toggleReportsSidebar() {
         $sth = dbquery($sql);
         while ($row = $sth->fetch_row()) {
             $this->item[] = $row;
+        }
+        if (count($this->item) > 0) {
+            $this->RecordHistory();
         }
     }
 

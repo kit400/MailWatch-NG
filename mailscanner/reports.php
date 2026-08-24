@@ -108,6 +108,32 @@ if (isset($_POST['action']) || isset($_GET['action'])) {
             }
             $filter->Delete(sanitizeInput($_POST['filter']));
             break;
+        case 'apply_history':
+            if (isset($_GET['history_index']) && isset($_SESSION['filter_history'][$_GET['history_index']])) {
+                $idx = (int)$_GET['history_index'];
+                $filter->item = $_SESSION['filter_history'][$idx]['items'];
+                $filter->display_last = 0;
+                $filter->RecordHistory();
+            }
+            break;
+        case 'clear_history':
+            $_SESSION['filter_history'] = [];
+            break;
+        case 'save_history':
+            if (false === checkFormToken('/filter.inc.php form token', $_POST['formtoken'])) {
+                header('Location: login.php?error=pagetimeout');
+                exit;
+            }
+            if (isset($_POST['history_index']) && isset($_SESSION['filter_history'][$_POST['history_index']]) && isset($_POST['save_as'])) {
+                $idx = (int)$_POST['history_index'];
+                $name = sanitizeInput($_POST['save_as']);
+                if (!empty($name)) {
+                    $tempFilter = new Filter();
+                    $tempFilter->item = $_SESSION['filter_history'][$idx]['items'];
+                    $tempFilter->Save($name);
+                }
+            }
+            break;
     }
 
     // add the session filters to the variables

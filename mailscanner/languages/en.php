@@ -385,6 +385,10 @@ return [
     'reports09' => 'Reports',
     'released09' => 'has been released (>0 = TRUE)',
     'learned09' => 'has been learned (>0 = TRUE)',
+    'filterhistory09' => 'Filter History',
+    'apply09' => 'Apply',
+    'clearhistory09' => 'Clear History',
+    'reset09' => 'Reset',
 
     // 10-other.php
     'tools10' => 'Tools',
