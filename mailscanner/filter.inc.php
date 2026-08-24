@@ -290,9 +290,9 @@ class Filter
             ],
             'senders' => [
                 'title' => __('senders14', false) ?: 'Senders & Relays',
-                'icon' => '📤',
+                'icon' => '🌐',
                 'items' => [
-                    ['url' => 'rep_top_mail_relays.php', 'title' => __('topmailrelay14', false) ?: 'Top Mail Relays', 'icon' => '🌐'],
+                    ['url' => 'rep_top_mail_relays.php', 'title' => __('topmailrelay14', false) ?: 'Top Mail Relays', 'icon' => '📡'],
                     ['url' => 'rep_top_senders_by_quantity.php', 'title' => __('topsendersqt14', false) ?: 'Top Senders by Quantity', 'icon' => '👤'],
                     ['url' => 'rep_top_senders_by_volume.php', 'title' => __('topsendersvol14', false) ?: 'Top Senders by Volume', 'icon' => '📦'],
                     ['url' => 'rep_top_sender_domains_by_quantity.php', 'title' => __('topsendersdomqt14', false) ?: 'Top Sender Domains by Qty', 'icon' => '🏢'],
@@ -301,9 +301,9 @@ class Filter
             ],
             'recipients' => [
                 'title' => __('recipients14', false) ?: 'Recipients & Domains',
-                'icon' => '📥',
+                'icon' => '👥',
                 'items' => [
-                    ['url' => 'rep_top_recipients_by_quantity.php', 'title' => __('toprecipqt14', false) ?: 'Top Recipients by Quantity', 'icon' => '👥'],
+                    ['url' => 'rep_top_recipients_by_quantity.php', 'title' => __('toprecipqt14', false) ?: 'Top Recipients by Quantity', 'icon' => '🎯'],
                     ['url' => 'rep_top_recipients_by_volume.php', 'title' => __('toprecipvol14', false) ?: 'Top Recipients by Volume', 'icon' => '🚚'],
                     ['url' => 'rep_top_recipient_domains_by_quantity.php', 'title' => __('toprecipdomqt14', false) ?: 'Top Recipient Domains by Qty', 'icon' => '🏛️'],
                     ['url' => 'rep_top_recipient_domains_by_volume.php', 'title' => __('toprecipdomvol14', false) ?: 'Top Recipient Domains by Vol', 'icon' => '📑'],
@@ -319,7 +319,7 @@ class Filter
             ],
             'logs' => [
                 'title' => __('messagelisting14', false) ?: 'Message Log & Audit',
-                'icon' => '📨',
+                'icon' => '📜',
                 'items' => [
                     ['url' => 'rep_message_listing.php' . ($token ? '?token=' . $token : ''), 'title' => __('messlisting14', false) ?: 'Message Listing', 'icon' => '✉️'],
                 ],
