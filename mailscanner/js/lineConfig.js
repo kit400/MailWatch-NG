@@ -1,6 +1,7 @@
 /**
  * Modern ECharts Line/Area/Bar Chart Implementation
  * Matching https://ip.space.ua/info.php & EFA-NG Design
+ * Full Dual Y-Axis Support (Left: Message Counts, Right: Volume/Bytes)
  */
 
 var lineColors = {
@@ -11,6 +12,16 @@ var lineColors = {
   mcpColor: '#8b5cf6',    // Purple
   hamColor: '#10b981'     // Green
 };
+
+function formatBytes(bytes) {
+  if (bytes === 0 || isNaN(bytes)) return '0 B';
+  var k = 1024;
+  var sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  var i = Math.floor(Math.log(Math.abs(bytes)) / Math.log(k));
+  if (i < 0) i = 0;
+  if (i >= sizes.length) i = sizes.length - 1;
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
 
 function printLineGraph(chartId, settings) {
   var chartDom = document.getElementById(chartId);
@@ -32,8 +43,10 @@ function printLineGraph(chartId, settings) {
   var labels = settings.chartLabels || [];
   var seriesList = [];
   var legendData = [];
+  var seriesMeta = [];
 
   var palette = ['#1f6cb0', '#f59e0b', '#dc2626', '#10b981', '#8b5cf6', '#06b6d4'];
+  var hasMultipleAxes = (settings.chartNumericData && settings.chartNumericData.length > 1);
 
   if (settings.chartNumericData && settings.chartNumericData.length > 0) {
     var colorIdx = 0;
@@ -56,7 +69,23 @@ function printLineGraph(chartId, settings) {
         if (settings.colors && settings.colors[axis] && settings.colors[axis][s]) {
           colKey = settings.colors[axis][s];
         }
-        var color = lineColors[colKey] || palette[colorIdx % palette.length];
+
+        // Smart color matching for standard mail security entities
+        var color = '';
+        var lowerName = sName.toLowerCase();
+        if (lowerName.indexOf('mail') !== -1 || lowerName.indexOf('email') !== -1) {
+          color = lineColors.mailColor;
+        } else if (lowerName.indexOf('virus') !== -1) {
+          color = lineColors.virusColor;
+        } else if (lowerName.indexOf('spam') !== -1) {
+          color = lineColors.spamColor;
+        } else if (lowerName.indexOf('volume') !== -1 || lowerName.indexOf('size') !== -1) {
+          color = lineColors.volumeColor;
+        } else if (lowerName.indexOf('mcp') !== -1) {
+          color = lineColors.mcpColor;
+        } else {
+          color = lineColors[colKey] || palette[colorIdx % palette.length];
+        }
         colorIdx++;
 
         var isFilled = (settings.fillBelowLine && settings.fillBelowLine[axis]);
@@ -64,6 +93,7 @@ function printLineGraph(chartId, settings) {
         var seriesConfig = {
           name: sName,
           type: sType,
+          yAxisIndex: axis, // Assigns series to appropriate Y-axis (0: Left for counts, 1: Right for volume)
           data: axisData[s],
           smooth: 0.35,
           showSymbol: !isHeaderTraffic && (sType === 'line'),
@@ -81,15 +111,74 @@ function printLineGraph(chartId, settings) {
         if (isFilled || isHeaderTraffic) {
           seriesConfig.areaStyle = {
             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: hexToRgba(color, 0.45) },
-              { offset: 1, color: hexToRgba(color, 0.02) }
+              { offset: 0, color: hexToRgba(color, 0.35) },
+              { offset: 1, color: hexToRgba(color, 0.01) }
             ])
           };
         }
 
+        seriesMeta.push({ axis: axis, series: s, name: sName });
         seriesList.push(seriesConfig);
       }
     }
+  }
+
+  // Construct Y-Axes (Dual Axis support when multiple data categories exist)
+  var yAxes = [];
+
+  // Y-Axis 0 (Left: Messages / Counts)
+  var leftAxisName = (settings.yAxeDescriptions && settings.yAxeDescriptions[0]) ? settings.yAxeDescriptions[0] : '';
+  yAxes.push({
+    type: 'value',
+    name: isHeaderTraffic ? '' : leftAxisName,
+    position: 'left',
+    minInterval: 1,
+    axisLine: {
+      show: !isHeaderTraffic,
+      lineStyle: { color: '#cbd5e1' }
+    },
+    axisTick: { show: false },
+    splitLine: {
+      show: true,
+      lineStyle: {
+        color: '#f1f5f9',
+        type: 'dashed'
+      }
+    },
+    axisLabel: {
+      color: '#64748b',
+      fontSize: isHeaderTraffic ? 9 : 10.5,
+      formatter: function(val) {
+        if (val >= 1000000) return (val / 1000000).toFixed(1) + 'M';
+        if (val >= 1000) return (val / 1000).toFixed(0) + 'k';
+        return val;
+      }
+    }
+  });
+
+  // Y-Axis 1 (Right: Volume / Bytes)
+  if (hasMultipleAxes) {
+    var rightAxisName = (settings.yAxeDescriptions && settings.yAxeDescriptions[1]) ? settings.yAxeDescriptions[1] : 'Volume';
+    yAxes.push({
+      type: 'value',
+      name: rightAxisName,
+      position: 'right',
+      axisLine: {
+        show: true,
+        lineStyle: { color: '#cbd5e1' }
+      },
+      axisTick: { show: false },
+      splitLine: {
+        show: false
+      },
+      axisLabel: {
+        color: '#64748b',
+        fontSize: 10.5,
+        formatter: function(val) {
+          return formatBytes(val);
+        }
+      }
+    });
   }
 
   var option = {
@@ -115,13 +204,43 @@ function printLineGraph(chartId, settings) {
           type: 'dashed'
         }
       },
-      backgroundColor: 'rgba(15, 23, 42, 0.92)',
+      backgroundColor: 'rgba(15, 23, 42, 0.94)',
       borderColor: '#334155',
       borderWidth: 1,
-      padding: [8, 12],
+      padding: [10, 14],
       textStyle: {
         color: '#f8fafc',
         fontSize: 12
+      },
+      formatter: function(params) {
+        if (!params || !params.length) return '';
+        var out = '<div style="font-weight:700;margin-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.15);padding-bottom:3px;">' + params[0].axisValue + '</div>';
+        params.forEach(function(item) {
+          var val = item.value;
+          var formattedVal = val;
+
+          if (item.seriesIndex !== undefined && seriesMeta[item.seriesIndex]) {
+            var meta = seriesMeta[item.seriesIndex];
+            if (settings.chartFormattedData && 
+                settings.chartFormattedData[meta.axis] && 
+                settings.chartFormattedData[meta.axis][meta.series] && 
+                settings.chartFormattedData[meta.axis][meta.series][item.dataIndex] !== undefined) {
+              formattedVal = settings.chartFormattedData[meta.axis][meta.series][item.dataIndex];
+            } else if (meta.axis === 1 || meta.name.toLowerCase().indexOf('volume') !== -1 || meta.name.toLowerCase().indexOf('size') !== -1) {
+              formattedVal = formatBytes(val);
+            } else if (typeof val === 'number') {
+              formattedVal = Number(val).toLocaleString();
+            }
+          } else if (typeof val === 'number') {
+            formattedVal = Number(val).toLocaleString();
+          }
+
+          out += '<div style="display:flex;justify-content:space-between;align-items:center;gap:14px;margin:3px 0;">' +
+                 '<span>' + item.marker + ' ' + item.seriesName + '</span>' +
+                 '<span style="font-weight:700;font-family:monospace;">' + formattedVal + '</span>' +
+                 '</div>';
+        });
+        return out;
       }
     },
     legend: {
@@ -135,8 +254,8 @@ function printLineGraph(chartId, settings) {
       }
     },
     grid: {
-      left: isHeaderTraffic ? 8 : 45,
-      right: isHeaderTraffic ? 8 : 25,
+      left: isHeaderTraffic ? 8 : 50,
+      right: isHeaderTraffic ? 8 : (hasMultipleAxes ? 65 : 25),
       bottom: isHeaderTraffic ? 6 : (labels.length > 20 ? 38 : 28),
       top: isHeaderTraffic ? 8 : (settings.chartTitle ? 55 : 35),
       containLabel: true
@@ -155,26 +274,7 @@ function printLineGraph(chartId, settings) {
         rotate: !isHeaderTraffic && labels.length > 24 ? 45 : 0
       }
     },
-    yAxis: {
-      type: 'value',
-      minInterval: 1,
-      axisLine: {
-        show: false
-      },
-      axisTick: {
-        show: false
-      },
-      splitLine: {
-        lineStyle: {
-          color: '#f1f5f9',
-          type: 'dashed'
-        }
-      },
-      axisLabel: {
-        color: '#64748b',
-        fontSize: isHeaderTraffic ? 9 : 10.5
-      }
-    },
+    yAxis: yAxes.length === 1 ? yAxes[0] : yAxes,
     series: seriesList
   };
 
