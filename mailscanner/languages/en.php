@@ -407,6 +407,8 @@ return [
     'updatesadesc10' => 'Update SpamAssassin Rule Descriptions',
     'updatemcpdesc10' => 'Update MCP Rule Descriptions',
     'updategeoip10' => 'Update GeoIP Database',
+    'notifications10' => 'System Notifications & Broadcast',
+    'changelog' => 'Changelog',
     'links10' => 'Links',
 
     // 11-sf_version.php

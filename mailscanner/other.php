@@ -42,6 +42,7 @@ echo '<tr>
 
 echo '<li><a href="user_manager.php">' . __('usermgnt10') . '</a>';
 if ('A' === $_SESSION['user_type']) {
+    echo '<li><a href="system_notifications.php">📢 ' . (__('notifications10', false) ?: 'System Notifications &amp; Broadcast') . '</a>';
     $virusScanner = get_conf_var('VirusScanners');
 
     if (preg_match('/sophos/i', $virusScanner)) {

@@ -49,6 +49,7 @@ if (!file_exists(__DIR__ . '/conf.php') || !is_readable(__DIR__ . '/conf.php')) 
 require_once __DIR__ . '/conf.php';
 require_once __DIR__ . '/database.php';
 require_once __DIR__ . '/filter.inc.php';
+require_once __DIR__ . '/notifications.inc.php';
 
 // more secure session cookies
 ini_set('session.use_cookies', '1');
@@ -563,6 +564,11 @@ function toggleHeaderWidgets() {
             $_SESSION['filter'] = new Filter();
         }
         echo $_SESSION['filter']->GetCompactBarHtml();
+    }
+
+    if (class_exists('SystemNotifications')) {
+        echo SystemNotifications::renderTopAnnouncementBanner($_SESSION['myusername'] ?? '', $_SESSION['user_type'] ?? 'U');
+        echo SystemNotifications::renderNotificationModalHtml($_SESSION['myusername'] ?? '', $_SESSION['user_type'] ?? 'U', $_SESSION['token'] ?? '');
     }
 
     if ($report) {
@@ -1096,6 +1102,9 @@ function printUserCabinet()
     echo '      <a href="user_manager.php" class="user-cabinet-name" title="' . __('usermgnt12') . '">' . $username . '</a>' . "\n";
     echo '      <span class="user-cabinet-role">' . $userType . '</span>' . "\n";
     echo '    </div>' . "\n";
+    if (class_exists('SystemNotifications')) {
+        echo SystemNotifications::renderBellButtonHtml($_SESSION['myusername'] ?? '', $_SESSION['user_type'] ?? 'U');
+    }
     echo '  </div>' . "\n";
 
     echo '  <div class="user-cabinet-details">' . "\n";
