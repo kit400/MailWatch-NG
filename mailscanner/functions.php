@@ -5215,10 +5215,7 @@ function validateInput($input, $type)
             }
             break;
         case 'msgid':
-            if (preg_match(
-                '/^([A-F0-9]{7,20}\.[A-F0-9]{5}|[0-9B-DF-HJ-NP-TV-Zb-df-hj-np-tv-z]{8,20}|[0-9B-DF-HJ-NP-TV-Zb-df-hj-np-tv-z.]{8,20}\.[A-F0-9]{5}|[0-9A-Za-z]{6}-[A-Za-z0-9]{6}-[A-Za-z0-9]{2}|[0-9A-Za-z]{6}-[A-Za-z0-9]{11}-[A-Za-z0-9]{4}|[0-9A-Za-z]{12,15})$/',
-                $input
-            )) {
+            if (preg_match('/^[0-9a-zA-Z._-]{4,64}$/', $input)) {
                 return true;
             }
             break;
