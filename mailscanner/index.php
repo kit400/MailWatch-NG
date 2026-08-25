@@ -31,7 +31,7 @@ header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Cache-Control: post-check=0, pre-check=0', false);
 
 if (isset($_GET['httpbasic'])) {
-    header('Location: status.php?httpbasic');
+    header('Location: dashboard.php?httpbasic');
 } else {
-    header('Location: status.php');
+    header('Location: dashboard.php');
 }

@@ -1171,6 +1171,7 @@ function printNavBar()
     // Navigation links - put them into an array to allow them to be switched
     // on or off as necessary and to allow for the table widths to be calculated.
     $nav = [];
+    $nav['dashboard.php'] = ['title' => 'Dashboard', 'icon' => '📊'];
     $nav['status.php'] = ['title' => __('recentmessages03'), 'icon' => '📬'];
     if (LISTS) {
         $nav['lists.php'] = ['title' => __('lists03'), 'icon' => '📋'];
