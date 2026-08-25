@@ -595,16 +595,17 @@ function render_widget_top_relays_asn($timeRange)
                 $locStr .= ' <span style="font-size:10px;color:#64748b;">(' . htmlspecialchars($geo['city']) . ')</span>';
             }
             if (!empty($geo['asn_number'])) {
-                $asnBadge = '<a href="https://bgp.he.net/AS' . $geo['asn_number'] . '" target="_blank" rel="noopener noreferrer" class="badge-asn">AS' . $geo['asn_number'] . '</a>';
+                $asnBadge = '<a href="https://ipinfo.io/AS' . $geo['asn_number'] . '" target="_blank" rel="noopener noreferrer" class="badge-asn" title="ipinfo.io AS' . $geo['asn_number'] . '">AS' . $geo['asn_number'] . '</a>';
                 $asnStr = $asnBadge . ' <span style="font-size:10.5px;color:#334155;">' . htmlspecialchars(mb_strimwidth($geo['asn_name'], 0, 24, '...')) . '</span>';
             }
         }
 
         $threatCount = (int)$row['threats'] + (int)$row['spam'];
+        $tokenParam = isset($_SESSION['token']) ? '&amp;token=' . urlencode($_SESSION['token']) : '';
 
         $out .= '<tr>
             <td style="padding:6px 10px;">
-                <strong><a href="rep_message_listing.php?relay=' . urlencode($ip) . '" style="color:#0284c7;text-decoration:none;">' . htmlspecialchars($ip) . '</a></strong><br>
+                <strong><a href="rep_message_listing.php?relay=' . urlencode($ip) . $tokenParam . '" style="color:#0284c7;text-decoration:none;">' . htmlspecialchars($ip) . '</a></strong><br>
                 <span style="font-size:10px;color:#64748b;">' . htmlspecialchars(mb_strimwidth($host, 0, 28, '...')) . '</span>
             </td>
             <td style="padding:6px 10px;">' . $locStr . '</td>
@@ -627,6 +628,7 @@ function render_widget_top_senders_recipients($timeRange)
 {
     $timeFilter = get_dashboard_time_filter($timeRange);
     $globalFilter = $_SESSION['global_filter'] ?? '1=1';
+    $tokenParam = isset($_SESSION['token']) ? '&amp;token=' . urlencode($_SESSION['token']) : '';
 
     // Top Senders
     $sqlSenders = "SELECT from_address, COUNT(*) AS count, SUM(isspam + ishighspam + virusinfected) AS threats 
@@ -663,7 +665,7 @@ function render_widget_top_senders_recipients($timeRange)
         while ($r = $resSenders->fetch_assoc()) {
             $addr = htmlspecialchars($r['from_address']);
             $out .= '<tr>
-                <td style="padding:6px 10px;"><a href="rep_message_listing.php?from=' . urlencode($r['from_address']) . '" style="color:#0284c7;text-decoration:none;font-weight:500;">' . mb_strimwidth($addr, 0, 38, '...') . '</a></td>
+                <td style="padding:6px 10px;"><a href="rep_message_listing.php?from=' . urlencode($r['from_address']) . $tokenParam . '" style="color:#0284c7;text-decoration:none;font-weight:500;">' . mb_strimwidth($addr, 0, 38, '...') . '</a></td>
                 <td style="padding:6px 10px;text-align:right;font-weight:600;">' . number_format($r['count']) . '</td>
                 <td style="padding:6px 10px;text-align:right;"><span class="' . ((int)$r['threats'] > 0 ? 'pill-red' : 'pill-green') . ' dash-kpi-pill" style="font-size:10px;">' . number_format($r['threats']) . '</span></td>
             </tr>';
@@ -690,7 +692,7 @@ function render_widget_top_senders_recipients($timeRange)
         while ($r = $resRecipients->fetch_assoc()) {
             $addr = htmlspecialchars($r['to_address']);
             $out .= '<tr>
-                <td style="padding:6px 10px;"><a href="rep_message_listing.php?to=' . urlencode($r['to_address']) . '" style="color:#0284c7;text-decoration:none;font-weight:500;">' . mb_strimwidth($addr, 0, 38, '...') . '</a></td>
+                <td style="padding:6px 10px;"><a href="rep_message_listing.php?to=' . urlencode($r['to_address']) . $tokenParam . '" style="color:#0284c7;text-decoration:none;font-weight:500;">' . mb_strimwidth($addr, 0, 38, '...') . '</a></td>
                 <td style="padding:6px 10px;text-align:right;font-weight:600;">' . number_format($r['count']) . '</td>
                 <td style="padding:6px 10px;text-align:right;"><span class="' . ((int)$r['threats'] > 0 ? 'pill-red' : 'pill-green') . ' dash-kpi-pill" style="font-size:10px;">' . number_format($r['threats']) . '</span></td>
             </tr>';

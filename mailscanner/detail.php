@@ -192,7 +192,7 @@ for ($f = 0; $f < $result->field_count; ++$f) {
 
                     $asnStr = '-';
                     if (!empty($geoData['asn_number'])) {
-                        $asnBadge = '<a href="https://bgp.he.net/AS' . $geoData['asn_number'] . '" target="_blank" rel="noopener noreferrer" class="badge-asn" title="BGP Toolkit AS' . $geoData['asn_number'] . '">AS' . $geoData['asn_number'] . '</a>';
+                        $asnBadge = '<a href="https://ipinfo.io/AS' . $geoData['asn_number'] . '" target="_blank" rel="noopener noreferrer" class="badge-asn" title="ipinfo.io AS' . $geoData['asn_number'] . '">AS' . $geoData['asn_number'] . '</a>';
                         $asnStr = $asnBadge . (!empty($geoData['asn_name']) ? ' ' . htmlspecialchars($geoData['asn_name']) : '');
                     }
                     $output .= ' <td>' . $asnStr . '</td>' . "\n";

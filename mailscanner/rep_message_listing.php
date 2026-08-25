@@ -35,7 +35,7 @@ require __DIR__ . '/login.function.php';
 // add the header information such as the logo, search, menu, ....
 $filter = html_start(__('messlisting16'), 0, false, true);
 
-if (false === checkToken($_GET['token'])) {
+if (isset($_GET['token']) && false === checkToken($_GET['token'])) {
     header('Location: login.php?error=pagetimeout');
     exit;
 }
@@ -96,28 +96,51 @@ if (defined('HIDE_HIGH_SPAM') && HIDE_HIGH_SPAM === true && 'U' === $_SESSION['u
      COALESCE(ishighmcp,0)=0';
 }
 
-// Check if we've passed in a relay that we want to check the headers for, this is from detail.php
-$relay_regex = '';
-if (isset($_GET['relay']) && preg_match('/^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$/', deepSanitizeInput($_GET['relay'], 'url'))) {
-    $sql_prefix = '[[:<:]]';
-    $sql_suffix = '[[:>:]]';
-    if (database::isUsingICURegexSyntax()) {
-        $sql_prefix = '\\b';
-        $sql_suffix = '\\b';
+// Check if we've passed in specific quick drilldown filters (relay, from, to, domains)
+$custom_filters = [];
+
+if (isset($_GET['relay'])) {
+    $relay = stripPortFromIp(trim(deepSanitizeInput($_GET['relay'], 'url')));
+    if (!empty($relay)) {
+        $clean_relay = safe_value($relay);
+        $sql_prefix = database::isUsingICURegexSyntax() ? '\\b' : '[[:<:]]';
+        $sql_suffix = database::isUsingICURegexSyntax() ? '\\b' : '[[:>:]]';
+        $relay_regex = $sql_prefix . str_replace('.', '\.', $clean_relay) . $sql_suffix;
+        $custom_filters[] = "(clientip = '$clean_relay' OR clientip LIKE '$clean_relay:%' OR headers REGEXP '$relay_regex')";
     }
-    $relay_regex = $sql_prefix . str_replace('.', '\.', deepSanitizeInput($_GET['relay'], 'url')) . $sql_suffix;
 }
 
-if (strlen($relay_regex) > 0) {
-    $sql .= " AND headers REGEXP '$relay_regex'";
-    if (isset($_GET['isspam'])) {
-        $sql .= ' AND isspam > 0';
-    }
-    if (isset($_GET['isvirus'])) {
-        $sql .= ' AND virusinfected > 0';
-    }
-    $sql .= ' AND ' . $_SESSION['global_filter'];
-} else {
+if (isset($_GET['from']) && !empty(trim($_GET['from']))) {
+    $clean_from = safe_value(trim($_GET['from']));
+    $custom_filters[] = "(from_address = '$clean_from' OR from_address LIKE '%$clean_from%')";
+}
+
+if (isset($_GET['to']) && !empty(trim($_GET['to']))) {
+    $clean_to = safe_value(trim($_GET['to']));
+    $custom_filters[] = "(to_address = '$clean_to' OR to_address LIKE '%$clean_to%')";
+}
+
+if (isset($_GET['from_domain']) && !empty(trim($_GET['from_domain']))) {
+    $clean_fdom = safe_value(trim($_GET['from_domain']));
+    $custom_filters[] = "from_domain = '$clean_fdom'";
+}
+
+if (isset($_GET['to_domain']) && !empty(trim($_GET['to_domain']))) {
+    $clean_tdom = safe_value(trim($_GET['to_domain']));
+    $custom_filters[] = "to_domain = '$clean_tdom'";
+}
+
+if (isset($_GET['isspam'])) {
+    $custom_filters[] = "isspam > 0";
+}
+
+if (isset($_GET['isvirus'])) {
+    $custom_filters[] = "virusinfected > 0";
+}
+
+if (!empty($custom_filters)) {
+    $sql .= " AND " . implode(' AND ', $custom_filters);
+} elseif (isset($_SESSION['filter'])) {
     $sql .= ' ' . $_SESSION['filter']->CreateSQL();
 }
 
