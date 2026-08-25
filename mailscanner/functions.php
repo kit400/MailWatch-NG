@@ -3837,31 +3837,166 @@ function debug_print_r($input)
 /**
  * @param string $ip
  *
- * @return bool
+/**
+ * Get active GeoIP database file path
+ *
+ * @return string|false
+ */
+function get_geoip_database_file()
+{
+    $candidates = [
+        __DIR__ . '/temp/ip-geo.mmdb',
+        '/usr/share/GeoIP/ip-geo.mmdb',
+        __DIR__ . '/temp/GeoLite2-Country.mmdb',
+        '/usr/share/GeoIP/GeoLite2-Country.mmdb',
+    ];
+    foreach ($candidates as $file) {
+        if (file_exists($file) && filesize($file) > 1000) {
+            return $file;
+        }
+    }
+    return false;
+}
+
+/**
+ * Return comprehensive GeoIP + ASN data array for a given IP
+ *
+ * @param string $ip
+ * @return array|false
+ */
+function return_geoip_data($ip)
+{
+    static $geoipCache = [];
+    $ip = stripPortFromIp(trim($ip));
+    if (empty($ip) || ip_in_range($ip, false, 'private') || ip_in_range($ip, false, 'local')) {
+        return false;
+    }
+    if (isset($geoipCache[$ip])) {
+        return $geoipCache[$ip];
+    }
+
+    $dbFile = get_geoip_database_file();
+    if (!$dbFile) {
+        return false;
+    }
+
+    require_once __DIR__ . '/lib/maxmind-db/reader/autoload.php';
+
+    try {
+        $reader = new \MaxMind\Db\Reader($dbFile);
+        $record = $reader->get($ip);
+        $reader->close();
+
+        if (empty($record) || !is_array($record)) {
+            $geoipCache[$ip] = false;
+            return false;
+        }
+
+        // 1. Country
+        $countryCode = $record['country_code'] ?? ($record['country']['iso_code'] ?? ($record['registered_country_code'] ?? ''));
+        $countryName = $record['country_name'] ?? ($record['country']['names']['en'] ?? ($record['registered_country_name'] ?? ''));
+
+        // Check locale translations if available
+        if (isset($record['country']['names'][LANG])) {
+            $countryName = $record['country']['names'][LANG];
+        }
+
+        // 2. City & Region
+        $city = $record['city'] ?? ($record['city']['names']['en'] ?? '');
+        $region = $record['region'] ?? ($record['subdivisions'][0]['names']['en'] ?? '');
+
+        // 3. Autonomous System (AS / ASN)
+        $asnNumber = 0;
+        $asnName = '';
+        $asnDomain = '';
+        if (isset($record['asn']) && is_array($record['asn'])) {
+            $asnNumber = (int)($record['asn']['number'] ?? 0);
+            $asnName = trim($record['asn']['name'] ?? '');
+            $asnDomain = trim($record['asn']['domain'] ?? '');
+        } elseif (isset($record['autonomous_system_number'])) {
+            $asnNumber = (int)$record['autonomous_system_number'];
+            $asnName = trim($record['autonomous_system_organization'] ?? '');
+        }
+
+        $asnFull = '';
+        if ($asnNumber > 0) {
+            $asnFull = 'AS' . $asnNumber . (!empty($asnName) ? ' ' . $asnName : '');
+        }
+
+        $data = [
+            'ip' => $ip,
+            'country_code' => $countryCode,
+            'country_name' => $countryName,
+            'city' => $city,
+            'region' => $region,
+            'asn_number' => $asnNumber,
+            'asn_name' => $asnName,
+            'asn_domain' => $asnDomain,
+            'asn_full' => $asnFull,
+        ];
+
+        $geoipCache[$ip] = $data;
+        return $data;
+    } catch (\Throwable $e) {
+        $geoipCache[$ip] = false;
+        return false;
+    }
+}
+
+/**
+ * Return country name
+ *
+ * @param string $ip
+ * @return string|false
  */
 function return_geoip_country($ip)
 {
-    require_once __DIR__ . '/lib/maxmind-db/reader/autoload.php';
+    $data = return_geoip_data($ip);
+    if ($data && !empty($data['country_name'])) {
+        return $data['country_name'];
+    }
+    return false;
+}
 
-    $geoLite2File = __DIR__ . '/temp/GeoLite2-Country.mmdb';
-    if (file_exists($geoLite2File) && filesize($geoLite2File) > 0) {
-        try {
-            // check if ipv4 has a port specified (e.g. 10.0.0.10:1025), strip it if found
-            $ip = stripPortFromIp($ip);
-            $reader = new \MaxMind\Db\Reader($geoLite2File);
-            $countryData = $reader->get($ip);
-            $reader->close();
-            if (isset($countryData['country']['names'][LANG])) {
-                return $countryData['country']['names'][LANG];
-            }
+/**
+ * Return Autonomous System (AS/ASN) formatted string
+ *
+ * @param string $ip
+ * @return string|false
+ */
+function return_geoip_asn($ip)
+{
+    $data = return_geoip_data($ip);
+    if ($data && !empty($data['asn_full'])) {
+        return $data['asn_full'];
+    }
+    return false;
+}
 
-            return $countryData['country']['names']['en'];
-        } catch (Exception $e) {
-            return false;
-        }
-    } else {
+/**
+ * Return combined GeoIP + AS formatted string (e.g. "Ukraine, Kyiv · AS6846 INFOCOM LLC")
+ *
+ * @param string $ip
+ * @return string|false
+ */
+function return_geoip_full($ip)
+{
+    $data = return_geoip_data($ip);
+    if (!$data) {
         return false;
     }
+    $parts = [];
+    if (!empty($data['country_name'])) {
+        $loc = $data['country_name'];
+        if (!empty($data['city'])) {
+            $loc .= ', ' . $data['city'];
+        }
+        $parts[] = $loc;
+    }
+    if (!empty($data['asn_full'])) {
+        $parts[] = $data['asn_full'];
+    }
+    return !empty($parts) ? implode(' · ', $parts) : false;
 }
 
 /**

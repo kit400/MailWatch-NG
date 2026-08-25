@@ -150,6 +150,7 @@ for ($f = 0; $f < $result->field_count; ++$f) {
         $output .= ' <th>' . __('ipaddress04') . '</th>' . "\n";
         $output .= ' <th>' . __('hostname04') . '</th>' . "\n";
         $output .= ' <th>' . __('country04') . '</th>' . "\n";
+        $output .= ' <th>Autonomous System (AS)</th>' . "\n";
         $output .= ' <th class="noprint">RBL</th>' . "\n";
         $output .= ' <th class="noprint">Spam</th>' . "\n";
         $output .= ' <th class="noprint" >Virus</th>' . "\n";
@@ -175,15 +176,29 @@ for ($f = 0; $f < $result->field_count; ++$f) {
                 } else {
                     $output .= ' <td>' . __('reversefailed04') . "</td>\n";
                 }
-                // Do GeoIP lookup on address
+                // Do GeoIP & AS lookup on address
                 if (true === $isPrivateNetwork) {
                     $output .= ' <td>' . __('privatenetwork04') . "</td>\n";
+                    $output .= ' <td>-</td>' . "\n";
                 } elseif (true === $isLocalNetwork) {
                     $output .= ' <td>' . __('localhost04') . "</td>\n";
-                } elseif ($geoip_country = return_geoip_country($relay)) {
-                    $output .= ' <td>' . $geoip_country . '</td>' . "\n";
+                    $output .= ' <td>-</td>' . "\n";
+                } elseif ($geoData = return_geoip_data($relay)) {
+                    $locStr = htmlspecialchars($geoData['country_name']);
+                    if (!empty($geoData['city'])) {
+                        $locStr .= ' <span style="font-size:10.5px;color:#64748b;">(' . htmlspecialchars($geoData['city']) . ')</span>';
+                    }
+                    $output .= ' <td>' . $locStr . '</td>' . "\n";
+
+                    $asnStr = '-';
+                    if (!empty($geoData['asn_number'])) {
+                        $asnBadge = '<a href="https://bgp.he.net/AS' . $geoData['asn_number'] . '" target="_blank" rel="noopener noreferrer" class="badge-asn" title="BGP Toolkit AS' . $geoData['asn_number'] . '">AS' . $geoData['asn_number'] . '</a>';
+                        $asnStr = $asnBadge . (!empty($geoData['asn_name']) ? ' ' . htmlspecialchars($geoData['asn_name']) : '');
+                    }
+                    $output .= ' <td>' . $asnStr . '</td>' . "\n";
                 } else {
                     $output .= ' <td>' . __('geoipfailed04') . '</td>' . "\n";
+                    $output .= ' <td>-</td>' . "\n";
                 }
                 // Link to RBL Lookup
                 $output .= ' <td class="noprint" align="center">[<a href="https://multirbl.valli.org/lookup/' . $relay . '.html">&nbsp;&nbsp;</a>]</td>' . "\n";

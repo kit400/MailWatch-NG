@@ -214,36 +214,35 @@ $components[] = [
     'version' => !empty($db_version) ? $db_version : 'Unknown',
 ];
 
-// GeoIP Database
+// GeoIP Database (strato-do / ip-geo)
 $geoip_version = false;
-$geoip_database_file = __DIR__ . '/temp/GeoLite2-Country.mmdb';
-if (!file_exists($geoip_database_file) && file_exists('/usr/share/GeoIP/GeoLite2-Country.mmdb')) {
-    $geoip_database_file = '/usr/share/GeoIP/GeoLite2-Country.mmdb';
-}
-if (file_exists($geoip_database_file) && filesize($geoip_database_file) > 0) {
+$geoip_database_file = get_geoip_database_file();
+if ($geoip_database_file && filesize($geoip_database_file) > 0) {
     require_once __DIR__ . '/lib/maxmind-db/reader/autoload.php';
     try {
         $geoIpDbReader = new \MaxMind\Db\Reader($geoip_database_file);
         $GeoIPDbMetadata = $geoIpDbReader->metadata();
 
-        $desc = '';
+        $desc = 'Fused IP Lookup (IPv4/IPv6 + AS/ASN)';
         if (isset($GeoIPDbMetadata->description) && is_array($GeoIPDbMetadata->description)) {
-            $desc = $GeoIPDbMetadata->description['en'] ?? (reset($GeoIPDbMetadata->description) ?: '');
+            $desc = $GeoIPDbMetadata->description['en'] ?? (reset($GeoIPDbMetadata->description) ?: $desc);
         } elseif (isset($GeoIPDbMetadata->description) && is_string($GeoIPDbMetadata->description)) {
             $desc = $GeoIPDbMetadata->description;
         }
 
         $epoch = (int)($GeoIPDbMetadata->buildEpoch ?? 0);
         $epochDate = $epoch > 0 ? date('Y-m-d H:i:s', $epoch) : '';
+        $nodeCount = isset($GeoIPDbMetadata->nodeCount) ? ' [' . number_format($GeoIPDbMetadata->nodeCount) . ' nodes]' : '';
 
-        $geoip_version = trim($desc . ' ' . $epochDate);
+        $geoip_version = trim($desc . $nodeCount . ' ' . $epochDate);
+        $geoIpDbReader->close();
     } catch (\Throwable $e) {
         $geoip_version = false;
     }
 }
 $components[] = [
-    'name' => 'GeoIP Database (MaxMind)',
-    'url' => 'https://www.maxmind.com',
+    'name' => 'GeoIP & ASN Database (strato-do / ip-geo)',
+    'url' => 'https://github.com/strato-do/ip-geo',
     'version' => !empty($geoip_version) ? $geoip_version : __('nodbdown11'),
 ];
 

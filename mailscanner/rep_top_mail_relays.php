@@ -59,6 +59,7 @@ $graphgenerator->tableColumns = [
     'hostname' => __('hostname39'),
     'clientip' => __('ipaddresses39'),
     'geoip' => __('country39'),
+    'asn' => 'Autonomous System (AS)',
     'countconv' => __('messages39'),
     'total_virusesconv' => __('viruses39'),
     'total_spamconv' => __('spam39'),

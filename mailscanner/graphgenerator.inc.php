@@ -244,7 +244,7 @@ class GraphGenerator
     }
 
     /**
-     * Converts the data (ip address) from $this->data[$column] so that the hostname and geoip lookup are generated in $this->data['hostname'] and $this->data['geoip'].
+     * Converts the data (ip address) from $this->data[$column] so that the hostname and geoip lookup are generated in $this->data['hostname'], $this->data['geoip'], and $this->data['asn'].
      *
      * @param string $column the data column that shall be converted
      *
@@ -254,6 +254,7 @@ class GraphGenerator
     {
         $this->data['hostname'] = [];
         $this->data['geoip'] = [];
+        $this->data['asn'] = [];
         foreach ($this->data[$column] as $ipval) {
             $hostname = gethostbyaddr($ipval);
             if ($hostname === $ipval) {
@@ -261,10 +262,21 @@ class GraphGenerator
             } else {
                 $this->data['hostname'][] = $hostname;
             }
-            if ($geoip = return_geoip_country($ipval)) {
-                $this->data['geoip'][] = $geoip;
+            if ($geoData = return_geoip_data($ipval)) {
+                $loc = $geoData['country_name'];
+                if (!empty($geoData['city'])) {
+                    $loc .= ' (' . $geoData['city'] . ')';
+                }
+                $this->data['geoip'][] = $loc;
+
+                if (!empty($geoData['asn_number'])) {
+                    $this->data['asn'][] = 'AS' . $geoData['asn_number'] . (!empty($geoData['asn_name']) ? ' ' . $geoData['asn_name'] : '');
+                } else {
+                    $this->data['asn'][] = '-';
+                }
             } else {
                 $this->data['geoip'][] = __('geoipfailed64');
+                $this->data['asn'][] = '-';
             }
         }
     }

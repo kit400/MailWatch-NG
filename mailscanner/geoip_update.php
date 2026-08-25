@@ -4,31 +4,14 @@
  * MailWatch for MailScanner
  * Copyright (C) 2003-2011  Steve Freegard (steve@freegard.name)
  * Copyright (C) 2011  Garrod Alwood (garrod.alwood@lorodoes.com)
- * Copyright (C) 2014-2021  MailWatch Team (https://github.com/mailwatch/1.2.0/graphs/contributors)
+ * Copyright (C) 2014-2026  MailWatch Team (https://github.com/mailwatch/1.2.0/graphs/contributors)
  *
  * This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public
  * License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later
  * version.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
- *
- * In addition, as a special exception, the copyright holder gives permission to link the code of this program with
- * those files in the PEAR library that are licensed under the PHP License (or with modified versions of those files
- * that use the same license as those files), and distribute linked combinations including the two.
- * You must obey the GNU General Public License in all respects for all of the code used other than those files in the
- * PEAR library that are licensed under the PHP License. If you modify this program, you may extend this exception to
- * your version of the program, but you are not obligated to do so.
- * If you do not wish to do so, delete this exception statement from your version.
- *
- * You should have received a copy of the GNU General Public License along with this program; if not, write to the Free
- * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-// Require files
 require_once __DIR__ . '/functions.php';
-
-// Authentication verification
 require __DIR__ . '/login.function.php';
 
 if ('A' !== $_SESSION['user_type']) {
@@ -38,205 +21,151 @@ if ('A' !== $_SESSION['user_type']) {
 
 html_start(__('geoipupdate15'), 0, false, false);
 
-if (!defined('MAXMIND_LICENSE_KEY') || !validateInput(MAXMIND_LICENSE_KEY, 'maxmind')) {
-    $error_message = __('geoipnokey15') . '<br>' . "\n";
-    exit($error_message);
-} elseif (!isset($_POST['run'])) {
+$dbFile = __DIR__ . '/temp/ip-geo.mmdb';
+$sourceUrl = 'https://github.com/strato-do/ip-geo/releases/latest/download/ip-geo.mmdb';
+
+if (!isset($_POST['run'])) {
+    $currentStatus = 'Not installed';
+    $nodeCount = '-';
+    $buildDate = '-';
+    $fileSize = '-';
+
+    $activeFile = get_geoip_database_file();
+    if ($activeFile && file_exists($activeFile)) {
+        $fileSize = formatSize(filesize($activeFile));
+        require_once __DIR__ . '/lib/maxmind-db/reader/autoload.php';
+        try {
+            $reader = new \MaxMind\Db\Reader($activeFile);
+            $meta = $reader->metadata();
+            $currentStatus = 'Active (' . basename($activeFile) . ')';
+            $nodeCount = number_format($meta->nodeCount ?? 0) . ' nodes';
+            $buildDate = isset($meta->buildEpoch) ? date('Y-m-d H:i:s', $meta->buildEpoch) : date('Y-m-d H:i:s', filemtime($activeFile));
+            $reader->close();
+        } catch (\Throwable $e) {
+            $currentStatus = 'Error reading database: ' . htmlspecialchars($e->getMessage());
+        }
+    }
+
     echo '<form method="POST" action="geoip_update.php">
             <input type="hidden" name="run" value="true">
+            <input type="hidden" name="token" value="' . htmlspecialchars($_SESSION['token'] ?? '') . '">
             <table class="boxtable" width="100%">
-            <tr><th>';
-    echo __('updategeoip15');
-    echo '</th></tr>
+            <thead>
+                <tr><th colspan="2">' . __('updategeoip15') . ' — strato-do/ip-geo</th></tr>
+            </thead>
+            <tbody>
                <tr>
-                   <td>
-                    <br>
-                       ' . __('message115') . ' <a href="https://dev.maxmind.com/geoip/geolite2-free-geolocation-data" target="_maxmind">MaxMind</a> ' . __('message215') . '<br><br>
+                   <td colspan="2" style="padding:12px;line-height:1.5;">
+                       <strong>IP Geolocation & Autonomous System (AS/ASN) Database</strong><br>
+                       High-accuracy IPv4 / IPv6 geolocation and AS/ASN database powered by <a href="https://github.com/strato-do/ip-geo" target="_blank" rel="noopener noreferrer"><strong>strato-do/ip-geo</strong></a> (MaxMind DB format, rebuilt weekly with city-level precision and BGP Autonomous System mappings).<br>
+                       <span style="color:#64748b;font-size:11px;">Direct download from official releases — no MaxMind license key required.</span>
                    </td>
                </tr>
                <tr>
-                   <td align="center"><br><input type="SUBMIT" value="' . __('input15') . '"><br><br></td>
+                   <td style="width:30%;font-weight:600;padding:8px 12px;background:#f8fafc;">Database Status</td>
+                   <td style="padding:8px 12px;">' . htmlspecialchars($currentStatus) . '</td>
                </tr>
+               <tr>
+                   <td style="font-weight:600;padding:8px 12px;background:#f8fafc;">File Size</td>
+                   <td style="padding:8px 12px;">' . $fileSize . '</td>
+               </tr>
+               <tr>
+                   <td style="font-weight:600;padding:8px 12px;background:#f8fafc;">Nodes / IP Ranges</td>
+                   <td style="padding:8px 12px;">' . $nodeCount . '</td>
+               </tr>
+               <tr>
+                   <td style="font-weight:600;padding:8px 12px;background:#f8fafc;">Build Date</td>
+                   <td style="padding:8px 12px;">' . $buildDate . '</td>
+               </tr>
+               <tr>
+                   <td colspan="2" align="center" style="padding:16px;">
+                       <input type="submit" value="⬇ Download &amp; Update GeoIP Database Now" class="btn" style="padding:8px 18px;font-weight:700;cursor:pointer;">
+                   </td>
+               </tr>
+            </tbody>
             </table>
             </form>' . "\n";
 } else {
-    require_once __DIR__ . '/lib/request/Requests.php';
-    Requests::register_autoloader();
-
-    ob_start();
-    echo __('downfile15') . '<br>' . "\n";
-
-    $files_base_url = 'https://download.maxmind.com';
-    $file['description'] = __('geoip15');
-    $file['path'] = '/geoip/databases/GeoLite2-Country/download?suffix=tar.gz';
-    $file['legacy_path'] = '/app/geoip_download?edition_id=GeoLite2-Country&suffix=tar.gz&license_key=' . MAXMIND_LICENSE_KEY;
-    $file['destination'] = __DIR__ . '/temp/GeoLite2-Country.tar.gz';
-    $file['destinationFileName'] = 'GeoLite2-Country.mmdb';
-
-    $extract_dir = __DIR__ . '/temp/';
-
-    // Clean-up from last run
-    if (file_exists($file['destination'])) {
-        unlink($file['destination']);
-        @unlink(substr($file['destination'], 0, -3));
+    if (false === checkToken($_POST['token'] ?? '')) {
+        header('Location: login.php?error=pagetimeout');
+        exit;
     }
+
+    echo '<div style="background:#ffffff;border:1px solid #cbd5e1;border-radius:6px;padding:16px;margin-top:12px;line-height:1.6;">';
+    echo '<h3 style="margin-top:0;">Downloading strato-do/ip-geo Database...</h3>';
     ob_flush();
     flush();
 
-    if (!file_exists($file['destination'])) {
-        if (is_writable($extract_dir) && is_readable($extract_dir)) {
-            if (function_exists('fsockopen') || extension_loaded('curl')) {
-                $requestSession = new Requests_Session($files_base_url . '/');
-                $requestSession->options['useragent'] = 'MailWatch/' . mailwatch_version();
-                if (USE_PROXY === true) {
-                    if (PROXY_USER !== '') {
-                        $requestSession->options['proxy']['authentication'] = [
-                            PROXY_SERVER . ':' . PROXY_PORT,
-                            PROXY_USER,
-                            PROXY_PASS,
-                        ];
-                    } else {
-                        $requestSession->options['proxy']['authentication'] = [
-                            PROXY_SERVER . ':' . PROXY_PORT,
-                        ];
-                    }
+    $tempDest = __DIR__ . '/temp/ip-geo.mmdb.tmp';
+    $finalDest = __DIR__ . '/temp/ip-geo.mmdb';
 
-                    switch (PROXY_TYPE) {
-                        case 'HTTP':
-                        case 'CURLPROXY_HTTP': // BC for old constant name
-                            // $requestProxy = new Requests_Proxy_HTTP($requestProxyParams);
-                            $requestSession->options['proxy']['type'] = 'HTTP';
-                            break;
-                        case 'SOCKS5':
-                        case 'CURLPROXY_SOCKS5': // BC for old constant name
-                            $requestSession->options['proxy']['type'] = 'SOCKS5';
-                            break;
-                        default:
-                            exit(__('dieproxy15'));
-                    }
+    if (!is_dir(__DIR__ . '/temp')) {
+        mkdir(__DIR__ . '/temp', 0755, true);
+    }
+
+    $ch = curl_init($sourceUrl);
+    $fp = fopen($tempDest, 'wb');
+    curl_setopt($ch, CURLOPT_FILE, $fp);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 300);
+    curl_setopt($ch, CURLOPT_USERAGENT, 'MailWatch-NG/' . mailwatch_version());
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+
+    $success = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_error($ch);
+    curl_close($ch);
+    fclose($fp);
+
+    if ($success && ($httpCode === 200 || $httpCode === 302) && filesize($tempDest) > 1000000) {
+        rename($tempDest, $finalDest);
+        @chmod($finalDest, 0644);
+
+        // Update symlink in /usr/share/GeoIP if directory exists
+        if (is_dir('/usr/share/GeoIP') && is_writable('/usr/share/GeoIP')) {
+            @unlink('/usr/share/GeoIP/ip-geo.mmdb');
+            @symlink($finalDest, '/usr/share/GeoIP/ip-geo.mmdb');
+        }
+
+        echo '<div style="color:#166534;font-weight:700;margin-bottom:10px;">✔ Successfully downloaded and installed ip-geo.mmdb (' . formatSize(filesize($finalDest)) . ')</div>';
+
+        // Verification & Test Lookups
+        require_once __DIR__ . '/lib/maxmind-db/reader/autoload.php';
+        try {
+            $reader = new \MaxMind\Db\Reader($finalDest);
+            $meta = $reader->metadata();
+            echo '<table class="boxtable" style="width:100%;margin-top:12px;">';
+            echo '<tr><th colspan="2">Verified Database Metadata</th></tr>';
+            echo '<tr><td style="width:25%;font-weight:600;">Database Type</td><td>' . htmlspecialchars($meta->databaseType ?? 'ip-geo') . '</td></tr>';
+            echo '<tr><td style="font-weight:600;">Node Count</td><td>' . number_format($meta->nodeCount ?? 0) . ' nodes</td></tr>';
+            echo '<tr><td style="font-weight:600;">Build Date</td><td>' . (isset($meta->buildEpoch) ? date('Y-m-d H:i:s', $meta->buildEpoch) : '-') . '</td></tr>';
+            echo '</table>';
+
+            // Sample Lookups
+            echo '<h4 style="margin-top:16px;">Sample Geolocation &amp; AS Verification Lookups:</h4>';
+            echo '<ul>';
+            $sampleIps = ['8.8.8.8', '1.1.1.1', '195.230.150.68'];
+            foreach ($sampleIps as $testIp) {
+                $rec = return_geoip_data($testIp);
+                if ($rec) {
+                    echo '<li><strong>' . htmlspecialchars($testIp) . '</strong>: ' . htmlspecialchars($rec['country_name']) . (!empty($rec['city']) ? ' (' . htmlspecialchars($rec['city']) . ')' : '') . ' &mdash; <span class="badge-asn">' . htmlspecialchars($rec['asn_full']) . '</span></li>';
                 }
-
-                try {
-                    $requestSession->options['filename'] = $file['destination'];
-                    if (defined('MAXMIND_ACCOUNT_ID')) {
-                        // use basic auth
-                        $requestSession->options['auth'] = new Requests_Auth_Basic([MAXMIND_ACCOUNT_ID, MAXMIND_LICENSE_KEY]);
-
-                        // remove auth and hooks from redirect request
-                        $hooks = new Requests_Hooks();
-                        $hooks->register('requests.before_redirect', function (
-                            &$location,
-                            &$req_headers,
-                            &$req_data,
-                            &$options
-                        ) {
-                            $options['auth'] = false;
-                            $options['hooks'] = new Requests_Hooks();
-                        });
-                        $requestSession->options['hooks'] = $hooks;
-                        $result = $requestSession->get($file['path']);
-                    } else {
-                        $result = $requestSession->get($file['legacy_path']);
-                    }
-                    $result->throw_for_status();
-                    if (true === $result->success) {
-                        echo $file['description'] . ' ' . __('downok15') . '<br>' . "\n";
-                    }
-                } catch (Requests_Exception $e) {
-                    echo sprintf('%s %s%s %s', __('downbad15'), $file['description'], __('colon99'), $e->getMessage());
-                    if (file_exists($file['destination'])) {
-                        echo sprintf(' (%s)', strip_tags(file_get_contents($file['destination'])));
-                    }
-                    exit;
-                }
-
-                ob_flush();
-                flush();
-
-                echo __('downokunpack15') . '<br>' . "\n";
-                ob_flush();
-                flush();
-            } elseif (!in_array('exec', array_map('trim', explode(',', ini_get('disable_functions'))), true)) {
-                // wget
-                $proxyString = '';
-                if (USE_PROXY) {
-                    if (PROXY_USER !== '') {
-                        $proxyString = '-e use_proxy=on -e http_proxy=' . PROXY_SERVER . ':' . PROXY_PORT . ' --proxy-user=' . PROXY_USER . ' --proxy-password=' . PROXY_PASS;
-                    } else {
-                        $proxyString = '-e use_proxy=on -e http_proxy=' . PROXY_SERVER . ':' . PROXY_PORT;
-                    }
-                }
-
-                if (defined('MAXMIND_ACCOUNT_ID')) {
-                    $wget_basic_auth = sprintf('--user=%s --password=%s', MAXMIND_ACCOUNT_ID, MAXMIND_LICENSE_KEY);
-                    $command = escapeshellcmd('wget ' . $wget_basic_auth . $proxyString . ' -N ' . $files_base_url . $file['path'] . ' -O ' . $file['destination']);
-                } else {
-                    $command = escapeshellcmd('wget ' . $proxyString . ' -N ' . $files_base_url . $file['path'] . ' -O ' . $file['destination']);
-                }
-
-                $result = exec(
-                    $command,
-                    $output_wget,
-                    $retval_wget
-                );
-
-                if ($retval_wget > 0) {
-                    echo __('downbad15') . ' ' . $file['description'] . "<br>\n";
-                    exit;
-                } else {
-                    echo $file['description'] . ' ' . __('downok15') . '<br>' . "\n";
-                }
-            } else {
-                $error_message = __('message315') . '<br>' . "\n" . __('message415');
-                exit($error_message);
             }
+            echo '</ul>';
 
-            // Extract files
-            echo '<br>' . "\n";
-            if (class_exists('PharData')) {
-                $p = new PharData($file['destination']);
-                $p->decompress();
-                $phar = new PharData(substr($file['destination'], 0, -3));
-                $phar->extractTo($extract_dir, null, true);
-                echo $file['description'] . ' ' . __('unpackok15') . '<br>' . "\n";
-                unlink($file['destination']);
-                unlink(substr($file['destination'], 0, -3));
-
-                foreach (new DirectoryIterator($extract_dir) as $item) {
-                    if ($item->isDot()) {
-                        continue;
-                    }
-
-                    if ($item->isDir()) {
-                        $extractedFolder = $item->getFilename();
-                        if (rename($extract_dir . $extractedFolder . '/' . $file['destinationFileName'], $extract_dir . $file['destinationFileName'])) {
-                            array_map('unlink', glob($extract_dir . $extractedFolder . '/*'));
-                            rmdir($extract_dir . $extractedFolder);
-                        }
-                    }
-                }
-            } else {
-                // Unable to extract the file correctly
-                $error_message = __('message515') . "<br>\n" . __('message615');
-                exit($error_message);
-            }
-
-            echo __('processok15') . "\n";
-            ob_flush();
-            flush();
-            audit_log(__('auditlog15', true));
-        } else {
-            // Unable to read or write to the directory
-            exit(__('norread15') . ' ' . $extract_dir . ' ' . __('directory15') . ".\n");
+            $reader->close();
+            audit_log('Updated GeoIP & ASN database to strato-do/ip-geo');
+        } catch (\Throwable $e) {
+            echo '<div style="color:#dc2626;">Error verifying database: ' . htmlspecialchars($e->getMessage()) . '</div>';
         }
     } else {
-        $error_message = __('message715') . "<br>\n";
-        $error_message .= __('message815') . " $extract_dir" . '.';
-        exit($error_message);
+        @unlink($tempDest);
+        echo '<div style="color:#dc2626;font-weight:700;">✖ Failed to download ip-geo.mmdb: HTTP ' . $httpCode . ' ' . htmlspecialchars($curlErr) . '</div>';
     }
+
+    echo '<div style="margin-top:16px;"><a href="geoip_update.php" class="btn" style="text-decoration:none;padding:6px 14px;">« Back to GeoIP Management</a></div>';
+    echo '</div>';
 }
 
-// Add the footer
 html_end();
-// Close the connection to the Database
 dbclose();
