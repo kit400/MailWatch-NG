@@ -279,7 +279,7 @@ function getVirusRegex($scanner = null)
  */
 function mailwatch_version()
 {
-    return '1.2.27-15';
+    return '6.0.2';
 }
 
 function mailwatch_full_version()
@@ -300,9 +300,12 @@ function mailwatch_project_url()
 function efa_version()
 {
     if (file_exists('/etc/eFa-Version')) {
-        return trim(file_get_contents('/etc/eFa-Version', false, null, 0, 32));
+        $ver = trim(file_get_contents('/etc/eFa-Version', false, null, 0, 32));
+        if (!empty($ver)) {
+            return $ver;
+        }
     }
-    return '';
+    return 'eFa-6.0.2';
 }
 
 /**
