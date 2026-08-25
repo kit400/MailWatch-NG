@@ -319,49 +319,70 @@ table.rowhover tr:hover {
     filter: none !important;
 }
 
-/* Status Color Highlights (20% Brighter & Saturated) */
+/* Status Color Highlights (Distinct palettes for Virus, Bad Content, High Spam, Spam) */
 table.mail tr.clean,
 table.mail tr.clean td {
     background-color: #ffffff;
     color: #1e293b;
 }
 
-table.mail tr.infected,
-table.mail tr.infected td {
+/* 1. Virus: Distinct Crimson Red */
+table.mail tr.virus,
+table.mail tr.virus td {
     background-color: #fee2e2 !important;
     color: #991b1b !important;
 }
 
+/* 2. Bad Content: Distinct Warm Tangerine / Orange */
+table.mail tr.badcontent,
+table.mail tr.badcontent td {
+    background-color: #ffedd5 !important;
+    color: #9a3412 !important;
+}
+
+/* Fallback for generic infected */
+table.mail tr.infected:not(.badcontent):not(.virus),
+table.mail tr.infected:not(.badcontent):not(.virus) td {
+    background-color: #fee2e2 !important;
+    color: #991b1b !important;
+}
+
+/* 3. High Spam: Distinct Deep Fuchsia / Purple-Wine */
+table.mail tr.highspam,
+table.mail tr.highspam td {
+    background-color: #fae8ff !important;
+    color: #86198f !important;
+}
+
+/* 4. Spam (Standard): Golden Yellow / Amber */
 table.mail tr.spam,
 table.mail tr.spam td {
-    background-color: #fef3c7 !important;
+    background-color: #fef9c3 !important;
     color: #854d0e !important;
 }
 
-table.mail tr.highspam,
-table.mail tr.highspam td {
-    background-color: #ffe4e6 !important;
-    color: #9f1239 !important;
-}
-
+/* 5. Policy / MCP: Sky Blue */
 table.mail tr.mcp,
 table.mail tr.mcp td {
-    background-color: #e0f0fe !important;
-    color: #0c4a6e !important;
+    background-color: #e0f2fe !important;
+    color: #075985 !important;
 }
 
+/* 6. High MCP: Deep Indigo */
 table.mail tr.highmcp,
 table.mail tr.highmcp td {
     background-color: #e0e7ff !important;
     color: #3730a3 !important;
 }
 
+/* 7. Whitelisted: Mint Green */
 table.mail tr.whitelisted,
 table.mail tr.whitelisted td {
     background-color: #dcfce7 !important;
     color: #15803d !important;
 }
 
+/* 8. Blacklisted: Slate */
 table.mail tr.blacklisted,
 table.mail tr.blacklisted td {
     background-color: #e2e8f0 !important;
@@ -369,6 +390,7 @@ table.mail tr.blacklisted td {
     font-weight: 500;
 }
 
+/* 9. Not Scanned: Lavender Purple */
 table.mail tr.notscanned,
 table.mail tr.notscanned td {
     background-color: #f3e8ff !important;
@@ -376,7 +398,7 @@ table.mail tr.notscanned td {
 }
 
 /* Color indicator pills */
-table.mail td.infected, td.colorcode-infected {
+table.mail td.virus, td.colorcode-virus, .legend-pill.virus {
     background-color: #ef4444 !important;
     border-radius: 3px !important;
     border: none !important;
@@ -385,8 +407,8 @@ table.mail td.infected, td.colorcode-infected {
     height: 12px !important;
 }
 
-table.mail td.spam, td.colorcode-spam {
-    background-color: #f59e0b !important;
+table.mail td.badcontent, td.colorcode-badcontent, .legend-pill.badcontent {
+    background-color: #f97316 !important;
     border-radius: 3px !important;
     border: none !important;
     width: 12px !important;
@@ -394,8 +416,8 @@ table.mail td.spam, td.colorcode-spam {
     height: 12px !important;
 }
 
-table.mail td.highspam, td.colorcode-highspam {
-    background-color: #dc2626 !important;
+table.mail td.infected, td.colorcode-infected, .legend-pill.infected {
+    background-color: #ef4444 !important;
     border-radius: 3px !important;
     border: none !important;
     width: 12px !important;
@@ -403,8 +425,8 @@ table.mail td.highspam, td.colorcode-highspam {
     height: 12px !important;
 }
 
-table.mail td.mcp, td.colorcode-mcp {
-    background-color: #3b82f6 !important;
+table.mail td.highspam, td.colorcode-highspam, .legend-pill.highspam {
+    background-color: #c026d3 !important;
     border-radius: 3px !important;
     border: none !important;
     width: 12px !important;
@@ -412,8 +434,8 @@ table.mail td.mcp, td.colorcode-mcp {
     height: 12px !important;
 }
 
-table.mail td.highmcp, td.colorcode-highmcp {
-    background-color: #185890 !important;
+table.mail td.spam, td.colorcode-spam, .legend-pill.spam {
+    background-color: #eab308 !important;
     border-radius: 3px !important;
     border: none !important;
     width: 12px !important;
@@ -421,7 +443,25 @@ table.mail td.highmcp, td.colorcode-highmcp {
     height: 12px !important;
 }
 
-table.mail td.whitelisted, td.colorcode-whitelisted {
+table.mail td.mcp, td.colorcode-mcp, .legend-pill.mcp {
+    background-color: #0284c7 !important;
+    border-radius: 3px !important;
+    border: none !important;
+    width: 12px !important;
+    min-width: 12px !important;
+    height: 12px !important;
+}
+
+table.mail td.highmcp, td.colorcode-highmcp, .legend-pill.highmcp {
+    background-color: #6366f1 !important;
+    border-radius: 3px !important;
+    border: none !important;
+    width: 12px !important;
+    min-width: 12px !important;
+    height: 12px !important;
+}
+
+table.mail td.whitelisted, td.colorcode-whitelisted, .legend-pill.whitelisted {
     background-color: #22c55e !important;
     border-radius: 3px !important;
     border: none !important;
@@ -430,7 +470,7 @@ table.mail td.whitelisted, td.colorcode-whitelisted {
     height: 12px !important;
 }
 
-table.mail td.blacklisted, td.colorcode-blacklisted {
+table.mail td.blacklisted, td.colorcode-blacklisted, .legend-pill.blacklisted {
     background-color: #0f172a !important;
     border-radius: 3px !important;
     border: none !important;
@@ -439,7 +479,7 @@ table.mail td.blacklisted, td.colorcode-blacklisted {
     height: 12px !important;
 }
 
-table.mail td.notscanned, td.colorcode-notscanned {
+table.mail td.notscanned, td.colorcode-notscanned, .legend-pill.notscanned {
     background-color: #a855f7 !important;
     border-radius: 3px !important;
     border: none !important;
@@ -448,7 +488,7 @@ table.mail td.notscanned, td.colorcode-notscanned {
     height: 12px !important;
 }
 
-table.mail td.clean, td.colorcode-clean {
+table.mail td.clean, td.colorcode-clean, .legend-pill.clean {
     background-color: #cbd5e1 !important;
     border-radius: 3px !important;
     border: none !important;

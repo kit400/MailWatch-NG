@@ -607,9 +607,10 @@ function toggleHeaderWidgets() {
 function getColorCodesHtml()
 {
     $html = '<div class="legend-inline-list">';
-    $html .= '<span class="legend-item"><span class="legend-pill infected"></span> ' . __('badcontentinfected03') . '</span>';
-    $html .= '<span class="legend-item"><span class="legend-pill spam"></span> ' . __('spam103') . '</span>';
+    $html .= '<span class="legend-item"><span class="legend-pill virus"></span> ' . __('virus03') . '</span>';
+    $html .= '<span class="legend-item"><span class="legend-pill badcontent"></span> ' . __('badcontent03') . '</span>';
     $html .= '<span class="legend-item"><span class="legend-pill highspam"></span> ' . __('highspam03') . '</span>';
+    $html .= '<span class="legend-item"><span class="legend-pill spam"></span> ' . __('spam103') . '</span>';
     if (get_conf_truefalse('mcpchecks')) {
         $html .= '<span class="legend-item"><span class="legend-pill mcp"></span> ' . __('mcp03') . '</span>';
         $html .= '<span class="legend-item"><span class="legend-pill highmcp"></span> ' . __('highmcp03') . '</span>';
@@ -2747,7 +2748,9 @@ function db_colorised_table($sql, $table_heading = false, $pager = false, $order
             // Work out field colourings and modify the incoming data as necessary
             // and populate the generate an overall 'status' for the mail.
             $status_array = [];
-            $infected = false;
+            $virusinfected = false;
+            $nameinfected = false;
+            $otherinfected = false;
             $highspam = false;
             $spam = false;
             $whitelisted = false;
@@ -2846,7 +2849,7 @@ function db_colorised_table($sql, $table_heading = false, $pager = false, $order
                         break;
                     case 'virusinfected':
                         if ('Y' === $row[$f] || $row[$f] > 0) {
-                            $infected = true;
+                            $virusinfected = true;
                             $status_array[] = __('virus03');
                         }
                         break;
@@ -2864,13 +2867,13 @@ function db_colorised_table($sql, $table_heading = false, $pager = false, $order
                         break;
                     case 'nameinfected':
                         if ('Y' === $row[$f] || $row[$f] > 0) {
-                            $infected = true;
+                            $nameinfected = true;
                             $status_array[] = __('badcontent03');
                         }
                         break;
                     case 'otherinfected':
                         if ('Y' === $row[$f] || $row[$f] > 0) {
-                            $infected = true;
+                            $otherinfected = true;
                             $status_array[] = __('otherinfected03');
                         }
                         break;
@@ -2947,8 +2950,11 @@ function db_colorised_table($sql, $table_heading = false, $pager = false, $order
             }
             // Colorise the row
             switch (true) {
-                case $infected:
-                    echo '<tr class="infected">' . "\n";
+                case $virusinfected:
+                    echo '<tr class="virus infected">' . "\n";
+                    break;
+                case ($nameinfected || $otherinfected):
+                    echo '<tr class="badcontent infected">' . "\n";
                     break;
                 case $whitelisted:
                     echo '<tr class="whitelisted">' . "\n";
@@ -2972,7 +2978,7 @@ function db_colorised_table($sql, $table_heading = false, $pager = false, $order
                     if (isset($fieldname['mcpsascore']) && '' !== $fieldname['mcpsascore']) {
                         echo '<tr class="mcp">' . "\n";
                     } else {
-                        echo '<tr >' . "\n";
+                        echo '<tr class="clean">' . "\n";
                     }
                     break;
             }
