@@ -769,6 +769,8 @@ function render_widget_recent_threats($timeRange)
         $timeStr = date('H:i:s', strtotime($r['timestamp']));
         $subject = !empty($r['subject']) ? htmlspecialchars(mb_strimwidth($r['subject'], 0, 32, '...')) : '<em>(no subject)</em>';
 
+        $tokenParam = isset($_SESSION['token']) ? '&amp;token=' . urlencode($_SESSION['token']) : '';
+
         $out .= '<tr>
             <td style="padding:6px 10px;">' . $typeBadge . '</td>
             <td style="padding:6px 10px;font-size:11px;">
@@ -779,7 +781,7 @@ function render_widget_recent_threats($timeRange)
             <td style="padding:6px 10px;text-align:center;font-weight:700;font-size:11px;">' . number_format((float)$r['sascore'], 1) . '</td>
             <td style="padding:6px 10px;text-align:right;font-size:10.5px;color:#64748b;">' . $timeStr . '</td>
             <td style="padding:6px 10px;text-align:center;">
-                <a href="detail.php?id=' . urlencode($r['id']) . '" class="btn-micro" title="View details">🔍</a>
+                <a href="detail.php?id=' . urlencode($r['id']) . $tokenParam . '" class="btn-micro" title="View details">🔍</a>
             </td>
         </tr>';
     }
@@ -803,6 +805,8 @@ function render_widget_recent_messages($timeRange)
     if (!$res || $res->num_rows === 0) {
         return '<div style="padding:16px;text-align:center;color:#64748b;">No recent messages found.</div>';
     }
+
+    $tokenParam = isset($_SESSION['token']) ? '&amp;token=' . urlencode($_SESSION['token']) : '';
 
     $out = '<div class="table-responsive"><table class="boxtable" width="100%">
     <thead>
@@ -839,7 +843,7 @@ function render_widget_recent_messages($timeRange)
             <td style="padding:6px 10px;font-size:11px;">' . $subject . '</td>
             <td style="padding:6px 10px;text-align:right;font-size:10.5px;">' . formatSize((float)$r['size']) . '</td>
             <td style="padding:6px 10px;text-align:center;">
-                <a href="detail.php?id=' . urlencode($r['id']) . '" class="btn-micro">🔍</a>
+                <a href="detail.php?id=' . urlencode($r['id']) . $tokenParam . '" class="btn-micro">🔍</a>
             </td>
         </tr>';
     }

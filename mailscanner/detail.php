@@ -39,7 +39,7 @@ if (isset($_POST['token'])) {
         header('Location: login.php?error=pagetimeout');
         exit;
     }
-} else {
+} elseif (isset($_GET['token'])) {
     if (false === checkToken($_GET['token'])) {
         header('Location: login.php?error=pagetimeout');
         exit;
