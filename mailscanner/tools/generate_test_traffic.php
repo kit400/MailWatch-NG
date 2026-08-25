@@ -104,29 +104,33 @@ $subjects = [
     ],
 ];
 
-$typesDistribution = [
-    'Clean', 'Clean', 'Clean', 'Clean', 'Clean', 'Clean', 'Clean',
-    'LowSpam', 'LowSpam',
-    'HighSpam',
-    'Virus',
-    'BlockedFile',
-    'BadHeader',
-    'Whitelisted',
-    'Blacklisted',
-    'MCP',
-    'HighMCP',
-    'Released',
+$baseTypes = [
+    'Clean', 'Clean', 'Clean',
+    'LowSpam', 'HighSpam',
+    'Virus', 'BlockedFile', 'BadHeader',
+    'Whitelisted', 'Blacklisted',
+    'MCP', 'HighMCP', 'Released',
 ];
 
 $now = time();
-$stepSeconds = ($minutes * 60) / $totalCount;
+$stepSeconds = ($minutes * 60) / max(1, $totalCount);
 $inserted = 0;
 
+// Build pool ensuring even coverage of all types
+$typePool = [];
+while (count($typePool) < $totalCount) {
+    $shuffled = $baseTypes;
+    shuffle($shuffled);
+    $typePool = array_merge($typePool, $shuffled);
+}
+$typePool = array_slice($typePool, 0, $totalCount);
+shuffle($typePool);
+
 for ($i = 0; $i < $totalCount; $i++) {
-    $msgTime = $now - (int)(($totalCount - $i) * $stepSeconds) + mt_rand(-10, 10);
+    $msgTime = $now - (int)(($totalCount - $i) * $stepSeconds) + mt_rand(-3, 3);
     if ($msgTime > $now) $msgTime = $now;
 
-    $type = $typesDistribution[array_rand($typesDistribution)];
+    $type = $typePool[$i];
     $senderPair = $senders[array_rand($senders)];
     $recipientPair = $recipients[array_rand($recipients)];
     $subjectList = $subjects[$type] ?? $subjects['Clean'];
