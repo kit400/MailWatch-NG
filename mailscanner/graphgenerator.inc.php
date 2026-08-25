@@ -256,11 +256,16 @@ class GraphGenerator
         $this->data['geoip'] = [];
         $this->data['asn'] = [];
         foreach ($this->data[$column] as $ipval) {
-            $hostname = gethostbyaddr($ipval);
-            if ($hostname === $ipval) {
-                $this->data['hostname'][] = __('hostfailed64');
+            $cleanIp = stripPortFromIp(trim($ipval));
+            if (filter_var($cleanIp, FILTER_VALIDATE_IP)) {
+                $hostname = @gethostbyaddr($cleanIp);
+                if ($hostname === $cleanIp || empty($hostname)) {
+                    $this->data['hostname'][] = __('hostfailed64');
+                } else {
+                    $this->data['hostname'][] = $hostname;
+                }
             } else {
-                $this->data['hostname'][] = $hostname;
+                $this->data['hostname'][] = !empty($ipval) ? $ipval : __('hostfailed64');
             }
             if ($geoData = return_geoip_data($ipval)) {
                 $loc = $geoData['country_name'];
