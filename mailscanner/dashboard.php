@@ -159,12 +159,12 @@ function render_single_widget_card($w, $timeRange)
                 <select id="dashAutoRefresh" class="dash-select">
                     <option value="0">Off</option>
                     <option value="15">15s</option>
-                    <option value="30" selected>30s</option>
-                    <option value="60">60s</option>
+                    <option value="30">30s</option>
+                    <option value="60" selected>60s</option>
                     <option value="120">2m</option>
                     <option value="300">5m</option>
                 </select>
-                <span id="dashRefreshCountdown" class="dash-countdown-badge">30s</span>
+                <span id="dashRefreshCountdown" class="dash-countdown-badge">60s</span>
             </div>
 
             <!-- Manual Refresh -->

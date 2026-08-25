@@ -278,12 +278,14 @@
         var body = wrapper.querySelector('.dash-widget-body');
 
         btn.classList.add('rotating');
+        if (body) body.classList.add('dash-body-refreshing');
 
         fetch('dashboard.php?action=get_widget_body&type=' + encodeURIComponent(type) + '&widget_id=' + encodeURIComponent(widgetId) + '&range=' + encodeURIComponent(timeRange))
             .then(function (res) { return res.text(); })
             .then(function (html) {
                 if (body) {
                     body.innerHTML = html;
+                    body.classList.remove('dash-body-refreshing');
                     // Execute scripts in injected HTML
                     Array.from(body.querySelectorAll('script')).forEach(function (oldScript) {
                         var newScript = document.createElement('script');
@@ -298,6 +300,7 @@
                 resizeAllCharts();
             })
             .catch(function () {
+                if (body) body.classList.remove('dash-body-refreshing');
                 btn.classList.remove('rotating');
             });
     };
@@ -310,8 +313,6 @@
         if (refreshBtn) refreshBtn.classList.add('rotating');
 
         var wrappers = document.querySelectorAll('.dash-widget-wrapper');
-        var completed = 0;
-
         wrappers.forEach(function (w) {
             var btn = w.querySelector('.btn-dash-refresh');
             if (btn) refreshWidget(btn);
@@ -320,7 +321,7 @@
         setTimeout(function () {
             if (refreshBtn) refreshBtn.classList.remove('rotating');
             resetCountdown();
-        }, 600);
+        }, 850);
     };
 
     /**
@@ -393,9 +394,12 @@
         var savedVal = localStorage.getItem('mw_dash_autorefresh');
         if (savedVal !== null) {
             select.value = savedVal;
+        } else {
+            select.value = '60';
         }
 
-        autoRefreshInterval = parseInt(select.value, 10) || 0;
+        autoRefreshInterval = parseInt(select.value, 10);
+        if (isNaN(autoRefreshInterval)) autoRefreshInterval = 60;
         resetCountdown();
 
         select.addEventListener('change', function () {
