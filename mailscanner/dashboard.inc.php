@@ -398,12 +398,12 @@ function render_widget_traffic_chart($timeRange, $widgetId)
     $timeFilter = get_dashboard_time_filter($timeRange);
     $globalFilter = $_SESSION['global_filter'] ?? '1=1';
 
-    $groupBy = ($timeRange === '7d' || $timeRange === '30d') 
-        ? "DATE_FORMAT(timestamp, '%Y-%m-%d'), DATE_FORMAT(timestamp, '%b %d')" 
-        : "DATE_FORMAT(timestamp, '%Y-%m-%d %H:00'), DATE_FORMAT(timestamp, '%H:00')";
+    $slotFormat = ($timeRange === '7d' || $timeRange === '30d') ? "%Y-%m-%d" : "%Y-%m-%d %H:00";
+    $labelFormat = ($timeRange === '7d' || $timeRange === '30d') ? "%b %d" : "%H:00";
 
     $sql = "SELECT 
-        $groupBy AS (slot, label),
+        DATE_FORMAT(timestamp, '$slotFormat') AS slot,
+        DATE_FORMAT(timestamp, '$labelFormat') AS label,
         COUNT(*) AS total,
         SUM(CASE WHEN isspam=0 AND ishighspam=0 AND virusinfected=0 AND nameinfected=0 AND otherinfected=0 AND ismcp=0 AND ishighmcp=0 THEN 1 ELSE 0 END) AS clean,
         SUM(isspam + ishighspam) AS spam,
