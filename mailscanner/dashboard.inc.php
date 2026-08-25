@@ -281,8 +281,9 @@ function render_widget_kpi_summary($timeRange)
     $load = function_exists('sys_getloadavg') ? sys_getloadavg() : [0, 0, 0];
     $loadStr = number_format($load[0], 2) . ', ' . number_format($load[1], 2);
 
-    // RAM
+    // RAM & Swap
     $ramPct = 0;
+    $swapPct = 0;
     if (file_exists('/proc/meminfo')) {
         $meminfo = @file_get_contents('/proc/meminfo');
         if (preg_match('/MemTotal:\s+(\d+)/', $meminfo, $mt) && preg_match('/MemAvailable:\s+(\d+)/', $meminfo, $ma)) {
@@ -290,6 +291,13 @@ function render_widget_kpi_summary($timeRange)
             $avail = (float)$ma[1];
             if ($tot > 0) {
                 $ramPct = round((($tot - $avail) / $tot) * 100);
+            }
+        }
+        if (preg_match('/SwapTotal:\s+(\d+)/', $meminfo, $st) && preg_match('/SwapFree:\s+(\d+)/', $meminfo, $sf)) {
+            $stot = (float)$st[1];
+            $sfree = (float)$sf[1];
+            if ($stot > 0) {
+                $swapPct = round((($stot - $sfree) / $stot) * 100);
             }
         }
     }
@@ -381,7 +389,7 @@ function render_widget_kpi_summary($timeRange)
         <div class="dash-kpi-val">Load ' . $loadStr . '</div>
         <div class="dash-kpi-sub">
             <span class="dash-kpi-pill pill-teal">RAM ' . $ramPct . '%</span>
-            <span class="dash-kpi-pill pill-teal">CPU Active</span>
+            <span class="dash-kpi-pill ' . ($swapPct > 50 ? 'pill-yellow' : 'pill-teal') . '">Swap ' . $swapPct . '%</span>
         </div>
     </div>';
 
@@ -874,10 +882,10 @@ function render_widget_system_services()
         if ($svc === 'spamassassin') {
             if ($isRunning) {
                 $badgeClass = 'pill-green';
-                $badgeText = '● RUNNING (spamd)';
+                $badgeText = '● ACTIVE';
             } elseif (true === get_conf_truefalse('UseSpamAssassin')) {
                 $badgeClass = 'pill-green';
-                $badgeText = '● ACTIVE (In-Process)';
+                $badgeText = '● ACTIVE';
             } else {
                 $badgeClass = 'pill-slate';
                 $badgeText = '○ DISABLED';
@@ -894,10 +902,13 @@ function render_widget_system_services()
     // Resource Bars
     $out .= '<div style="font-size:11px;font-weight:700;color:#475569;margin-bottom:6px;text-transform:uppercase;">Resource Consumption</div>';
 
-    // RAM
+    // RAM & Swap
     $ramTotal = 1;
     $ramUsed = 0;
     $ramPct = 0;
+    $swapTotal = 0;
+    $swapUsed = 0;
+    $swapPct = 0;
     if (file_exists('/proc/meminfo')) {
         $meminfo = @file_get_contents('/proc/meminfo');
         if (preg_match('/MemTotal:\s+(\d+)/', $meminfo, $mt) && preg_match('/MemAvailable:\s+(\d+)/', $meminfo, $ma)) {
@@ -905,6 +916,12 @@ function render_widget_system_services()
             $avail = (float)$ma[1] * 1024;
             $ramUsed = $ramTotal - $avail;
             $ramPct = round(($ramUsed / $ramTotal) * 100, 1);
+        }
+        if (preg_match('/SwapTotal:\s+(\d+)/', $meminfo, $st) && preg_match('/SwapFree:\s+(\d+)/', $meminfo, $sf)) {
+            $swapTotal = (float)$st[1] * 1024;
+            $swapFree = (float)$sf[1] * 1024;
+            $swapUsed = $swapTotal - $swapFree;
+            $swapPct = $swapTotal > 0 ? round(($swapUsed / $swapTotal) * 100, 1) : 0;
         }
     }
 
@@ -918,6 +935,19 @@ function render_widget_system_services()
             <div class="dash-progress-bar ' . ($ramPct > 85 ? 'bar-red' : ($ramPct > 70 ? 'bar-yellow' : 'bar-blue')) . '" style="width:' . min($ramPct, 100) . '%;"></div>
         </div>
     </div>';
+
+    if ($swapTotal > 0) {
+        $out .= '
+        <div style="margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px;">
+                <span>Swap Memory</span>
+                <span style="font-weight:600;">' . formatSize($swapUsed) . ' / ' . formatSize($swapTotal) . ' (' . $swapPct . '%)</span>
+            </div>
+            <div class="dash-progress-track">
+                <div class="dash-progress-bar ' . ($swapPct > 70 ? 'bar-red' : ($swapPct > 40 ? 'bar-yellow' : 'bar-purple')) . '" style="width:' . min($swapPct, 100) . '%;"></div>
+            </div>
+        </div>';
+    }
 
     // Disk
     $diskTotal = @disk_total_space('/') ?: 1;
