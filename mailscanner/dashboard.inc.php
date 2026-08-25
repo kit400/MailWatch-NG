@@ -871,6 +871,19 @@ function render_widget_system_services()
         $badgeClass = $isRunning ? 'pill-green' : 'pill-slate';
         $badgeText = $isRunning ? '● RUNNING' : '○ STOPPED';
 
+        if ($svc === 'spamassassin') {
+            if ($isRunning) {
+                $badgeClass = 'pill-green';
+                $badgeText = '● RUNNING (spamd)';
+            } elseif (true === get_conf_truefalse('UseSpamAssassin')) {
+                $badgeClass = 'pill-green';
+                $badgeText = '● ACTIVE (In-Process)';
+            } else {
+                $badgeClass = 'pill-slate';
+                $badgeText = '○ DISABLED';
+            }
+        }
+
         $out .= '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;padding:5px 8px;display:flex;justify-content:space-between;align-items:center;">
             <span style="font-size:11px;font-weight:600;color:#1e293b;">' . $label . '</span>
             <span class="dash-kpi-pill ' . $badgeClass . '" style="font-size:9.5px;padding:1px 5px;">' . $badgeText . '</span>
