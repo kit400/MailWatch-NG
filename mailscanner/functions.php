@@ -436,7 +436,7 @@ function html_start($title, $refresh = 0, $cacheable = true, $report = false)
     echo '        <form action="./detail.php" method="get" class="compact-jump-form">' . "\n";
     echo '          <span class="compact-jump-label">🔍 ' . __('jumpmessage03') . '</span>' . "\n";
     echo '          <input type="text" name="id" value="' . $message_id . '" placeholder="ID" class="compact-jump-input">' . "\n";
-    echo '          <input type="hidden" name="token" value="' . $_SESSION['token'] . '">' . "\n";
+    echo '          <input type="hidden" name="token" value="' . htmlspecialchars($_SESSION['token'] ?? '') . '">' . "\n";
     echo '        </form>' . "\n";
     echo '      </div>' . "\n";
     echo '    </div>' . "\n";
@@ -473,7 +473,7 @@ function html_start($title, $refresh = 0, $cacheable = true, $report = false)
     echo '          <div class="jump-box">' . "\n";
     echo '            <form action="./detail.php">' . "\n";
     echo '              <p>🔍 ' . __('jumpmessage03') . ' <input type="text" name="id" value="' . $message_id . '" placeholder="ID"></p>' . "\n";
-    echo '              <input type="hidden" name="token" value="' . $_SESSION['token'] . '">' . "\n";
+    echo '              <input type="hidden" name="token" value="' . htmlspecialchars($_SESSION['token'] ?? '') . '">' . "\n";
     echo '            </form>' . "\n";
     echo '          </div>' . "\n";
     echo '        </div>' . "\n";

@@ -131,7 +131,7 @@ $row = $result->fetch_array();
 if ($result->num_rows > 1) {
     error_log('WARNING: multiple mails existed for id ' . $url_id . ' only first result displayed to user');
 }
-$listurl = 'lists.php?token=' . $_SESSION['token'] . '&amp;host=' . $row[__('receivedfrom04')] . '&amp;from=' . $row[__('from04')] . '&amp;to=' . $row[__('to04')];
+$listurl = 'lists.php?token=' . urlencode($_SESSION['token'] ?? '') . '&amp;host=' . $row[__('receivedfrom04')] . '&amp;from=' . $row[__('from04')] . '&amp;to=' . $row[__('to04')];
 for ($f = 0; $f < $result->field_count; ++$f) {
     $fieldInfo = $result->fetch_field_direct($f);
     $fieldn = $fieldInfo->name;
