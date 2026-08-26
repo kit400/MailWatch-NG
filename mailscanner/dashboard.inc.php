@@ -316,12 +316,12 @@ function render_widget_kpi_summary($timeRange)
     $out .= '
     <div class="dash-kpi-card kpi-blue">
         <div class="dash-kpi-header">
-            <span class="dash-kpi-title">TOTAL PROCESSED</span>
+            <span class="dash-kpi-title">TOTAL</span>
             <span class="dash-kpi-icon">📨</span>
         </div>
         <div class="dash-kpi-val">' . number_format($total) . '</div>
         <div class="dash-kpi-sub">
-            <span class="dash-kpi-pill pill-blue">Volume ' . $totalSize . '</span>
+            <span class="dash-kpi-pill pill-blue">Vol ' . $totalSize . '</span>
         </div>
     </div>';
 
@@ -329,12 +329,12 @@ function render_widget_kpi_summary($timeRange)
     $out .= '
     <div class="dash-kpi-card kpi-green">
         <div class="dash-kpi-header">
-            <span class="dash-kpi-title">CLEAN MESSAGES</span>
+            <span class="dash-kpi-title">CLEAN</span>
             <span class="dash-kpi-icon">🛡️</span>
         </div>
         <div class="dash-kpi-val">' . number_format($clean) . '</div>
         <div class="dash-kpi-sub">
-            <span class="dash-kpi-pill pill-green">' . $cleanPct . '% Clean Rate</span>
+            <span class="dash-kpi-pill pill-green">' . $cleanPct . '% Clean</span>
         </div>
     </div>';
 
@@ -342,12 +342,12 @@ function render_widget_kpi_summary($timeRange)
     $out .= '
     <div class="dash-kpi-card kpi-yellow">
         <div class="dash-kpi-header">
-            <span class="dash-kpi-title">SPAM INTERCEPTED</span>
+            <span class="dash-kpi-title">SPAM</span>
             <span class="dash-kpi-icon">⚡</span>
         </div>
         <div class="dash-kpi-val">' . number_format($spam + $highspam) . '</div>
         <div class="dash-kpi-sub">
-            <span class="dash-kpi-pill pill-yellow">' . number_format($spam) . ' Spam</span>
+            <span class="dash-kpi-pill pill-yellow">' . number_format($spam) . ' Low</span>
             <span class="dash-kpi-pill pill-purple">' . number_format($highspam) . ' High</span>
         </div>
     </div>';
@@ -356,13 +356,13 @@ function render_widget_kpi_summary($timeRange)
     $out .= '
     <div class="dash-kpi-card kpi-red">
         <div class="dash-kpi-header">
-            <span class="dash-kpi-title">VIRUSES &amp; THREATS</span>
+            <span class="dash-kpi-title">THREATS</span>
             <span class="dash-kpi-icon">🦠</span>
         </div>
         <div class="dash-kpi-val">' . number_format($threats) . '</div>
         <div class="dash-kpi-sub">
             <span class="dash-kpi-pill pill-red">' . number_format($virus) . ' Virus</span>
-            <span class="dash-kpi-pill pill-orange">' . number_format($badcontent) . ' Bad Content</span>
+            <span class="dash-kpi-pill pill-orange">' . number_format($badcontent) . ' Content</span>
         </div>
     </div>';
 
@@ -370,12 +370,12 @@ function render_widget_kpi_summary($timeRange)
     $out .= '
     <div class="dash-kpi-card kpi-slate">
         <div class="dash-kpi-header">
-            <span class="dash-kpi-title">MAIL QUEUES</span>
+            <span class="dash-kpi-title">QUEUES</span>
             <span class="dash-kpi-icon">📬</span>
         </div>
         <div class="dash-kpi-val">' . number_format($inqCount) . '</div>
         <div class="dash-kpi-sub">
-            <span class="dash-kpi-pill ' . ($inqCount > 50 ? 'pill-red' : 'pill-slate') . '">' . ($inqCount === 0 ? 'Queues Clear' : 'Pending in Spool') . '</span>
+            <span class="dash-kpi-pill ' . ($inqCount > 50 ? 'pill-red' : 'pill-slate') . '">' . ($inqCount === 0 ? 'Clear' : $inqCount . ' Pending') . '</span>
         </div>
     </div>';
 
@@ -383,10 +383,10 @@ function render_widget_kpi_summary($timeRange)
     $out .= '
     <div class="dash-kpi-card kpi-teal">
         <div class="dash-kpi-header">
-            <span class="dash-kpi-title">SYSTEM HEALTH</span>
-            <span class="dash-kpi-icon">⚡</span>
+            <span class="dash-kpi-title">HEALTH</span>
+            <span class="dash-kpi-icon">💻</span>
         </div>
-        <div class="dash-kpi-val">Load ' . $loadStr . '</div>
+        <div class="dash-kpi-val">' . $loadStr . '</div>
         <div class="dash-kpi-sub">
             <span class="dash-kpi-pill pill-teal">RAM ' . $ramPct . '%</span>
             <span class="dash-kpi-pill ' . ($swapPct > 50 ? 'pill-yellow' : 'pill-teal') . '">Swap ' . $swapPct . '%</span>

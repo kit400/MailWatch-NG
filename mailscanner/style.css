@@ -4700,34 +4700,39 @@ th.col-sortable.is-sorted {
     pointer-events: none;
 }
 
-/* KPI Grid & Cards */
+/* KPI Grid & Cards - Ultra Compact 1-Row Layout */
 .dash-kpi-grid {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 8px;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 6px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
-@media (max-width: 1300px) {
-    .dash-kpi-grid { grid-template-columns: repeat(3, 1fr); }
-}
-@media (max-width: 650px) {
-    .dash-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 900px) {
+    .dash-kpi-grid {
+        grid-template-columns: repeat(6, minmax(130px, 1fr));
+        overflow-x: auto;
+        padding-bottom: 4px;
+    }
 }
 
 .dash-kpi-card {
     background: #ffffff;
     border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 10px 12px;
+    border-radius: 5px;
+    padding: 6px 8px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    min-width: 0;
+    overflow: hidden;
     transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 
 .dash-kpi-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 3px 6px rgba(0,0,0,0.04);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.04);
 }
 
 .dash-kpi-card.kpi-blue { border-left: 3px solid #0284c7; }
@@ -4742,41 +4747,58 @@ th.col-sortable.is-sorted {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
+    line-height: 1.1;
 }
 
 .dash-kpi-title {
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 700;
     color: #64748b;
     letter-spacing: 0.3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .dash-kpi-icon {
-    font-size: 14px;
+    font-size: 11px;
+    line-height: 1;
+    margin-left: 2px;
+    flex-shrink: 0;
 }
 
 .dash-kpi-val {
-    font-size: 19px;
+    font-size: 15px;
     font-weight: 800;
     color: #0f172a;
-    line-height: 1.2;
-    margin-bottom: 6px;
+    line-height: 1.15;
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .dash-kpi-sub {
     display: flex;
-    flex-wrap: wrap;
-    gap: 3px;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 2px;
+    overflow: hidden;
+    white-space: nowrap;
 }
 
 .dash-kpi-pill {
     display: inline-block;
-    padding: 1px 5px;
-    font-size: 9.5px;
+    padding: 1px 4px;
+    font-size: 8.5px;
     font-weight: 700;
     border-radius: 3px;
-    line-height: 1.2;
+    line-height: 1.15;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 1;
 }
 
 .pill-blue { background: #e0f2fe; color: #0369a1; }
