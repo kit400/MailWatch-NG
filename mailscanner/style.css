@@ -887,8 +887,8 @@ table.colorcodes {
 }
 
 .header-logo-img {
-    max-height: 32px;
-    max-width: 135px;
+    max-height: 36px;
+    max-width: 165px;
     height: auto;
     width: auto;
     object-fit: contain;
