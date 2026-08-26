@@ -5737,7 +5737,11 @@ function getVirus($report)
  */
 function logFailedLogin($myusername = '')
 {
-    error_log('MailWatch failed login attempt from: [' . getHTTPClientIP() . '] for User: ' . $myusername);
+    $ip = getHTTPClientIP();
+    if (is_client_ip_whitelisted($ip)) {
+        return;
+    }
+    error_log('MailWatch failed login attempt from: [' . $ip . '] for User: ' . $myusername);
 }
 
 /**
