@@ -5901,12 +5901,12 @@ function format_email_auth_badge($type, $data)
 
         return '<span class="gmail-auth-entry"><span class="auth-pill ' . $pillClass . '">' . $displayStatus . '</span>' . $ipText . ' ' . $learnMoreLink . '</span>';
     } elseif ($type === 'dkim') {
-        $displayStatus = "'" . htmlspecialchars($status) . "'";
+        $displayStatus = htmlspecialchars($status);
         $domainText = !empty($data['domain']) ? ' with domain <span class="auth-mono-val">' . htmlspecialchars($data['domain']) . '</span>' : '';
 
         return '<span class="gmail-auth-entry"><span class="auth-pill ' . $pillClass . '">' . $displayStatus . '</span>' . $domainText . ' ' . $learnMoreLink . '</span>';
     } elseif ($type === 'dmarc') {
-        $displayStatus = "'" . htmlspecialchars($status) . "'";
+        $displayStatus = htmlspecialchars($status);
 
         return '<span class="gmail-auth-entry"><span class="auth-pill ' . $pillClass . '">' . $displayStatus . '</span> ' . $learnMoreLink . '</span>';
     }
