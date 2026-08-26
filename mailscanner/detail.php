@@ -136,9 +136,13 @@ for ($f = 0; $f < $result->field_count; ++$f) {
     $fieldInfo = $result->fetch_field_direct($f);
     $fieldn = $fieldInfo->name;
     if ($fieldn === __('receivedfrom04')) {
-        $output = '<table class="sa_rules_report" width="100%" cellspacing=0 cellpadding=0><tr><td>' . $row[$f] . '</td>';
+        $output = '<table class="sa_rules_report" width="100%" cellspacing=0 cellpadding=0><tr><td style="vertical-align:middle;">' . $row[$f] . '</td>';
         if (LISTS) {
-            $output .= '<td class="noprint" align="right">[<a class="nowrap" href="' . $listurl . '&amp;type=h&amp;list=w">' . __('addwl04') . '</a>&nbsp;|&nbsp;<a class="nowrap" href="' . $listurl . '&amp;type=h&amp;list=b">' . __('addbl04') . '</a>]</td>';
+            $output .= '<td class="noprint" align="right" style="vertical-align:middle;">' .
+                '<div class="detail-list-actions">' .
+                '<a class="btn-action-badge badge-btn-allowlist" href="' . $listurl . '&amp;type=h&amp;list=w" title="' . __('addwl04') . '">✓ ' . __('addwl04') . '</a>' .
+                '<a class="btn-action-badge badge-btn-blocklist" href="' . $listurl . '&amp;type=h&amp;list=b" title="' . __('addbl04') . '">✕ ' . __('addbl04') . '</a>' .
+                '</div></td>';
         }
         $output .= "</tr></table>\n";
         $row[$f] = $output;
@@ -224,9 +228,13 @@ for ($f = 0; $f < $result->field_count; ++$f) {
     }
     if ($fieldn === __('from04')) {
         $row[$f] = htmlentities($row[$f]);
-        $output = '<table class="sa_rules_report" cellspacing="0"><tr><td>' . $row[$f] . '</td>' . "\n";
+        $output = '<table class="sa_rules_report" width="100%" cellspacing=0 cellpadding=0><tr><td style="vertical-align:middle;">' . $row[$f] . '</td>' . "\n";
         if (LISTS) {
-            $output .= '<td class="noprint" align="right">[<a class="nowrap" href="' . $listurl . '&amp;type=f&amp;list=w">' . __('addwl04') . '</a>&nbsp;|&nbsp;<a class="nowrap" href="' . $listurl . '&amp;type=f&amp;list=b">' . __('addbl04') . '</a>]</td>' . "\n";
+            $output .= '<td class="noprint" align="right" style="vertical-align:middle;">' .
+                '<div class="detail-list-actions">' .
+                '<a class="btn-action-badge badge-btn-allowlist" href="' . $listurl . '&amp;type=f&amp;list=w" title="' . __('addwl04') . '">✓ ' . __('addwl04') . '</a>' .
+                '<a class="btn-action-badge badge-btn-blocklist" href="' . $listurl . '&amp;type=f&amp;list=b" title="' . __('addbl04') . '">✕ ' . __('addbl04') . '</a>' .
+                '</div></td>' . "\n";
         }
         $output .= '</tr></table>' . "\n";
         $row[$f] = $output;

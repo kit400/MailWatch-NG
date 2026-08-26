@@ -1821,6 +1821,59 @@ div.table > .caption {
     border: 1px solid #bbf7d0 !important;
 }
 
+/* Allowlist / Blocklist Action Badges in Message Detail */
+.detail-list-actions {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap !important;
+}
+
+.btn-action-badge {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px !important;
+    font-size: 10.5px !important;
+    font-weight: 700 !important;
+    border-radius: 4px !important;
+    text-decoration: none !important;
+    line-height: 1.35 !important;
+    white-space: nowrap !important;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    transition: all 0.15s ease-in-out;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.btn-action-badge.badge-btn-allowlist {
+    background-color: #dcfce7 !important;
+    color: #166534 !important;
+    border: 1px solid #bbf7d0 !important;
+}
+
+.btn-action-badge.badge-btn-allowlist:hover {
+    background-color: #bbf7d0 !important;
+    color: #14532d !important;
+    border-color: #86efac !important;
+    box-shadow: 0 2px 5px rgba(22, 101, 52, 0.18);
+    transform: translateY(-1px);
+}
+
+.btn-action-badge.badge-btn-blocklist {
+    background-color: #f1f5f9 !important;
+    color: #334155 !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+.btn-action-badge.badge-btn-blocklist:hover {
+    background-color: #fee2e2 !important;
+    color: #991b1b !important;
+    border-color: #fca5a5 !important;
+    box-shadow: 0 2px 5px rgba(153, 27, 27, 0.18);
+    transform: translateY(-1px);
+}
+
 .filterbuttons {
     white-space: nowrap;
     text-align: right;
