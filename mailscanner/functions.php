@@ -2927,21 +2927,26 @@ function db_colorised_table($sql, $table_heading = false, $pager = false, $order
                         // NOTE: this should always be the last row for it to be displayed correctly
                         // Work out status
                         if (0 === count($status_array)) {
-                            $status = __('clean03');
+                            $status = '<span class="status-main-tag">' . __('clean03') . '</span>';
                         } else {
                             $status = '';
                             foreach ($status_array as $item) {
                                 if ($item === __('released03')) {
-                                    $class = 'released';
+                                    $class = 'badge-status-sub released';
                                 } elseif ($item === __('learnham03')) {
-                                    $class = 'salearn-1';
+                                    $class = 'badge-status-sub salearn-1';
                                 } elseif ($item === __('learnspam03')) {
-                                    $class = 'salearn-2';
+                                    $class = 'badge-status-sub salearn-2';
+                                } elseif ($item === __('blacklisted03')) {
+                                    $class = 'badge-status-sub blacklisted-tag';
+                                } elseif ($item === __('whitelisted03')) {
+                                    $class = 'badge-status-sub whitelisted-tag';
                                 } else {
-                                    $class = '';
+                                    $class = 'status-main-tag';
                                 }
-                                $status .= '<div class="' . $class . '">' . $item . '</div>';
+                                $status .= '<span class="' . $class . '">' . $item . '</span>';
                             }
+                            $status = '<span class="status-tags-wrap">' . $status . '</span>';
                         }
                         $row[$f] = $status;
                         break;

@@ -1759,38 +1759,66 @@ div.table > .caption {
     background-color: #ffffff;
 }
 
-/* Action Badges */
-.released {
-    background-color: #dcfce7 !important;
-    color: #15803d !important;
-    border: 1px solid #bbf7d0 !important;
-    border-radius: 4px !important;
-    padding: 2px 6px !important;
-    font-weight: 600 !important;
-    font-size: 10.5px !important;
-    display: inline-block;
+/* Single-line Status Badges & Tags */
+.status-tags-wrap {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap !important;
+    vertical-align: middle;
+    flex-wrap: nowrap;
 }
 
+.status-main-tag {
+    display: inline-block;
+    white-space: nowrap !important;
+    font-weight: 500;
+}
+
+.badge-status-sub {
+    display: inline-block;
+    padding: 1px 6px !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    border-radius: 3px !important;
+    line-height: 1.3 !important;
+    white-space: nowrap !important;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    vertical-align: middle;
+}
+
+.badge-status-sub.released,
+.released {
+    background-color: #dbeafe !important;
+    color: #1e40af !important;
+    border: 1px solid #bfdbfe !important;
+}
+
+.badge-status-sub.salearn-1,
 .salearn-1 { /* HAM */
     background-color: #dcfce7 !important;
     color: #15803d !important;
     border: 1px solid #bbf7d0 !important;
-    border-radius: 4px !important;
-    padding: 2px 6px !important;
-    font-weight: 600 !important;
-    font-size: 10.5px !important;
-    display: inline-block;
 }
 
+.badge-status-sub.salearn-2,
 .salearn-2 { /* SPAM */
     background-color: #fee2e2 !important;
     color: #b91c1c !important;
     border: 1px solid #fecaca !important;
-    border-radius: 4px !important;
-    padding: 2px 6px !important;
-    font-weight: 600 !important;
-    font-size: 10.5px !important;
-    display: inline-block;
+}
+
+.badge-status-sub.blacklisted-tag {
+    background-color: #f1f5f9 !important;
+    color: #334155 !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+.badge-status-sub.whitelisted-tag {
+    background-color: #dcfce7 !important;
+    color: #166534 !important;
+    border: 1px solid #bbf7d0 !important;
 }
 
 .filterbuttons {
