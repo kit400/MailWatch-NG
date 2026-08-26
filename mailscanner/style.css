@@ -2239,6 +2239,21 @@ p.footer {
     color: #0284c7;
 }
 
+.sidebar-nav-link .menu-text,
+.sidebar-dropdown > a .menu-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sidebar-nav-link .badge,
+.sidebar-dropdown > a .badge {
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
 .nav-icon {
     font-size: 13px;
     line-height: 1;
@@ -2247,6 +2262,7 @@ p.footer {
     align-items: center;
     justify-content: center;
     width: 16px;
+    flex-shrink: 0;
 }
 
 /* Sidebar Dropdown Accordion */
@@ -2291,7 +2307,8 @@ p.footer {
 .sidebar-dropdown > a:after {
     content: "▶";
     font-size: 7.5px;
-    margin-left: auto;
+    margin-left: 6px;
+    flex-shrink: 0;
     color: #94a3b8;
     transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
