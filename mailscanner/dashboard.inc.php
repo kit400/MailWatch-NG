@@ -727,7 +727,8 @@ function render_widget_recent_threats($timeRange)
         isspam,
         ishighspam,
         ismcp,
-        ishighmcp
+        ishighmcp,
+        report
     FROM maillog 
     WHERE (isspam=1 OR virusinfected=1 OR nameinfected=1 OR otherinfected=1 OR ismcp=1 OR ishighmcp=1)
       AND $timeFilter AND ($globalFilter)
@@ -755,9 +756,13 @@ function render_widget_recent_threats($timeRange)
     while ($r = $res->fetch_assoc()) {
         $typeBadge = '';
         if ((int)$r['virusinfected'] === 1) {
-            $typeBadge = '<span class="dash-kpi-pill pill-red">🔴 Virus</span>';
+            $fullRep = !empty($r['report']) ? $r['report'] : 'Virus signature detected';
+            $shortRep = format_short_virus_name($fullRep, 18);
+            $typeBadge = '<span class="dash-kpi-pill pill-red mw-threat-tooltip" title="' . htmlspecialchars($fullRep, ENT_QUOTES, 'UTF-8') . '" data-tooltip="' . htmlspecialchars($fullRep, ENT_QUOTES, 'UTF-8') . '">🔴 Virus (' . htmlspecialchars($shortRep, ENT_QUOTES, 'UTF-8') . ')</span>';
         } elseif ((int)$r['nameinfected'] === 1 || (int)$r['otherinfected'] === 1) {
-            $typeBadge = '<span class="dash-kpi-pill pill-orange">🟠 Bad Content</span>';
+            $fullRep = !empty($r['report']) ? $r['report'] : 'Dangerous content / disallowed file';
+            $shortRep = format_short_virus_name($fullRep, 18);
+            $typeBadge = '<span class="dash-kpi-pill pill-orange mw-threat-tooltip" title="' . htmlspecialchars($fullRep, ENT_QUOTES, 'UTF-8') . '" data-tooltip="' . htmlspecialchars($fullRep, ENT_QUOTES, 'UTF-8') . '">🟠 Bad Content (' . htmlspecialchars($shortRep, ENT_QUOTES, 'UTF-8') . ')</span>';
         } elseif ((int)$r['ishighspam'] === 1) {
             $typeBadge = '<span class="dash-kpi-pill pill-purple">🟣 High Spam</span>';
         } elseif ((int)$r['isspam'] === 1) {
@@ -796,7 +801,7 @@ function render_widget_recent_threats($timeRange)
 function render_widget_recent_messages($timeRange)
 {
     $globalFilter = $_SESSION['global_filter'] ?? '1=1';
-    $sql = "SELECT id, timestamp, from_address, to_address, subject, size, isspam, ishighspam, virusinfected, nameinfected, otherinfected, sascore
+    $sql = "SELECT id, timestamp, from_address, to_address, subject, size, isspam, ishighspam, virusinfected, nameinfected, otherinfected, sascore, report
             FROM maillog 
             WHERE $globalFilter 
             ORDER BY timestamp DESC LIMIT 6";
@@ -823,9 +828,13 @@ function render_widget_recent_messages($timeRange)
     while ($r = $res->fetch_assoc()) {
         $status = '<span class="dash-kpi-pill pill-green">Clean</span>';
         if ((int)$r['virusinfected'] === 1) {
-            $status = '<span class="dash-kpi-pill pill-red">Virus</span>';
+            $fullRep = !empty($r['report']) ? $r['report'] : 'Virus detected';
+            $shortRep = format_short_virus_name($fullRep, 18);
+            $status = '<span class="dash-kpi-pill pill-red mw-threat-tooltip" title="' . htmlspecialchars($fullRep, ENT_QUOTES, 'UTF-8') . '" data-tooltip="' . htmlspecialchars($fullRep, ENT_QUOTES, 'UTF-8') . '">Virus (' . htmlspecialchars($shortRep, ENT_QUOTES, 'UTF-8') . ')</span>';
         } elseif ((int)$r['nameinfected'] === 1 || (int)$r['otherinfected'] === 1) {
-            $status = '<span class="dash-kpi-pill pill-orange">Bad Content</span>';
+            $fullRep = !empty($r['report']) ? $r['report'] : 'Bad Content';
+            $shortRep = format_short_virus_name($fullRep, 18);
+            $status = '<span class="dash-kpi-pill pill-orange mw-threat-tooltip" title="' . htmlspecialchars($fullRep, ENT_QUOTES, 'UTF-8') . '" data-tooltip="' . htmlspecialchars($fullRep, ENT_QUOTES, 'UTF-8') . '">Bad Content (' . htmlspecialchars($shortRep, ENT_QUOTES, 'UTF-8') . ')</span>';
         } elseif ((int)$r['ishighspam'] === 1) {
             $status = '<span class="dash-kpi-pill pill-purple">High Spam</span>';
         } elseif ((int)$r['isspam'] === 1) {

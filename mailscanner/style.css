@@ -4068,6 +4068,76 @@ th.col-sortable.is-sorted {
     border-color: #0284c7;
 }
 
+/* Threat & Virus Hover Tooltip Popups */
+.mw-threat-tooltip,
+.mw-threat-badge-wrap {
+    position: relative;
+    display: inline-block;
+    cursor: help;
+    text-decoration: none !important;
+}
+
+.mw-threat-tooltip {
+    border-bottom: 1px dotted rgba(220, 38, 38, 0.7);
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.mw-threat-tooltip:hover {
+    color: #b91c1c;
+    border-bottom-color: #b91c1c;
+}
+
+/* Modern popup bubble on hover */
+.mw-threat-tooltip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    background: #0f172a;
+    color: #f8fafc;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.35;
+    white-space: normal;
+    min-width: 140px;
+    max-width: 360px;
+    word-break: break-word;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.35), 0 4px 6px -4px rgba(0, 0, 0, 0.25);
+    border: 1px solid #334155;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+    z-index: 10000;
+    text-align: center;
+}
+
+.mw-threat-tooltip::before {
+    content: "";
+    position: absolute;
+    bottom: 110%;
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    border-width: 5px 5px 0 5px;
+    border-style: solid;
+    border-color: #0f172a transparent transparent transparent;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+    z-index: 10000;
+}
+
+.mw-threat-tooltip:hover::after,
+.mw-threat-tooltip:hover::before {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
+
 /* ==========================================================================
    Interactive Customizable Dashboard Styles
    ========================================================================== */

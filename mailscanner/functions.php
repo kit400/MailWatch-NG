@@ -2861,10 +2861,11 @@ function db_colorised_table($sql, $table_heading = false, $pager = false, $order
                         // IMPORTANT NOTE: for this to work correctly the 'report' field MUST
                         // appear after the 'virusinfected' field within the SQL statement.
                         $virus = getVirus($row[$f]);
-                        if (defined('DISPLAY_VIRUS_REPORT') && DISPLAY_VIRUS_REPORT === true && null !== $virus) {
+                        if (defined('DISPLAY_VIRUS_REPORT') && DISPLAY_VIRUS_REPORT === true && null !== $virus && '' !== trim((string)$virus) && '0' !== trim((string)$virus)) {
+                            $virusLink = return_virus_link($virus, true);
                             foreach ($status_array as $k => $v) {
-                                if ($v = str_replace('Virus', 'Virus (' . return_virus_link($virus) . ')', $v)) {
-                                    $status_array[$k] = $v;
+                                if (strpos($v, 'Virus') !== false) {
+                                    $status_array[$k] = 'Virus (' . $virusLink . ')';
                                 }
                             }
                         }
@@ -4683,27 +4684,63 @@ function return_quarantine_dates()
 }
 
 /**
+ * Shorten long virus report string while preserving the core signature name
+ *
  * @param string $virus
+ * @param int $maxLen
+ * @return string
+ */
+function format_short_virus_name($virus, $maxLen = 22)
+{
+    $clean = trim((string)$virus);
+    if ($clean === '' || $clean === '0') {
+        return 'Infection';
+    }
+
+    // Extract inner signature if wrapped in Scanner (e.g. ClamAV (Eicar-Test-Signature / Win32.Trojan...))
+    if (preg_match('/^[A-Za-z0-9_.-]+\s*\((.+)\)$/', $clean, $m)) {
+        $clean = trim($m[1]);
+    }
+
+    // If MailScanner prefix e.g. MailScanner: Blocked dangerous executable (setup.exe)
+    if (preg_match('/(?:blocked|dangerous|disallowed|found)\s+.*?\(([^)]+)\)/i', $clean, $m)) {
+        $clean = trim($m[1]);
+    } elseif (preg_match('/^MailScanner:\s*(.+)$/i', $clean, $m)) {
+        $clean = trim($m[1]);
+    }
+
+    // If multiple signatures separated by slash, take primary signature
+    if (strpos($clean, ' / ') !== false) {
+        $parts = explode(' / ', $clean);
+        $clean = trim($parts[0]);
+    }
+
+    if (mb_strlen($clean) > $maxLen) {
+        $clean = mb_substr($clean, 0, $maxLen - 3) . '...';
+    }
+
+    return $clean;
+}
+
+/**
+ * @param string $virus
+ * @param bool $truncateOutput
  *
  * @return string
  */
-function return_virus_link($virus, $truncateOutput = false)
+function return_virus_link($virus, $truncateOutput = true)
 {
-    $virus = htmlentities($virus);
-    // Truncate excessively long output (more than 30 characters)
-    if ($truncateOutput && strlen($virus) > 30) {
-        $virusText = substr($virus, 0, 30) . '...';
-    } else {
-        $virusText = $virus;
-    }
+    $rawVirus = trim((string)$virus);
+    $fullVirus = htmlspecialchars($rawVirus, ENT_QUOTES, 'UTF-8');
+    $shortVirus = htmlspecialchars(format_short_virus_name($rawVirus, 22), ENT_QUOTES, 'UTF-8');
 
     if (defined('VIRUS_INFO') && VIRUS_INFO !== false) {
-        $link = sprintf(VIRUS_INFO, $virus);
+        $link = sprintf(VIRUS_INFO, urlencode($rawVirus));
 
-        return sprintf('<a href="%s">%s</a>', $link, $virusText);
+        return sprintf('<a href="%s" class="mw-threat-tooltip" title="%s" data-tooltip="%s">%s</a>', $link, $fullVirus, $fullVirus, $shortVirus);
     }
 
-    return $virusText;
+    return sprintf('<span class="mw-threat-tooltip" title="%s" data-tooltip="%s">%s</span>', $fullVirus, $fullVirus, $shortVirus);
 }
 
 /**
