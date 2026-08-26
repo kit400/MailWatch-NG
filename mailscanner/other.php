@@ -42,6 +42,7 @@ echo '<tr>
 
 echo '<li><a href="user_manager.php">' . __('usermgnt10') . '</a>';
 if ('A' === $_SESSION['user_type']) {
+    echo '<li><a href="settings.php">🛡️ ' . (__('systemsettings10', false) ?: 'System Settings &amp; Security') . '</a>';
     echo '<li><a href="system_notifications.php">📢 ' . (__('notifications10', false) ?: 'System Notifications &amp; Broadcast') . '</a>';
     $virusScanner = get_conf_var('VirusScanners');
 

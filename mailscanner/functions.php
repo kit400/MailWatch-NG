@@ -1159,6 +1159,9 @@ function printUserCabinet()
     }
 
     echo '    <div class="user-cabinet-actions">' . "\n";
+    if (isset($_SESSION['user_type']) && 'A' === $_SESSION['user_type']) {
+        echo '      <a href="settings.php" class="cabinet-btn cabinet-btn-settings" title="System Settings &amp; Security">🛡️ Settings</a>' . "\n";
+    }
     echo '      <a href="user_manager.php" class="cabinet-btn cabinet-btn-profile">⚙️ ' . __('usermgnt10') . '</a>' . "\n";
     echo '      <a href="logout.php" class="cabinet-btn cabinet-btn-logout">' . __('logout03') . '</a>' . "\n";
     echo '    </div>' . "\n";
@@ -5973,6 +5976,278 @@ function ip_in_cidr_ipv4($ip, $range)
 }
 
 /**
+ * Ensure system_settings table exists and default values are seeded.
+ *
+ * @return void
+ */
+function ensure_system_settings_table()
+{
+    static $ensured = false;
+    if ($ensured) {
+        return;
+    }
+
+    $sql = "CREATE TABLE IF NOT EXISTS `system_settings` (
+        `setting_key` VARCHAR(64) NOT NULL PRIMARY KEY,
+        `setting_value` TEXT NULL,
+        `setting_type` VARCHAR(20) NOT NULL DEFAULT 'string',
+        `category` VARCHAR(32) NOT NULL DEFAULT 'general',
+        `label` VARCHAR(128) NOT NULL,
+        `description` TEXT NULL,
+        `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX `idx_category` (`category`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+
+    @dbquery($sql);
+
+    // Default configuration entries
+    $defaultSettings = [
+        'LOGIN_PROTECTION_ENABLED' => [
+            'value' => defined('LOGIN_PROTECTION_ENABLED') ? (LOGIN_PROTECTION_ENABLED ? '1' : '0') : '1',
+            'type' => 'bool',
+            'category' => 'security',
+            'label' => 'Brute-Force Protection',
+            'description' => 'Enable or disable brute-force password login protection.',
+        ],
+        'LOGIN_MAX_FAILURES_BEFORE_CAPTCHA' => [
+            'value' => defined('LOGIN_MAX_FAILURES_BEFORE_CAPTCHA') ? (string)LOGIN_MAX_FAILURES_BEFORE_CAPTCHA : '2',
+            'type' => 'int',
+            'category' => 'security',
+            'label' => 'Attempts Before CAPTCHA',
+            'description' => 'Number of consecutive failed login attempts before prompting for CAPTCHA security verification (default: 2).',
+        ],
+        'LOGIN_MAX_FAILURES_BEFORE_BAN' => [
+            'value' => defined('LOGIN_MAX_FAILURES_BEFORE_BAN') ? (string)LOGIN_MAX_FAILURES_BEFORE_BAN : '3',
+            'type' => 'int',
+            'category' => 'security',
+            'label' => 'Attempts Before IP Ban',
+            'description' => 'Number of consecutive failed login attempts before temporarily banning the client IP address (default: 3).',
+        ],
+        'LOGIN_BAN_DURATION_MINUTES' => [
+            'value' => defined('LOGIN_BAN_DURATION_MINUTES') ? (string)LOGIN_BAN_DURATION_MINUTES : '30',
+            'type' => 'int',
+            'category' => 'security',
+            'label' => 'IP Ban Duration (Minutes)',
+            'description' => 'Duration in minutes to block access from a banned client IP (default: 30 minutes).',
+        ],
+        'LOGIN_FAILURES_WINDOW_MINUTES' => [
+            'value' => defined('LOGIN_FAILURES_WINDOW_MINUTES') ? (string)LOGIN_FAILURES_WINDOW_MINUTES : '15',
+            'type' => 'int',
+            'category' => 'security',
+            'label' => 'Failure Tracking Window (Minutes)',
+            'description' => 'Time window in minutes to track consecutive failed attempts for an IP (default: 15 minutes).',
+        ],
+        'LOGIN_WHITELIST_IPS' => [
+            'value' => defined('LOGIN_WHITELIST_IPS') ? (is_array(LOGIN_WHITELIST_IPS) ? implode(', ', LOGIN_WHITELIST_IPS) : LOGIN_WHITELIST_IPS) : '127.0.0.1, ::1, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16',
+            'type' => 'text',
+            'category' => 'security',
+            'label' => 'IP & CIDR Subnet Whitelist',
+            'description' => 'Trusted IP addresses and subnets (comma-separated or one per line) that are never prompted for CAPTCHA and never banned. Supports IPv4 & IPv6 exact and CIDR notation (e.g. 192.168.0.0/16, 10.0.0.0/8).',
+        ],
+        'SESSION_TIMEOUT' => [
+            'value' => defined('SESSION_TIMEOUT') ? (string)SESSION_TIMEOUT : '259200',
+            'type' => 'int',
+            'category' => 'general',
+            'label' => 'Session Inactivity Timeout (Seconds)',
+            'description' => 'Time in seconds of inactivity before a logged-in user is automatically logged out.',
+        ],
+        'MAX_RESULTS' => [
+            'value' => defined('MAX_RESULTS') ? (string)MAX_RESULTS : '50',
+            'type' => 'int',
+            'category' => 'general',
+            'label' => 'Default Results Per Page',
+            'description' => 'Default number of messages displayed per page on Recent Messages and listing reports.',
+        ],
+        'STATUS_REFRESH' => [
+            'value' => defined('STATUS_REFRESH') ? (string)STATUS_REFRESH : '30',
+            'type' => 'int',
+            'category' => 'general',
+            'label' => 'Recent Messages Auto-Refresh (Seconds)',
+            'description' => 'Auto-refresh interval in seconds for the Recent Messages screen.',
+        ],
+    ];
+
+    foreach ($defaultSettings as $key => $meta) {
+        $safeKey = safe_value($key);
+        $safeVal = safe_value($meta['value']);
+        $safeType = safe_value($meta['type']);
+        $safeCat = safe_value($meta['category']);
+        $safeLabel = safe_value($meta['label']);
+        $safeDesc = safe_value($meta['description']);
+
+        $check = @dbquery("SELECT `setting_key` FROM `system_settings` WHERE `setting_key` = '$safeKey'");
+        if ($check && $check->num_rows === 0) {
+            @dbquery("INSERT INTO `system_settings` (`setting_key`, `setting_value`, `setting_type`, `category`, `label`, `description`) VALUES ('$safeKey', '$safeVal', '$safeType', '$safeCat', '$safeLabel', '$safeDesc')");
+        }
+    }
+
+    $ensured = true;
+}
+
+/**
+ * Get system setting value with precedence:
+ * 1. Database (`system_settings`)
+ * 2. Constant in `conf.php`
+ * 3. Default fallback
+ *
+ * @param string $key
+ * @param mixed $default
+ * @return mixed
+ */
+function get_system_setting($key, $default = null)
+{
+    static $cache = null;
+
+    if ($cache === null) {
+        $cache = [];
+        ensure_system_settings_table();
+        $res = @dbquery("SELECT `setting_key`, `setting_value`, `setting_type` FROM `system_settings`");
+        if ($res && $res->num_rows > 0) {
+            while ($row = $res->fetch_assoc()) {
+                $raw = $row['setting_value'];
+                $val = $raw;
+                switch ($row['setting_type']) {
+                    case 'bool':
+                        $val = in_array(strtolower((string)$raw), ['1', 'true', 'yes', 'on'], true);
+                        break;
+                    case 'int':
+                        $val = (int)$raw;
+                        break;
+                    case 'float':
+                        $val = (float)$raw;
+                        break;
+                    default:
+                        $val = (string)$raw;
+                        break;
+                }
+                $cache[$row['setting_key']] = $val;
+            }
+        }
+    }
+
+    if (array_key_exists($key, $cache)) {
+        return $cache[$key];
+    }
+
+    if (defined($key)) {
+        return constant($key);
+    }
+
+    return $default;
+}
+
+/**
+ * Update or set a system setting in database.
+ *
+ * @param string $key
+ * @param mixed $value
+ * @return bool
+ */
+function set_system_setting($key, $value)
+{
+    ensure_system_settings_table();
+    $safeKey = safe_value($key);
+
+    if (is_bool($value)) {
+        $strVal = $value ? '1' : '0';
+    } else {
+        $strVal = (string)$value;
+    }
+    $safeVal = safe_value($strVal);
+
+    $sql = "UPDATE `system_settings` SET `setting_value` = '$safeVal' WHERE `setting_key` = '$safeKey'";
+    $res = @dbquery($sql);
+    return ($res !== false);
+}
+
+/**
+ * Get all system settings with metadata, grouped or optionally filtered by category.
+ *
+ * @param string|null $category
+ * @return array
+ */
+function get_all_system_settings($category = null)
+{
+    ensure_system_settings_table();
+    $sql = "SELECT * FROM `system_settings`";
+    if (!empty($category)) {
+        $safeCat = safe_value($category);
+        $sql .= " WHERE `category` = '$safeCat'";
+    }
+    $sql .= " ORDER BY `category` ASC, `setting_key` ASC";
+
+    $results = [];
+    $res = @dbquery($sql);
+    if ($res && $res->num_rows > 0) {
+        while ($row = $res->fetch_assoc()) {
+            $results[$row['setting_key']] = $row;
+        }
+    }
+    return $results;
+}
+
+/**
+ * Unban a currently blocked IP address.
+ *
+ * @param string $ip
+ * @return bool
+ */
+function unban_login_ip($ip)
+{
+    ensure_login_failures_table();
+    $safeIp = safe_value($ip);
+    $res = @dbquery("DELETE FROM `login_failures` WHERE `ip_address` = '$safeIp'");
+    return ($res !== false);
+}
+
+/**
+ * Get list of currently active IP bans.
+ *
+ * @return array
+ */
+function get_active_ip_bans()
+{
+    ensure_login_failures_table();
+    $sql = "SELECT `ip_address`, `username`, `attempt_time`, `ban_until`,
+            TIMESTAMPDIFF(MINUTE, NOW(), `ban_until`) AS `remaining_minutes`
+            FROM `login_failures`
+            WHERE `is_banned` = 1 AND `ban_until` > NOW()
+            ORDER BY `ban_until` DESC";
+    $bans = [];
+    $res = @dbquery($sql);
+    if ($res && $res->num_rows > 0) {
+        while ($row = $res->fetch_assoc()) {
+            $bans[] = $row;
+        }
+    }
+    return $bans;
+}
+
+/**
+ * Get recent failed login attempts for audit and management.
+ *
+ * @param int $limit
+ * @return array
+ */
+function get_recent_failed_logins($limit = 30)
+{
+    ensure_login_failures_table();
+    $limit = (int)$limit;
+    $sql = "SELECT `id`, `ip_address`, `username`, `attempt_time`, `is_banned`, `ban_until`
+            FROM `login_failures`
+            ORDER BY `attempt_time` DESC
+            LIMIT $limit";
+    $list = [];
+    $res = @dbquery($sql);
+    if ($res && $res->num_rows > 0) {
+        while ($row = $res->fetch_assoc()) {
+            $list[] = $row;
+        }
+    }
+    return $list;
+}
+
+/**
  * Check if an IP address or subnet is in the login security whitelist.
  * Whitelisted IPs are never banned and never required to solve CAPTCHA.
  *
@@ -5990,18 +6265,17 @@ function is_client_ip_whitelisted($clientIp = null)
         return true;
     }
 
-    $whitelist = [];
-    if (defined('LOGIN_WHITELIST_IPS')) {
-        if (is_array(LOGIN_WHITELIST_IPS)) {
-            $whitelist = LOGIN_WHITELIST_IPS;
-        } elseif (is_string(LOGIN_WHITELIST_IPS)) {
-            $whitelist = array_map('trim', explode(',', LOGIN_WHITELIST_IPS));
-        }
-    }
+    $rawWhitelist = get_system_setting('LOGIN_WHITELIST_IPS', '127.0.0.1, ::1, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16');
 
-    // Default private RFC1918 subnets if not specified
-    if (empty($whitelist)) {
-        $whitelist = ['127.0.0.1', '::1', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16'];
+    $whitelist = [];
+    if (is_array($rawWhitelist)) {
+        $whitelist = $rawWhitelist;
+    } elseif (is_string($rawWhitelist)) {
+        // Split by commas and/or newlines
+        $parts = preg_split('/[\r\n,]+/', $rawWhitelist);
+        if ($parts) {
+            $whitelist = array_map('trim', $parts);
+        }
     }
 
     foreach ($whitelist as $entry) {
@@ -6069,11 +6343,11 @@ function get_login_security_status($clientIp = null)
         $clientIp = getHTTPClientIP();
     }
 
-    $enabled = defined('LOGIN_PROTECTION_ENABLED') ? (bool)LOGIN_PROTECTION_ENABLED : true;
-    $maxBeforeCaptcha = defined('LOGIN_MAX_FAILURES_BEFORE_CAPTCHA') ? (int)LOGIN_MAX_FAILURES_BEFORE_CAPTCHA : 2;
-    $maxBeforeBan = defined('LOGIN_MAX_FAILURES_BEFORE_BAN') ? (int)LOGIN_MAX_FAILURES_BEFORE_BAN : 3;
-    $banDurationMinutes = defined('LOGIN_BAN_DURATION_MINUTES') ? (int)LOGIN_BAN_DURATION_MINUTES : 30;
-    $windowMinutes = defined('LOGIN_FAILURES_WINDOW_MINUTES') ? (int)LOGIN_FAILURES_WINDOW_MINUTES : 15;
+    $enabled = (bool)get_system_setting('LOGIN_PROTECTION_ENABLED', true);
+    $maxBeforeCaptcha = (int)get_system_setting('LOGIN_MAX_FAILURES_BEFORE_CAPTCHA', 2);
+    $maxBeforeBan = (int)get_system_setting('LOGIN_MAX_FAILURES_BEFORE_BAN', 3);
+    $banDurationMinutes = (int)get_system_setting('LOGIN_BAN_DURATION_MINUTES', 30);
+    $windowMinutes = (int)get_system_setting('LOGIN_FAILURES_WINDOW_MINUTES', 15);
 
     $isWhitelisted = is_client_ip_whitelisted($clientIp);
 
@@ -6164,9 +6438,9 @@ function record_failed_login($username = '', $clientIp = null)
 
     $safeIp = safe_value($clientIp);
     $safeUser = safe_value(substr((string)$username, 0, 255));
-    $banDurationMinutes = defined('LOGIN_BAN_DURATION_MINUTES') ? (int)LOGIN_BAN_DURATION_MINUTES : 30;
-    $maxBeforeBan = defined('LOGIN_MAX_FAILURES_BEFORE_BAN') ? (int)LOGIN_MAX_FAILURES_BEFORE_BAN : 3;
-    $windowMinutes = defined('LOGIN_FAILURES_WINDOW_MINUTES') ? (int)LOGIN_FAILURES_WINDOW_MINUTES : 15;
+    $banDurationMinutes = (int)get_system_setting('LOGIN_BAN_DURATION_MINUTES', 30);
+    $maxBeforeBan = (int)get_system_setting('LOGIN_MAX_FAILURES_BEFORE_BAN', 3);
+    $windowMinutes = (int)get_system_setting('LOGIN_FAILURES_WINDOW_MINUTES', 15);
 
     // Record the failure
     @dbquery("INSERT INTO `login_failures` (`ip_address`, `username`, `attempt_time`, `is_banned`, `ban_until`) VALUES ('$safeIp', '$safeUser', NOW(), 0, NULL)");
@@ -6183,6 +6457,9 @@ function record_failed_login($username = '', $clientIp = null)
     if ($failedCount >= $maxBeforeBan) {
         @dbquery("INSERT INTO `login_failures` (`ip_address`, `username`, `attempt_time`, `is_banned`, `ban_until`) VALUES ('$safeIp', '$safeUser', NOW(), 1, DATE_ADD(NOW(), INTERVAL $banDurationMinutes MINUTE))");
         error_log("MailWatch Security Alert: IP [{$clientIp}] has been temporarily banned for {$banDurationMinutes} minutes after {$failedCount} failed login attempts.");
+        if (function_exists('audit_log')) {
+            audit_log("IP [{$clientIp}] temporarily banned for {$banDurationMinutes}m after {$failedCount} failed logins", 'SYSTEM');
+        }
     }
 
     return get_login_security_status($clientIp);
@@ -6222,4 +6499,5 @@ function verify_login_captcha($userInput)
 
     return (!empty($expected) && !empty($actual) && hash_equals($expected, $actual));
 }
+
 

@@ -418,6 +418,7 @@ return [
     'updatesadesc10' => 'Update SpamAssassin Rule Descriptions',
     'updatemcpdesc10' => 'Update MCP Rule Descriptions',
     'updategeoip10' => 'Update GeoIP Database',
+    'systemsettings10' => 'System Settings & Security',
     'notifications10' => 'System Notifications & Broadcast',
     'changelog' => 'Changelog',
     'links10' => 'Links',
