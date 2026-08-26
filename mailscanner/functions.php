@@ -3951,6 +3951,41 @@ function return_geoip_data($ip)
 }
 
 /**
+ * Format Country with Flag Icon HTML
+ *
+ * @param string $countryCode (e.g. "UA", "US", "DE")
+ * @param string $countryName (e.g. "Ukraine", "United States")
+ * @return string HTML
+ */
+function format_country_flag($countryCode, $countryName = '')
+{
+    $countryCode = strtolower(trim((string)$countryCode));
+    $countryName = trim((string)$countryName);
+
+    if (empty($countryCode) && empty($countryName)) {
+        return '<span class="text-muted">' . __('unknown13') . '</span>';
+    }
+
+    if (empty($countryName)) {
+        $countryName = strtoupper($countryCode);
+    }
+
+    $imagesDir = defined('IMAGES_DIR') ? IMAGES_DIR : '/images/';
+    $flagRel = ltrim($imagesDir, './') . 'flags/' . $countryCode . '.svg';
+    $flagAbs = MAILWATCH_HOME . '/' . $flagRel;
+
+    if (!empty($countryCode) && file_exists($flagAbs)) {
+        $flagUrl = '.' . $imagesDir . 'flags/' . htmlspecialchars($countryCode) . '.svg';
+        return '<span class="country-flag-wrap" title="' . htmlspecialchars($countryName) . ' (' . strtoupper($countryCode) . ')">' .
+               '<img src="' . $flagUrl . '" alt="' . strtoupper($countryCode) . '" class="country-flag-img">' .
+               '<span class="country-name-txt">' . htmlspecialchars($countryName) . '</span>' .
+               '</span>';
+    }
+
+    return '<span class="country-name-txt">' . htmlspecialchars($countryName) . '</span>';
+}
+
+/**
  * Return country name
  *
  * @param string $ip

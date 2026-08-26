@@ -590,7 +590,7 @@ function render_widget_top_relays_asn($timeRange)
         $asnStr = '-';
         $geo = return_geoip_data($ip);
         if ($geo) {
-            $locStr = htmlspecialchars($geo['country_name']);
+            $locStr = format_country_flag($geo['country_code'] ?? '', $geo['country_name'] ?? '');
             if (!empty($geo['city'])) {
                 $locStr .= ' <span style="font-size:10px;color:#64748b;">(' . htmlspecialchars($geo['city']) . ')</span>';
             }

@@ -268,9 +268,9 @@ class GraphGenerator
                 $this->data['hostname'][] = !empty($ipval) ? $ipval : __('hostfailed64');
             }
             if ($geoData = return_geoip_data($ipval)) {
-                $loc = $geoData['country_name'];
+                $loc = format_country_flag($geoData['country_code'] ?? '', $geoData['country_name'] ?? '');
                 if (!empty($geoData['city'])) {
-                    $loc .= ' (' . $geoData['city'] . ')';
+                    $loc .= ' <span style="font-size:10px;color:#64748b;">(' . htmlspecialchars($geoData['city']) . ')</span>';
                 }
                 $this->data['geoip'][] = $loc;
 

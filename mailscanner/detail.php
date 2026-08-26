@@ -217,7 +217,7 @@ for ($f = 0; $f < $result->field_count; ++$f) {
                     $output .= ' <td>' . __('localhost04') . "</td>\n";
                     $output .= ' <td>-</td>' . "\n";
                 } elseif ($geoData = return_geoip_data($relay)) {
-                    $locStr = htmlspecialchars($geoData['country_name']);
+                    $locStr = format_country_flag($geoData['country_code'] ?? '', $geoData['country_name'] ?? '');
                     if (!empty($geoData['city'])) {
                         $locStr .= ' <span style="font-size:10.5px;color:#64748b;">(' . htmlspecialchars($geoData['city']) . ')</span>';
                     }
