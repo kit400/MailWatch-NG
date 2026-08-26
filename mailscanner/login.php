@@ -81,7 +81,7 @@ echo '
     ' . ((defined('SESSION_TIMEOUT') && SESSION_TIMEOUT > 0) ? 'enableTimeoutNotice(' . SESSION_TIMEOUT . ');' : '') . '
 </script>
 <div class="login">
-    <div class="center"><img src=".' . IMAGES_DIR . MW_LOGO . '" alt="' . __('mwlogo99') . '"></div>
+    <div class="center login-logo-container"><img src=".' . IMAGES_DIR . MW_LOGO . '" alt="' . __('mwlogo99') . '" class="login-logo-img"></div>
     <h1>' . __('mwlogin01') . '</h1>
     <div class="inner-container">';
 if (file_exists(__DIR__ . '/conf.php')) {
