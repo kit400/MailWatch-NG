@@ -247,18 +247,22 @@ for ($f = 0; $f < $result->field_count; ++$f) {
     if ($fieldn === __('msgheaders04')) {
         $rawHeaders = trim((string)$row[$f]);
         if (!empty($rawHeaders)) {
-            $formatted = nl2br(
-                str_replace(["\n", "\t"], ['<br>', '&nbsp; &nbsp; &nbsp;'], htmlentities($rawHeaders, ENT_COMPAT | ENT_HTML401 | ENT_SUBSTITUTE))
-            );
-            if (function_exists('iconv_mime_decode')) {
-                $decoded = @iconv_mime_decode($rawHeaders, 2, 'UTF-8');
-                if (false !== $decoded && !empty($decoded)) {
-                    $formatted = nl2br(
-                        str_replace(["\n", "\t"], ['<br>', '&nbsp; &nbsp; &nbsp;'], htmlentities($decoded, ENT_COMPAT | ENT_HTML401 | ENT_SUBSTITUTE))
-                    );
+            $lines = explode("\n", $rawHeaders);
+            $decodedLines = [];
+            foreach ($lines as $line) {
+                if (function_exists('decode_header')) {
+                    $decodedLines[] = decode_header($line);
+                } elseif (function_exists('mb_decode_mimeheader')) {
+                    $decodedLines[] = mb_decode_mimeheader($line);
+                } else {
+                    $decodedLines[] = $line;
                 }
             }
-            $row[$f] = preg_replace("/<br \/>/", '<br>', $formatted);
+            $fullDecoded = implode("\n", $decodedLines);
+            $formatted = nl2br(
+                str_replace(["\t"], ['&nbsp; &nbsp; &nbsp;'], htmlentities($fullDecoded, ENT_COMPAT | ENT_HTML401 | ENT_SUBSTITUTE))
+            );
+            $row[$f] = '<div style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11.5px; line-height: 1.5; color: #1e293b; max-height: 400px; overflow-y: auto;">' . $formatted . '</div>';
         } else {
             // If raw headers column is empty, synthesize basic message headers from available fields
             $synth = "Received: from " . strip_tags($row[__('receivedfrom04')] ?? 'unknown') . " by " . strip_tags($row[__('receivedby04')] ?? 'unknown') . "\n";
@@ -267,7 +271,7 @@ for ($f = 0; $f < $result->field_count; ++$f) {
             $synth .= "Subject: " . strip_tags($row[__('subject04')] ?? '') . "\n";
             $synth .= "Date: " . strip_tags($row[__('receivedon04')] ?? '') . "\n";
             $synth .= "Message-ID: &lt;" . htmlspecialchars($url_id) . "&gt;";
-            $row[$f] = '<div style="font-family: monospace; font-size: 11px; color: #475569;">' . nl2br($synth) . '</div>';
+            $row[$f] = '<div style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11.5px; line-height: 1.5; color: #64748b;">' . nl2br($synth) . '</div>';
         }
     }
     if ($fieldn === __('saautolearn04')) {
