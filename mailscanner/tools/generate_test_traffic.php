@@ -258,11 +258,11 @@ for ($i = 0; $i < $totalCount; $i++) {
     $sysHostname = safe_value(rtrim(gethostname()));
 
     // Generate realistic RFC822 headers
-    $rawHeaders = "Received: from mail.$fromDomain ([$clientIp]) by $sysHostname with ESMTP id $msgId;\n\t" . date('r', $ts) . "\n" .
+    $rawHeaders = "Received: from mail.$fromDomain ([$clientIp]) by $sysHostname with ESMTP id $msgId;\n\t" . date('r', $msgTime) . "\n" .
                   "From: <$fromAddr>\n" .
                   "To: <$toAddr>\n" .
                   "Subject: $subject\n" .
-                  "Date: " . date('r', $ts) . "\n" .
+                  "Date: " . date('r', $msgTime) . "\n" .
                   "Message-ID: <$msgId@$fromDomain>\n" .
                   "X-Mailer: EFA-NG Mail Agent\n" .
                   "X-MailScanner-ID: $msgId\n" .
