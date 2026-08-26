@@ -4064,21 +4064,51 @@ function quarantine_list($input = '/')
 }
 
 /**
+ * @param string $host
+ *
  * @return bool
  */
 function is_local($host)
 {
-    $host = strtolower($host);
-    // Is RPC required to look-up??
-    $sys_hostname = strtolower(rtrim(gethostname()));
-    switch ($host) {
-        case $sys_hostname:
-        case gethostbyaddr('127.0.0.1'):
-            return true;
-        default:
-            // Remote - RPC needed
-            return false;
+    // If not running in distributed mode, all messages are processed and stored locally
+    if (defined('DISTRIBUTED_SETUP') && false === DISTRIBUTED_SETUP) {
+        return true;
     }
+
+    $host = strtolower(trim((string)$host));
+    if ($host === '' || $host === 'localhost' || $host === '127.0.0.1' || $host === '::1') {
+        return true;
+    }
+
+    $sys_hostname = strtolower(rtrim(gethostname()));
+    if ($host === $sys_hostname) {
+        return true;
+    }
+
+    // Match short hostnames (e.g. efa-test vs efa-test.ukrpack.net or EFA-NG-Test)
+    $shortHost = explode('.', $host)[0];
+    $shortSys = explode('.', $sys_hostname)[0];
+    if ($shortHost === $shortSys) {
+        return true;
+    }
+
+    if ($host === strtolower(gethostbyaddr('127.0.0.1'))) {
+        return true;
+    }
+
+    // Compare resolved IP addresses
+    $hostIp = @gethostbyname($host);
+    $sysIp = @gethostbyname($sys_hostname);
+    if (!empty($hostIp) && $hostIp !== $host && $hostIp === $sysIp) {
+        return true;
+    }
+
+    // Default to true on standalone appliances
+    if (!defined('DISTRIBUTED_SETUP')) {
+        return true;
+    }
+
+    return false;
 }
 
 /**
@@ -4802,10 +4832,7 @@ function xmlrpc_wrapper($host, $msg)
 {
     $method = 'http';
 
-    if (defined('SSL_ONLY') && SSL_ONLY) {
-        $method = 'https';
-        $port = defined('RPC_PORT') ? RPC_PORT : 443;
-    } elseif (defined('RPC_SSL') && RPC_SSL) {
+    if ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') || (defined('SSL_ONLY') && SSL_ONLY) || (defined('RPC_SSL') && RPC_SSL)) {
         $method = 'https';
         $port = defined('RPC_PORT') ? RPC_PORT : 443;
     } elseif (defined('RPC_PORT')) {

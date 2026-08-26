@@ -255,17 +255,30 @@ for ($i = 0; $i < $totalCount; $i++) {
     $reportSafe = safe_value($report);
     $spamReportSafe = safe_value($spamreport);
     $mcpReportSafe = safe_value($mcpreport);
+    $sysHostname = safe_value(rtrim(gethostname()));
+
+    // Generate realistic RFC822 headers
+    $rawHeaders = "Received: from mail.$fromDomain ([$clientIp]) by $sysHostname with ESMTP id $msgId;\n\t" . date('r', $ts) . "\n" .
+                  "From: <$fromAddr>\n" .
+                  "To: <$toAddr>\n" .
+                  "Subject: $subject\n" .
+                  "Date: " . date('r', $ts) . "\n" .
+                  "Message-ID: <$msgId@$fromDomain>\n" .
+                  "X-Mailer: EFA-NG Mail Agent\n" .
+                  "X-MailScanner-ID: $msgId\n" .
+                  "X-MailScanner-SpamCheck: $spamreport";
+    $headersSafe = safe_value($rawHeaders);
 
     $sql = "INSERT INTO maillog 
             (timestamp, id, size, from_address, from_domain, to_address, to_domain, subject, clientip,
              isspam, ishighspam, issaspam, isrblspam, spamwhitelisted, spamblacklisted, sascore, spamreport,
              virusinfected, nameinfected, otherinfected, report, ismcp, ishighmcp, issamcp, mcpsascore, mcpreport,
-             hostname, date, time, quarantined, released, salearn, messageid)
+             hostname, date, time, headers, quarantined, released, salearn, messageid)
             VALUES
             ('$timestampStr', '$msgId', $size, '$fromAddr', '$fromDomain', '$toAddr', '$toDomain', '$subjSafe', '$clientIp',
              $isspam, $ishighspam, $issaspam, $isrblspam, $spamwhitelisted, $spamblacklisted, $sascore, '$spamReportSafe',
              $virusinfected, $nameinfected, $otherinfected, '$reportSafe', $ismcp, $ishighmcp, $issamcp, $mcpsascore, '$mcpReportSafe',
-             'efa-test.ukrpack.net', '$dateStr', '$timeStr', $quarantined, $released, $salearn, '<$msgId@$fromDomain>')";
+             '$sysHostname', '$dateStr', '$timeStr', '$headersSafe', $quarantined, $released, $salearn, '<$msgId@$fromDomain>')";
 
     dbquery($sql);
     $inserted++;
