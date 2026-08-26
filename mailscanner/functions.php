@@ -305,7 +305,7 @@ function efa_version()
             return $ver;
         }
     }
-    return 'eFa-6.0.3';
+    return 'eFa-6.0.4';
 }
 
 /**
