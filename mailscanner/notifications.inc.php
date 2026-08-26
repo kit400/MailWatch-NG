@@ -112,12 +112,35 @@ class SystemNotifications
     /**
      * Create a notification
      *
-     * @param array $data
+    /**
+     * Create a new notification
+     * Supports either an associative array of options, or positional arguments:
+     * createNotification($title, $desc, $type, $targetRole, $version, $changelogUrl)
+     *
+     * @param array|string $data
+     * @param string $desc
+     * @param string $type
+     * @param string $targetRole
+     * @param string|null $version
+     * @param string|null $changelogUrl
      * @return int Inserted ID
      */
-    public static function createNotification($data)
+    public static function createNotification($data, $desc = '', $type = 'info', $targetRole = 'ALL', $version = null, $changelogUrl = null)
     {
         dbconn();
+        if (!is_array($data)) {
+            $data = [
+                'title' => (string)$data,
+                'short_description' => (string)$desc,
+                'type' => (string)$type,
+                'target_role' => (string)$targetRole,
+                'version' => $version,
+                'changelog_url' => $changelogUrl,
+                'is_banner' => 1,
+                'is_active' => 1,
+            ];
+        }
+
         $type = in_array($data['type'] ?? '', ['release', 'danger', 'warning', 'info', 'tip']) ? $data['type'] : 'info';
         $title = safe_value($data['title'] ?? 'System Notice');
         $version = !empty($data['version']) ? "'" . safe_value($data['version']) . "'" : "NULL";
@@ -125,8 +148,8 @@ class SystemNotifications
         $changelogUrl = !empty($data['changelog_url']) ? "'" . safe_value($data['changelog_url']) . "'" : "NULL";
         $fullContent = !empty($data['full_content']) ? "'" . safe_value($data['full_content']) . "'" : "NULL";
         $targetRole = in_array($data['target_role'] ?? '', ['ALL', 'A', 'D', 'U']) ? $data['target_role'] : 'ALL';
-        $isBanner = isset($data['is_banner']) && $data['is_banner'] ? 1 : 0;
-        $isActive = isset($data['is_active']) && $data['is_active'] ? 1 : 0;
+        $isBanner = (!isset($data['is_banner']) || $data['is_banner']) ? 1 : 0;
+        $isActive = (!isset($data['is_active']) || $data['is_active']) ? 1 : 0;
         $expiresAt = !empty($data['expires_at']) ? "'" . safe_value($data['expires_at']) . "'" : "NULL";
 
         // De-duplicate: If active notification with same title & type exists, update it
