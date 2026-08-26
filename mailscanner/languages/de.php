@@ -29,6 +29,12 @@
 /* v0.3.12 */
 
 return [
+    'banned01' => 'Access temporarily blocked due to multiple failed login attempts. Please try again later.',
+    'badcaptcha01' => 'Security verification code is incorrect. Please try again.',
+    'captchalabel01' => 'Security Verification',
+    'captchaplaceholder01' => 'Enter code from image',
+    'captcharefresh01' => 'Refresh code',
+    'systemsettings10' => 'System Settings & Security',
     // 01-login.php
     'username' => 'Benutzername:',
     'password' => 'Passwort:',

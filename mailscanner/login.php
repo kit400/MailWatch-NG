@@ -151,14 +151,27 @@ if (file_exists(__DIR__ . '/conf.php')) {
                 <input type="hidden" id="mypassword_length" name="mypassword_length">';
 
     if ($requireCaptcha && !$isBanned) {
+        $cLabel = __('captchalabel01');
+        if (empty($cLabel) || false !== stripos($cLabel, 'translation')) {
+            $cLabel = 'Security Verification';
+        }
+        $cPlaceholder = __('captchaplaceholder01');
+        if (empty($cPlaceholder) || false !== stripos($cPlaceholder, 'translation')) {
+            $cPlaceholder = 'Enter code from image';
+        }
+        $cRefresh = __('captcharefresh01');
+        if (empty($cRefresh) || false !== stripos($cRefresh, 'translation')) {
+            $cRefresh = 'Refresh code';
+        }
+
         echo '
                 <div class="login-captcha-group">
-                    <p><label for="captcha">' . __('captchalabel01') . '</label></p>
+                    <p><label for="captcha">' . htmlspecialchars($cLabel) . '</label></p>
                     <div class="captcha-img-row">
-                        <img src="captcha.php?t=' . time() . '" id="captchaImg" class="captcha-img" alt="CAPTCHA" title="' . __('captcharefresh01') . '" onclick="refreshCaptcha()">
-                        <button type="button" class="btn-captcha-refresh" onclick="refreshCaptcha()" title="' . __('captcharefresh01') . '">↻</button>
+                        <img src="captcha.php?t=' . time() . '" id="captchaImg" class="captcha-img" alt="CAPTCHA" title="' . htmlspecialchars($cRefresh) . '" onclick="refreshCaptcha()">
+                        <button type="button" class="btn-captcha-refresh" onclick="refreshCaptcha()" title="' . htmlspecialchars($cRefresh) . '">↻</button>
                     </div>
-                    <p><input name="captcha" type="text" id="captcha" class="login-captcha-input" placeholder="' . __('captchaplaceholder01') . '" maxlength="8" autocomplete="off" required></p>
+                    <p><input name="captcha" type="text" id="captcha" class="login-captcha-input" placeholder="' . htmlspecialchars($cPlaceholder) . '" maxlength="8" autocomplete="off" required></p>
                 </div>';
     }
 
