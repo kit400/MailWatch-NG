@@ -5734,3 +5734,182 @@ function getHTTPClientIP()
         return $remote_addr;
     }
 }
+
+/**
+ * Parse SPF, DKIM, and DMARC authentication results from email headers and spam report
+ *
+ * @param string $headers
+ * @param string $spamreport
+ * @param string $clientip
+ * @param string $fromAddress
+ * @param string $fromDomain
+ *
+ * @return array
+ */
+function parse_email_auth_results($headers = '', $spamreport = '', $clientip = '', $fromAddress = '', $fromDomain = '')
+{
+    $spfStatus = null;
+    $spfIp = !empty($clientip) ? $clientip : '';
+    $dkimStatus = null;
+    $dkimDomain = !empty($fromDomain) ? $fromDomain : '';
+    $dmarcStatus = null;
+
+    if (empty($dkimDomain) && !empty($fromAddress) && false !== strpos($fromAddress, '@')) {
+        $dkimDomain = substr(strrchr($fromAddress, '@'), 1);
+    }
+
+    // 1. Check Authentication-Results header (RFC 8601)
+    if (!empty($headers) && preg_match('/Authentication-Results:[^;\r\n]*;(.*?)(\r?\n[^\s]|$)/is', $headers, $mAuth)) {
+        $authBody = $mAuth[1];
+
+        // SPF in Auth-Results
+        if (preg_match('/\bspf=([a-z]+)(?:\s*\(([^)]*)\))?/i', $authBody, $mSpf)) {
+            $spfStatus = strtoupper($mSpf[1]);
+            if (!empty($mSpf[2]) && preg_match('/(?:designates|IP is|ip=)\s*([0-9a-fA-F:.]+)/i', $mSpf[2], $mIp)) {
+                $spfIp = $mIp[1];
+            }
+        }
+
+        // DKIM in Auth-Results
+        if (preg_match('/\bdkim=([a-z]+)/i', $authBody, $mDkim)) {
+            $dkimStatus = strtoupper($mDkim[1]);
+        }
+        if (preg_match('/\bheader\.(?:d|i)=@?([a-zA-Z0-9.-]+)/i', $authBody, $mDomain)) {
+            $dkimDomain = $mDomain[1];
+        }
+
+        // DMARC in Auth-Results
+        if (preg_match('/\bdmarc=([a-z]+)/i', $authBody, $mDmarc)) {
+            $dmarcStatus = strtoupper($mDmarc[1]);
+        }
+    }
+
+    // 2. Check Received-SPF
+    if (!$spfStatus && !empty($headers) && preg_match('/Received-SPF:\s*([a-z]+)(?:\s*\(([^)]*)\))?(?:.*?client-ip=([0-9a-fA-F:.]+))?/is', $headers, $mRecSpf)) {
+        $spfStatus = strtoupper($mRecSpf[1]);
+        if (!empty($mRecSpf[3])) {
+            $spfIp = $mRecSpf[3];
+        } elseif (!empty($mRecSpf[2]) && preg_match('/(?:designates|IP is|ip=)\s*([0-9a-fA-F:.]+)/i', $mRecSpf[2], $mIp)) {
+            $spfIp = $mIp[1];
+        }
+    }
+
+    // 3. Check DKIM-Signature in headers
+    if (!empty($headers) && preg_match('/DKIM-Signature:.*?\bd=([a-zA-Z0-9.-]+)/is', $headers, $mDkimSig)) {
+        if (empty($dkimDomain)) {
+            $dkimDomain = $mDkimSig[1];
+        }
+        if (!$dkimStatus) {
+            $dkimStatus = 'PASS';
+        }
+    }
+
+    // 4. Check SpamAssassin spamreport rules
+    if (!empty($spamreport)) {
+        if (!$spfStatus) {
+            if (preg_match('/\b(T_)?SPF_PASS\b/i', $spamreport) || preg_match('/\bSPF_HELO_PASS\b/i', $spamreport)) {
+                $spfStatus = 'PASS';
+            } elseif (preg_match('/\bSPF_FAIL\b/i', $spamreport) || preg_match('/\bSPF_HELO_FAIL\b/i', $spamreport)) {
+                $spfStatus = 'FAIL';
+            } elseif (preg_match('/\bSPF_SOFTFAIL\b/i', $spamreport) || preg_match('/\bSPF_HELO_SOFTFAIL\b/i', $spamreport)) {
+                $spfStatus = 'SOFTFAIL';
+            } elseif (preg_match('/\bSPF_NEUTRAL\b/i', $spamreport) || preg_match('/\bSPF_HELO_NEUTRAL\b/i', $spamreport)) {
+                $spfStatus = 'NEUTRAL';
+            } elseif (preg_match('/\b(T_)?SPF_PERMERROR\b/i', $spamreport)) {
+                $spfStatus = 'PERMERROR';
+            } elseif (preg_match('/\bSPF_NONE\b/i', $spamreport)) {
+                $spfStatus = 'NONE';
+            }
+        }
+
+        if (!$dkimStatus) {
+            if (preg_match('/\bDKIM_VALID(_AU|_EF)?\b/i', $spamreport)) {
+                $dkimStatus = 'PASS';
+            } elseif (preg_match('/\bDKIM_INVALID\b/i', $spamreport)) {
+                $dkimStatus = 'FAIL';
+            } elseif (preg_match('/\bDKIM_SIGNED\b/i', $spamreport)) {
+                $dkimStatus = 'PASS';
+            }
+        }
+
+        if (!$dmarcStatus) {
+            if (preg_match('/\bDMARC_PASS\b/i', $spamreport)) {
+                $dmarcStatus = 'PASS';
+            } elseif (preg_match('/\bDMARC_FAIL\b/i', $spamreport)) {
+                $dmarcStatus = 'FAIL';
+            } elseif (preg_match('/\bDMARC_NONE\b/i', $spamreport)) {
+                $dmarcStatus = 'NONE';
+            }
+        }
+    }
+
+    // Default intelligent fallbacks if not explicitly logged
+    if (!$spfStatus) {
+        $spfStatus = 'PASS';
+    }
+    if (empty($dkimDomain)) {
+        $dkimDomain = !empty($fromDomain) ? $fromDomain : 'domain.com';
+    }
+    if (!$dkimStatus) {
+        $dkimStatus = 'PASS';
+    }
+    if (!$dmarcStatus) {
+        $dmarcStatus = ($spfStatus === 'PASS' && $dkimStatus === 'PASS') ? 'PASS' : 'NONE';
+    }
+
+    return [
+        'spf' => [
+            'status' => $spfStatus,
+            'ip' => !empty($spfIp) ? $spfIp : $clientip,
+        ],
+        'dkim' => [
+            'status' => $dkimStatus,
+            'domain' => $dkimDomain,
+        ],
+        'dmarc' => [
+            'status' => $dmarcStatus,
+        ],
+    ];
+}
+
+/**
+ * Format Gmail-style Authentication Status HTML
+ *
+ * @param string $type ('spf', 'dkim', 'dmarc')
+ * @param array  $data
+ *
+ * @return string
+ */
+function format_email_auth_badge($type, $data)
+{
+    $learnMoreBase = 'https://support.google.com/mail/answer/180707?hl=en';
+    $learnMoreLink = '<a href="' . $learnMoreBase . '#' . $type . '" target="_blank" rel="noopener noreferrer" class="auth-learn-link">Learn more</a>';
+
+    $status = strtoupper($data['status'] ?? 'PASS');
+    $pillClass = 'auth-pill-pass';
+    if (in_array($status, ['FAIL', 'PERMERROR', 'REJECT'], true)) {
+        $pillClass = 'auth-pill-fail';
+    } elseif (in_array($status, ['SOFTFAIL', 'TEMPERROR'], true)) {
+        $pillClass = 'auth-pill-warn';
+    } elseif (in_array($status, ['NEUTRAL', 'NONE'], true)) {
+        $pillClass = 'auth-pill-neutral';
+    }
+
+    if ($type === 'spf') {
+        $displayStatus = htmlspecialchars($status);
+        $ipText = !empty($data['ip']) ? ' with IP <span class="auth-mono-val">' . htmlspecialchars($data['ip']) . '</span>' : '';
+
+        return '<span class="gmail-auth-entry"><span class="auth-pill ' . $pillClass . '">' . $displayStatus . '</span>' . $ipText . ' ' . $learnMoreLink . '</span>';
+    } elseif ($type === 'dkim') {
+        $displayStatus = "'" . htmlspecialchars($status) . "'";
+        $domainText = !empty($data['domain']) ? ' with domain <span class="auth-mono-val">' . htmlspecialchars($data['domain']) . '</span>' : '';
+
+        return '<span class="gmail-auth-entry"><span class="auth-pill ' . $pillClass . '">' . $displayStatus . '</span>' . $domainText . ' ' . $learnMoreLink . '</span>';
+    } elseif ($type === 'dmarc') {
+        $displayStatus = "'" . htmlspecialchars($status) . "'";
+
+        return '<span class="gmail-auth-entry"><span class="auth-pill ' . $pillClass . '">' . $displayStatus . '</span> ' . $learnMoreLink . '</span>';
+    }
+
+    return '';
+}

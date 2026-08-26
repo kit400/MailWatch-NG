@@ -257,8 +257,15 @@ for ($i = 0; $i < $totalCount; $i++) {
     $mcpReportSafe = safe_value($mcpreport);
     $sysHostname = safe_value(rtrim(gethostname()));
 
-    // Generate realistic RFC822 headers
-    $rawHeaders = "Received: from mail.$fromDomain ([$clientIp]) by $sysHostname with ESMTP id $msgId;\n\t" . date('r', $msgTime) . "\n" .
+    // Generate realistic RFC822 headers including SPF, DKIM, DMARC
+    $spfRes = ('HighSpam' === $type || 'Virus' === $type) ? 'fail' : 'pass';
+    $dkimRes = ('HighSpam' === $type || 'Virus' === $type) ? 'fail' : 'pass';
+    $dmarcRes = ('HighSpam' === $type || 'Virus' === $type) ? 'fail' : 'pass';
+
+    $rawHeaders = "Authentication-Results: $sysHostname; dkim=$dkimRes (1024-bit key) header.d=$fromDomain; spf=$spfRes ($sysHostname: domain of $fromAddr designates $clientIp as permitted sender) smtp.mailfrom=$fromAddr; dmarc=$dmarcRes header.from=$fromDomain\n" .
+                  "Received-SPF: $spfRes ($sysHostname: domain of $fromAddr designates $clientIp as permitted sender) client-ip=$clientIp;\n" .
+                  "DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=$fromDomain; s=default; bh=" . substr(md5($msgId), 0, 16) . "; b=" . substr(base64_encode(md5($msgId)), 0, 24) . "\n" .
+                  "Received: from mail.$fromDomain ([$clientIp]) by $sysHostname with ESMTP id $msgId;\n\t" . date('r', $msgTime) . "\n" .
                   "From: <$fromAddr>\n" .
                   "To: <$toAddr>\n" .
                   "Subject: $subject\n" .

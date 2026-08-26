@@ -74,11 +74,19 @@ $sql = "
   clientip AS '" . __('receivedfrom04') . "',
   headers '" . __('receivedvia04') . "',
   id AS '" . __('id04') . "',
-  headers AS '" . __('msgheaders04') . "',
   from_address AS '" . __('from04') . "',
   to_address AS '" . __('to04') . "',
   subject AS '" . __('subject04') . "',
   size AS '" . __('size04') . "',
+  headers AS 'raw_headers_field',
+  clientip AS 'raw_clientip_field',
+  from_address AS 'raw_from_field',
+  from_domain AS 'raw_domain_field',
+  spamreport AS 'raw_spamrep_field',
+  '' AS 'SPF:',
+  '' AS 'DKIM:',
+  '' AS 'DMARC:',
+  headers AS '" . __('msgheaders04') . "',
   archive AS 'Archive',
   '" . __('hdrantivirus04') . "' AS 'HEADER',
   CASE WHEN virusinfected>0 THEN '$yes' ELSE '$no' END AS '" . __('virus04') . "',
@@ -132,9 +140,30 @@ if ($result->num_rows > 1) {
     error_log('WARNING: multiple mails existed for id ' . $url_id . ' only first result displayed to user');
 }
 $listurl = 'lists.php?token=' . urlencode($_SESSION['token'] ?? '') . '&amp;host=' . $row[__('receivedfrom04')] . '&amp;from=' . $row[__('from04')] . '&amp;to=' . $row[__('to04')];
+
+$rawAuth = parse_email_auth_results(
+    $row['raw_headers_field'] ?? '',
+    $row['raw_spamrep_field'] ?? '',
+    $row['raw_clientip_field'] ?? '',
+    $row['raw_from_field'] ?? '',
+    $row['raw_domain_field'] ?? ''
+);
+
 for ($f = 0; $f < $result->field_count; ++$f) {
     $fieldInfo = $result->fetch_field_direct($f);
     $fieldn = $fieldInfo->name;
+    if (in_array($fieldn, ['raw_headers_field', 'raw_clientip_field', 'raw_from_field', 'raw_domain_field', 'raw_spamrep_field'], true)) {
+        continue;
+    }
+    if ('SPF:' === $fieldn) {
+        $row[$f] = format_email_auth_badge('spf', $rawAuth['spf']);
+    }
+    if ('DKIM:' === $fieldn) {
+        $row[$f] = format_email_auth_badge('dkim', $rawAuth['dkim']);
+    }
+    if ('DMARC:' === $fieldn) {
+        $row[$f] = format_email_auth_badge('dmarc', $rawAuth['dmarc']);
+    }
     if ($fieldn === __('receivedfrom04')) {
         $output = '<table class="sa_rules_report" width="100%" cellspacing=0 cellpadding=0><tr><td style="vertical-align:middle;">' . $row[$f] . '</td>';
         if (LISTS) {
@@ -337,7 +366,7 @@ for ($f = 0; $f < $result->field_count; ++$f) {
         echo '<tr><td class="heading" align="center" valign="top" colspan="2">' . $row[$f] . '</td></tr>' . "\n";
     } else {
         // Actual data
-        if (!empty($row[$f]) || $fieldn === __('msgheaders04')) {
+        if (!empty($row[$f]) || in_array($fieldn, [__('msgheaders04'), 'SPF:', 'DKIM:', 'DMARC:'], true)) {
             // Skip empty rows (notably Spam Report when SpamAssassin didn't run)
             echo '<tr><td class="heading-w175">' . $fieldn . '</td><td class="detail">' . $row[$f] . '</td></tr>' . "\n";
         }

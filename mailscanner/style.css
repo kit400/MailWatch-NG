@@ -1874,6 +1874,73 @@ div.table > .caption {
     transform: translateY(-1px);
 }
 
+/* Gmail-Style Email Authentication Statuses in detail.php */
+.gmail-auth-entry {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #1e293b;
+    vertical-align: middle;
+}
+
+.auth-pill {
+    display: inline-block;
+    padding: 1px 6px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.35;
+    border-radius: 4px;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+
+.auth-pill-pass {
+    background-color: #dcfce7 !important;
+    color: #15803d !important;
+    border: 1px solid #bbf7d0 !important;
+}
+
+.auth-pill-fail {
+    background-color: #fee2e2 !important;
+    color: #b91c1c !important;
+    border: 1px solid #fecaca !important;
+}
+
+.auth-pill-warn {
+    background-color: #ffedd5 !important;
+    color: #c2410c !important;
+    border: 1px solid #fed7aa !important;
+}
+
+.auth-pill-neutral {
+    background-color: #f1f5f9 !important;
+    color: #475569 !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+.auth-mono-val {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 11.5px;
+    color: #0f172a;
+    font-weight: 600;
+}
+
+.auth-learn-link {
+    color: #2563eb !important;
+    font-size: 11.5px;
+    text-decoration: none !important;
+    margin-left: 2px;
+    display: inline-flex;
+    align-items: center;
+    font-weight: 500;
+}
+
+.auth-learn-link:hover {
+    color: #1d4ed8 !important;
+    text-decoration: underline !important;
+}
+
 .filterbuttons {
     white-space: nowrap;
     text-align: right;
