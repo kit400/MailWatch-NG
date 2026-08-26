@@ -5399,7 +5399,7 @@ function validateInput($input, $type)
             }
             break;
         case 'loginerror':
-            if (preg_match('/^(baduser|emptypassword|timeout|pagetimeout)$/', $input)) {
+            if (preg_match('/^(baduser|emptypassword|timeout|pagetimeout|banned|badcaptcha)$/', $input)) {
                 return true;
             }
             break;
@@ -5742,7 +5742,7 @@ function logFailedLogin($myusername = '')
  */
 function getHTTPClientIP()
 {
-    $remote_addr = $_SERVER['REMOTE_ADDR'];
+    $remote_addr = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '127.0.0.1';
 
     if (defined('TRUSTED_PROXIES') && !empty(TRUSTED_PROXIES)) {
         if (defined('PROXY_HEADER') && (!isset($_SERVER[PROXY_HEADER]) || empty($_SERVER[PROXY_HEADER]))) {
@@ -5948,3 +5948,278 @@ function format_email_auth_badge($type, $data)
 
     return '';
 }
+
+/**
+ * Check if an IP is within an IPv4 CIDR range (e.g. 192.168.0.0/16, 10.0.0.0/8)
+ *
+ * @param string $ip
+ * @param string $range
+ * @return bool
+ */
+function ip_in_cidr_ipv4($ip, $range)
+{
+    if (false === strpos($range, '/')) {
+        return $ip === $range;
+    }
+    list($subnet, $bits) = explode('/', $range, 2);
+    $ipLong = ip2long($ip);
+    $subnetLong = ip2long($subnet);
+    if (false === $ipLong || false === $subnetLong) {
+        return false;
+    }
+    $mask = -1 << (32 - (int)$bits);
+    $subnetLong &= $mask;
+    return ($ipLong & $mask) === $subnetLong;
+}
+
+/**
+ * Check if an IP address or subnet is in the login security whitelist.
+ * Whitelisted IPs are never banned and never required to solve CAPTCHA.
+ *
+ * @param string|null $clientIp
+ * @return bool
+ */
+function is_client_ip_whitelisted($clientIp = null)
+{
+    if (empty($clientIp)) {
+        $clientIp = getHTTPClientIP();
+    }
+
+    // Always whitelist local loopback
+    if (in_array($clientIp, ['127.0.0.1', '::1', 'localhost'], true)) {
+        return true;
+    }
+
+    $whitelist = [];
+    if (defined('LOGIN_WHITELIST_IPS')) {
+        if (is_array(LOGIN_WHITELIST_IPS)) {
+            $whitelist = LOGIN_WHITELIST_IPS;
+        } elseif (is_string(LOGIN_WHITELIST_IPS)) {
+            $whitelist = array_map('trim', explode(',', LOGIN_WHITELIST_IPS));
+        }
+    }
+
+    // Default private RFC1918 subnets if not specified
+    if (empty($whitelist)) {
+        $whitelist = ['127.0.0.1', '::1', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16'];
+    }
+
+    foreach ($whitelist as $entry) {
+        $entry = trim($entry);
+        if (empty($entry)) {
+            continue;
+        }
+
+        // Exact match
+        if ($clientIp === $entry) {
+            return true;
+        }
+
+        // IPv4 CIDR match
+        if (false !== strpos($entry, '/') && filter_var($clientIp, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            if (ip_in_cidr_ipv4($clientIp, $entry)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Ensure login_failures table exists in database.
+ *
+ * @return void
+ */
+function ensure_login_failures_table()
+{
+    static $ensured = false;
+    if ($ensured) {
+        return;
+    }
+
+    $sql = "CREATE TABLE IF NOT EXISTS `login_failures` (
+        `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `ip_address` VARCHAR(45) NOT NULL,
+        `username` VARCHAR(255) NULL,
+        `attempt_time` DATETIME NOT NULL,
+        `is_banned` TINYINT(1) NOT NULL DEFAULT 0,
+        `ban_until` DATETIME NULL,
+        INDEX `idx_ip_attempt` (`ip_address`, `attempt_time`),
+        INDEX `idx_ip_ban` (`ip_address`, `is_banned`, `ban_until`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+
+    @dbquery($sql);
+
+    // Auto-clean records older than 7 days
+    @dbquery("DELETE FROM `login_failures` WHERE `attempt_time` < DATE_SUB(NOW(), INTERVAL 7 DAY)");
+
+    $ensured = true;
+}
+
+/**
+ * Get current brute-force protection status for a client IP.
+ *
+ * @param string|null $clientIp
+ * @return array
+ */
+function get_login_security_status($clientIp = null)
+{
+    if (empty($clientIp)) {
+        $clientIp = getHTTPClientIP();
+    }
+
+    $enabled = defined('LOGIN_PROTECTION_ENABLED') ? (bool)LOGIN_PROTECTION_ENABLED : true;
+    $maxBeforeCaptcha = defined('LOGIN_MAX_FAILURES_BEFORE_CAPTCHA') ? (int)LOGIN_MAX_FAILURES_BEFORE_CAPTCHA : 2;
+    $maxBeforeBan = defined('LOGIN_MAX_FAILURES_BEFORE_BAN') ? (int)LOGIN_MAX_FAILURES_BEFORE_BAN : 3;
+    $banDurationMinutes = defined('LOGIN_BAN_DURATION_MINUTES') ? (int)LOGIN_BAN_DURATION_MINUTES : 30;
+    $windowMinutes = defined('LOGIN_FAILURES_WINDOW_MINUTES') ? (int)LOGIN_FAILURES_WINDOW_MINUTES : 15;
+
+    $isWhitelisted = is_client_ip_whitelisted($clientIp);
+
+    if (!$enabled || $isWhitelisted) {
+        return [
+            'enabled' => $enabled,
+            'is_whitelisted' => $isWhitelisted,
+            'is_banned' => false,
+            'ban_until' => null,
+            'ban_remaining_minutes' => 0,
+            'failed_count' => 0,
+            'require_captcha' => false,
+            'attempts_left_before_ban' => $maxBeforeBan,
+            'max_before_captcha' => $maxBeforeCaptcha,
+            'max_before_ban' => $maxBeforeBan,
+        ];
+    }
+
+    ensure_login_failures_table();
+    $safeIp = safe_value($clientIp);
+
+    // 1. Check for active ban
+    $banRes = @dbquery("SELECT `ban_until`, TIMESTAMPDIFF(MINUTE, NOW(), `ban_until`) AS `remaining_minutes` FROM `login_failures` WHERE `ip_address` = '$safeIp' AND `is_banned` = 1 AND `ban_until` > NOW() ORDER BY `ban_until` DESC LIMIT 1");
+    if ($banRes && $banRes->num_rows > 0) {
+        $banRow = $banRes->fetch_assoc();
+        $remaining = max(1, (int)$banRow['remaining_minutes']);
+        return [
+            'enabled' => true,
+            'is_whitelisted' => false,
+            'is_banned' => true,
+            'ban_until' => $banRow['ban_until'],
+            'ban_remaining_minutes' => $remaining,
+            'failed_count' => $maxBeforeBan,
+            'require_captcha' => true,
+            'attempts_left_before_ban' => 0,
+            'max_before_captcha' => $maxBeforeCaptcha,
+            'max_before_ban' => $maxBeforeBan,
+        ];
+    }
+
+    // 2. Count failed attempts in the window period
+    $countRes = @dbquery("SELECT COUNT(*) AS `cnt` FROM `login_failures` WHERE `ip_address` = '$safeIp' AND `attempt_time` >= DATE_SUB(NOW(), INTERVAL $windowMinutes MINUTE)");
+    $failedCount = 0;
+    if ($countRes && $countRes->num_rows > 0) {
+        $cntRow = $countRes->fetch_assoc();
+        $failedCount = (int)$cntRow['cnt'];
+    }
+
+    $requireCaptcha = ($failedCount >= $maxBeforeCaptcha);
+    $isBanned = ($failedCount >= $maxBeforeBan);
+    $attemptsLeft = max(0, $maxBeforeBan - $failedCount);
+
+    return [
+        'enabled' => true,
+        'is_whitelisted' => false,
+        'is_banned' => $isBanned,
+        'ban_until' => null,
+        'ban_remaining_minutes' => $isBanned ? $banDurationMinutes : 0,
+        'failed_count' => $failedCount,
+        'require_captcha' => $requireCaptcha,
+        'attempts_left_before_ban' => $attemptsLeft,
+        'max_before_captcha' => $maxBeforeCaptcha,
+        'max_before_ban' => $maxBeforeBan,
+    ];
+}
+
+/**
+ * Record a failed login attempt and apply temporary ban if threshold reached.
+ *
+ * @param string $username
+ * @param string|null $clientIp
+ * @return array Updated security status
+ */
+function record_failed_login($username = '', $clientIp = null)
+{
+    if (empty($clientIp)) {
+        $clientIp = getHTTPClientIP();
+    }
+
+    logFailedLogin($username);
+
+    $isWhitelisted = is_client_ip_whitelisted($clientIp);
+    if ($isWhitelisted) {
+        return get_login_security_status($clientIp);
+    }
+
+    ensure_login_failures_table();
+
+    $safeIp = safe_value($clientIp);
+    $safeUser = safe_value(substr((string)$username, 0, 255));
+    $banDurationMinutes = defined('LOGIN_BAN_DURATION_MINUTES') ? (int)LOGIN_BAN_DURATION_MINUTES : 30;
+    $maxBeforeBan = defined('LOGIN_MAX_FAILURES_BEFORE_BAN') ? (int)LOGIN_MAX_FAILURES_BEFORE_BAN : 3;
+    $windowMinutes = defined('LOGIN_FAILURES_WINDOW_MINUTES') ? (int)LOGIN_FAILURES_WINDOW_MINUTES : 15;
+
+    // Record the failure
+    @dbquery("INSERT INTO `login_failures` (`ip_address`, `username`, `attempt_time`, `is_banned`, `ban_until`) VALUES ('$safeIp', '$safeUser', NOW(), 0, NULL)");
+
+    // Count attempts in window
+    $countRes = @dbquery("SELECT COUNT(*) AS `cnt` FROM `login_failures` WHERE `ip_address` = '$safeIp' AND `attempt_time` >= DATE_SUB(NOW(), INTERVAL $windowMinutes MINUTE)");
+    $failedCount = 1;
+    if ($countRes && $countRes->num_rows > 0) {
+        $cntRow = $countRes->fetch_assoc();
+        $failedCount = (int)$cntRow['cnt'];
+    }
+
+    // Ban if threshold exceeded
+    if ($failedCount >= $maxBeforeBan) {
+        @dbquery("INSERT INTO `login_failures` (`ip_address`, `username`, `attempt_time`, `is_banned`, `ban_until`) VALUES ('$safeIp', '$safeUser', NOW(), 1, DATE_ADD(NOW(), INTERVAL $banDurationMinutes MINUTE))");
+        error_log("MailWatch Security Alert: IP [{$clientIp}] has been temporarily banned for {$banDurationMinutes} minutes after {$failedCount} failed login attempts.");
+    }
+
+    return get_login_security_status($clientIp);
+}
+
+/**
+ * Clear failed login attempts for a client IP on successful login.
+ *
+ * @param string|null $clientIp
+ * @return void
+ */
+function clear_login_failures($clientIp = null)
+{
+    if (empty($clientIp)) {
+        $clientIp = getHTTPClientIP();
+    }
+    ensure_login_failures_table();
+    $safeIp = safe_value($clientIp);
+    @dbquery("DELETE FROM `login_failures` WHERE `ip_address` = '$safeIp'");
+    unset($_SESSION['login_captcha_code']);
+}
+
+/**
+ * Verify submitted CAPTCHA code.
+ *
+ * @param string $userInput
+ * @return bool
+ */
+function verify_login_captcha($userInput)
+{
+    if (!isset($_SESSION['login_captcha_code'])) {
+        return false;
+    }
+    $expected = trim(strtolower((string)$_SESSION['login_captcha_code']));
+    $actual = trim(strtolower((string)$userInput));
+    unset($_SESSION['login_captcha_code']);
+
+    return (!empty($expected) && !empty($actual) && hash_equals($expected, $actual));
+}
+

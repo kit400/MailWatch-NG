@@ -77,7 +77,17 @@ echo '
        loginfieldset = document.getElementById("loginfieldset");
        loginfieldset.setAttribute("class", loginfieldset.getAttribute("class") + " hidden");
       }, timeout*1000*0.95);
-    };
+    function refreshCaptcha() {
+        var img = document.getElementById("captchaImg");
+        if (img) {
+            img.src = "captcha.php?t=" + new Date().getTime();
+        }
+        var input = document.getElementById("captcha");
+        if (input) {
+            input.value = "";
+            input.focus();
+        }
+    }
     ' . ((defined('SESSION_TIMEOUT') && SESSION_TIMEOUT > 0) ? 'enableTimeoutNotice(' . SESSION_TIMEOUT . ');' : '') . '
 </script>
 <div class="login">
@@ -85,13 +95,25 @@ echo '
     <h1>' . __('mwlogin01') . '</h1>
     <div class="inner-container">';
 if (file_exists(__DIR__ . '/conf.php')) {
+    $secStatus = get_login_security_status();
+    $isBanned = !empty($secStatus['is_banned']);
+    $requireCaptcha = !empty($secStatus['require_captcha']);
+
     echo '
         <form name="loginform" class="loginform" method="post" action="checklogin.php" autocomplete="off">
             <fieldset class="hidden" id="sessiontimeout">
                <p class="loginerror">' . __('pagetimeoutreload01') . '</p>
             </fieldset>
             <fieldset id="loginfieldset">';
-    if (isset($_GET['error'])) {
+    if ($isBanned) {
+        echo '
+                <div class="login-banned-card">
+                    <div class="ban-icon">⛔</div>
+                    <div class="ban-title">' . (__('ipbannedtitle01', false) ?: 'Access Temporarily Blocked') . '</div>
+                    <div class="ban-desc">' . (__('ipbanneddesc01', false) ?: 'Too many failed login attempts.') . '</div>
+                    <div class="ban-time">⏱️ Try again in ' . $secStatus['ban_remaining_minutes'] . ' min</div>
+                </div>';
+    } elseif (isset($_GET['error'])) {
         $error = __('errorund01');
         switch ($loginerror) {
             case 'baduser':
@@ -106,26 +128,48 @@ if (file_exists(__DIR__ . '/conf.php')) {
             case 'pagetimeout':
                 $error = __('pagetimeout01');
                 break;
+            case 'banned':
+                $error = __('banned01');
+                break;
+            case 'badcaptcha':
+                $error = __('badcaptcha01');
+                break;
         }
         echo '
                 <p class="loginerror">' . $error . '</p>';
     }
+
+    $disabledAttr = $isBanned ? ' disabled' : '';
+
     echo '
                 <p><label for="myusername">' . __('username') . '</label></p>
-                <p><input name="myusername" type="text" id="myusername" autofocus></p>
+                <p><input name="myusername" type="text" id="myusername"' . ($isBanned ? '' : ' autofocus') . $disabledAttr . '></p>
                 <input type="hidden" id="myusername_length" name="myusername_length">
 
                 <p><label for="mypassword">' . __('password') . '</label></p>
-                <p><input name="mypassword" type="password" id="mypassword"></p>
-                <input type="hidden" id="mypassword_length" name="mypassword_length">
+                <p><input name="mypassword" type="password" id="mypassword"' . $disabledAttr . '></p>
+                <input type="hidden" id="mypassword_length" name="mypassword_length">';
 
+    if ($requireCaptcha && !$isBanned) {
+        echo '
+                <div class="login-captcha-group">
+                    <p><label for="captcha">' . __('captchalabel01') . '</label></p>
+                    <div class="captcha-img-row">
+                        <img src="captcha.php?t=' . time() . '" id="captchaImg" class="captcha-img" alt="CAPTCHA" title="' . __('captcharefresh01') . '" onclick="refreshCaptcha()">
+                        <button type="button" class="btn-captcha-refresh" onclick="refreshCaptcha()" title="' . __('captcharefresh01') . '">↻</button>
+                    </div>
+                    <p><input name="captcha" type="text" id="captcha" class="login-captcha-input" placeholder="' . __('captchaplaceholder01') . '" maxlength="8" autocomplete="off" required></p>
+                </div>';
+    }
+
+    echo '
                 <p>
-                    <button type="submit" name="Submit" value="loginSubmit">' . __('login01') . '</button>
+                    <button type="submit" name="Submit" value="loginSubmit"' . $disabledAttr . '>' . __('login01') . '</button>
                 </p>
                 <input type="hidden" name="token" value="' . $_SESSION['token'] . '">
             </fieldset>
         </form>';
-    if (defined('PWD_RESET') && PWD_RESET === true) {
+    if (defined('PWD_RESET') && PWD_RESET === true && !$isBanned) {
         echo '
         <div class="pwdresetButton"><a href="password_reset.php?stage=1">' . __('forgottenpwd01') . '</a></div>';
     }

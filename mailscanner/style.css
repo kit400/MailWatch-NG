@@ -176,6 +176,129 @@ body {
     box-shadow: 0 2px 4px rgba(31, 108, 176, 0.3);
 }
 
+.login fieldset button[type="submit"]:disabled,
+.login fieldset input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: #f1f5f9 !important;
+}
+
+/* Login CAPTCHA and Brute-force Protection */
+.login-captcha-group {
+    margin: 6px 0 14px 0;
+    padding: 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+}
+
+.login-captcha-group p {
+    margin: 0 0 6px 0 !important;
+}
+
+.login-captcha-group label {
+    display: block;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.captcha-img-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.captcha-img {
+    height: 40px;
+    width: auto;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+    cursor: pointer;
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: opacity 0.15s ease;
+}
+
+.captcha-img:hover {
+    opacity: 0.9;
+}
+
+.btn-captcha-refresh {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    color: #1f6cb0;
+    font-size: 17px;
+    font-weight: 700;
+    width: 38px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    padding: 0;
+}
+
+.btn-captcha-refresh:hover {
+    background: #e0f2fe;
+    border-color: #0284c7;
+    color: #0284c7;
+    transform: rotate(45deg);
+}
+
+.login-captcha-input {
+    width: 100%;
+    box-sizing: border-box;
+    letter-spacing: 3px;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 0 !important;
+    text-align: center;
+}
+
+/* Banned lockout notification */
+.login-banned-card {
+    background: #fff1f2;
+    border: 1px solid #fecdd3;
+    border-radius: 8px;
+    padding: 14px 12px;
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.login-banned-card .ban-icon {
+    font-size: 24px;
+    line-height: 1;
+    margin-bottom: 6px;
+}
+
+.login-banned-card .ban-title {
+    color: #9f1239;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.login-banned-card .ban-desc {
+    color: #881337;
+    font-size: 11.5px;
+    line-height: 1.4;
+}
+
+.login-banned-card .ban-time {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 2px 10px;
+    background: #ffe4e6;
+    border-radius: 12px;
+    font-weight: 600;
+    color: #be123c;
+    font-size: 11px;
+}
+
 .pwdresetButton {
     text-align: center;
     margin-bottom: 15px;

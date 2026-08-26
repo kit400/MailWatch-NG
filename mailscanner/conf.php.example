@@ -49,6 +49,27 @@ define('USER_SELECTABLE_LANG', 'de,en,es-419,fr,it,ja,nl,pt_br,tr');
 // This can also be set individually per user in the MailWatch GUI for greater flexibility.
 define('SESSION_TIMEOUT', 259200);
 
+// --- Login Security & Brute-Force Protection ---
+// Enable or disable login brute-force protection
+define('LOGIN_PROTECTION_ENABLED', true);
+
+// Show CAPTCHA verification after N consecutive failed attempts (default: 2)
+define('LOGIN_MAX_FAILURES_BEFORE_CAPTCHA', 2);
+
+// Temporarily BAN client IP after N consecutive failed attempts (default: 3)
+define('LOGIN_MAX_FAILURES_BEFORE_BAN', 3);
+
+// Duration of IP ban in minutes (default: 30 minutes)
+define('LOGIN_BAN_DURATION_MINUTES', 30);
+
+// Window time in minutes to count consecutive failed attempts (default: 15 minutes)
+define('LOGIN_FAILURES_WINDOW_MINUTES', 15);
+
+// Whitelist of IP addresses or CIDR subnets that are NEVER banned or prompted for CAPTCHA
+// Supports exact IPs and CIDR ranges (IPv4 & IPv6). Multiple entries can be comma-separated or array.
+// Example: '127.0.0.1, ::1, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 195.230.150.0/27'
+define('LOGIN_WHITELIST_IPS', '127.0.0.1, ::1, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16');
+
 // MaxMind License key
 // A free license key from MaxMind is required to download GeoLite2 data
 // https://blog.maxmind.com/2019/12/18/significant-changes-to-accessing-and-using-geolite2-databases/

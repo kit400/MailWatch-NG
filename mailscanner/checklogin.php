@@ -44,14 +44,40 @@ if (isset($_POST['token'])) {
 }
 $_SESSION['token'] = generateToken();
 
+// Brute-force protection: check client IP status before processing credentials
+$secStatus = get_login_security_status();
+if ($secStatus['is_banned']) {
+    header('Location: login.php?error=banned');
+    exit;
+}
+
+// If CAPTCHA is required, verify it before validating credentials
+if ($secStatus['require_captcha']) {
+    $submittedCaptcha = isset($_POST['captcha']) ? $_POST['captcha'] : '';
+    if (!verify_login_captcha($submittedCaptcha)) {
+        $usernameForLog = isset($_POST['myusername']) ? $_POST['myusername'] : '';
+        $newStatus = record_failed_login($usernameForLog);
+        if ($newStatus['is_banned']) {
+            header('Location: login.php?error=banned');
+        } else {
+            header('Location: login.php?error=badcaptcha');
+        }
+        exit;
+    }
+}
+
 if (isset($_SERVER['PHP_AUTH_USER'])) {
     $myusername = $_SERVER['PHP_AUTH_USER'];
     $mypassword = $_SERVER['PHP_AUTH_PW'];
 } else {
     // Define $myusername and $mypassword
     if (!isset($_POST['myusername'], $_POST['mypassword'])) {
-        header('Location: login.php?error=baduser');
-        logFailedLogin();
+        $newStatus = record_failed_login();
+        if ($newStatus['is_banned']) {
+            header('Location: login.php?error=banned');
+        } else {
+            header('Location: login.php?error=baduser');
+        }
         exit;
     }
     $myusername = html_entity_decode($_POST['myusername']);
@@ -80,8 +106,12 @@ if (defined('USE_LDAP')
         $myusername = safe_value($myusername);
         $mypassword = safe_value($mypassword);
     } else {
-        header('Location: login.php?error=emptypassword');
-        logFailedLogin($myusername);
+        $newStatus = record_failed_login($myusername);
+        if ($newStatus['is_banned']) {
+            header('Location: login.php?error=banned');
+        } else {
+            header('Location: login.php?error=emptypassword');
+        }
         exit;
     }
 }
@@ -94,8 +124,12 @@ $usercount = $result->num_rows;
 if (0 === $usercount) {
     // no user found, redirect to login
     dbclose();
-    header('Location: login.php?error=baduser');
-    logFailedLogin($myusername);
+    $newStatus = record_failed_login($myusername);
+    if ($newStatus['is_banned']) {
+        header('Location: login.php?error=banned');
+    } else {
+        header('Location: login.php?error=baduser');
+    }
     exit;
 }
 
@@ -105,15 +139,23 @@ if (
 ) {
     $passwordInDb = database::mysqli_result($result, 0, 'password');
     if(!is_string($passwordInDb)) {
-       header('Location: login.php?error=baduser');
-       logFailedLogin($myusername);
+       $newStatus = record_failed_login($myusername);
+       if ($newStatus['is_banned']) {
+           header('Location: login.php?error=banned');
+       } else {
+           header('Location: login.php?error=baduser');
+       }
        exit;
     }
 
     if (!password_verify($mypassword, $passwordInDb)) {
         if (!hash_equals(md5($mypassword), $passwordInDb)) {
-            header('Location: login.php?error=baduser');
-            logFailedLogin($myusername);
+            $newStatus = record_failed_login($myusername);
+            if ($newStatus['is_banned']) {
+                header('Location: login.php?error=banned');
+            } else {
+                header('Location: login.php?error=baduser');
+            }
             exit;
         }
 
@@ -177,6 +219,9 @@ switch ($usertype) {
 
 // If result matched $myusername and $mypassword, table row must be 1 row
 if (1 === $usercount) {
+    // Clear failed login attempts for this IP on successful login
+    clear_login_failures();
+
     session_regenerate_id(true);
     // Register $myusername, $mypassword and redirect to file "login_success.php"
     $_SESSION['myusername'] = $myusername;
@@ -197,8 +242,12 @@ if (1 === $usercount) {
     }
     header('Location: ' . str_replace('&amp;', '&', sanitizeInput($redirect_url)));
 } else {
-    header('Location: login.php?error=baduser');
-    logFailedLogin($myusername);
+    $newStatus = record_failed_login($myusername);
+    if ($newStatus['is_banned']) {
+        header('Location: login.php?error=banned');
+    } else {
+        header('Location: login.php?error=baduser');
+    }
 }
 
 // close any DB connections
