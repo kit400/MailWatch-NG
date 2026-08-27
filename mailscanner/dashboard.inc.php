@@ -521,16 +521,30 @@ function render_widget_threat_donut($timeRange, $widgetId)
         var myChart = echarts.init(el);
         var option = {
             tooltip: { trigger: "item", formatter: "{b}: {c} ({d}%)" },
-            legend: { orient: "horizontal", bottom: 0, itemWidth: 10, itemHeight: 10, textStyle: { fontSize: 10 } },
+            legend: { 
+                orient: "horizontal", 
+                bottom: 0, 
+                itemWidth: 12, 
+                itemHeight: 12, 
+                itemStyle: { 
+                    borderColor: "#94a3b8", 
+                    borderWidth: 1, 
+                    borderRadius: 2 
+                }, 
+                textStyle: { fontSize: 10, color: "#475569" } 
+            },
             series: [{
                 name: "Threat Distribution",
                 type: "pie",
                 radius: ["42%", "72%"],
                 center: ["50%", "45%"],
                 avoidLabelOverlap: false,
-                itemStyle: { borderRadius: 4, borderColor: "#fff", borderWidth: 2 },
+                itemStyle: { borderRadius: 4, borderColor: "#94a3b8", borderWidth: 1.5 },
                 label: { show: false, position: "center" },
-                emphasis: { label: { show: true, fontSize: 13, fontWeight: "bold" } },
+                emphasis: { 
+                    label: { show: true, fontSize: 13, fontWeight: "bold" },
+                    itemStyle: { borderColor: "#475569", borderWidth: 2 }
+                },
                 data: ' . $jsonData . '
             }]
         };

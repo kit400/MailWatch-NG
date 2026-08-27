@@ -91,6 +91,11 @@ function printPieGraph(chartId, settings) {
       itemGap: 8,
       itemWidth: 12,
       itemHeight: 12,
+      itemStyle: {
+        borderColor: '#94a3b8',
+        borderWidth: 1,
+        borderRadius: 2
+      },
       textStyle: {
         color: '#475569',
         fontSize: 11
@@ -110,8 +115,8 @@ function printPieGraph(chartId, settings) {
         padAngle: 3,
         itemStyle: {
           borderRadius: 6,
-          borderColor: '#ffffff',
-          borderWidth: 2
+          borderColor: '#94a3b8',
+          borderWidth: 1.5
         },
         label: {
           show: false,
@@ -126,6 +131,8 @@ function printPieGraph(chartId, settings) {
             formatter: '{b}\n{d}%'
           },
           itemStyle: {
+            borderColor: '#475569',
+            borderWidth: 2,
             shadowBlur: 10,
             shadowOffsetX: 0,
             shadowColor: 'rgba(0, 0, 0, 0.15)'
