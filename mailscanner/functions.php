@@ -456,7 +456,7 @@ function html_start($title, $refresh = 0, $cacheable = true, $report = false)
     echo '      <span class="compact-vdiv">|</span>' . "\n";
     echo '      <div class="compact-jump-box">' . "\n";
     echo '        <form action="./detail.php" method="get" class="compact-jump-form">' . "\n";
-    echo '          <span class="compact-jump-label">🔍 ' . __('jumpmessage03') . '</span>' . "\n";
+    echo '          <span class="compact-jump-label">' . mw_icon('search', '', 11) . ' ' . __('jumpmessage03') . '</span>' . "\n";
     echo '          <input type="text" name="id" value="' . $message_id . '" placeholder="ID" class="compact-jump-input">' . "\n";
     echo '          <input type="hidden" name="token" value="' . htmlspecialchars($_SESSION['token'] ?? '') . '">' . "\n";
     echo '        </form>' . "\n";
@@ -489,7 +489,10 @@ function html_start($title, $refresh = 0, $cacheable = true, $report = false)
     echo '          </div>' . "\n";
     echo '          <div class="jump-box">' . "\n";
     echo '            <form action="./detail.php">' . "\n";
-    echo '              <p>🔍 ' . __('jumpmessage03') . ' <input type="text" name="id" value="' . $message_id . '" placeholder="ID"></p>' . "\n";
+    echo '              <div class="jump-field-group">' . "\n";
+    echo '                <span class="jump-label">' . mw_icon('search', '', 11) . ' ' . __('jumpmessage03') . '</span>' . "\n";
+    echo '                <input type="text" name="id" value="' . $message_id . '" placeholder="ID">' . "\n";
+    echo '              </div>' . "\n";
     echo '              <input type="hidden" name="token" value="' . htmlspecialchars($_SESSION['token'] ?? '') . '">' . "\n";
     echo '            </form>' . "\n";
     echo '          </div>' . "\n";

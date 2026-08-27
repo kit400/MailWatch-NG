@@ -1001,9 +1001,9 @@ table.colorcodes {
 }
 
 .header-col-user {
-    flex: 0 0 190px;
-    max-width: 200px;
-    min-width: 175px;
+    flex: 0 0 135px;
+    max-width: 140px;
+    min-width: 120px;
     gap: 4px;
 }
 
@@ -1029,11 +1029,12 @@ table.colorcodes {
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
+    width: 100%;
 }
 
 .header-logo-img {
-    max-height: 36px;
-    max-width: 165px;
+    max-height: 32px;
+    max-width: 105px;
     height: auto;
     width: auto;
     object-fit: contain;
@@ -1047,47 +1048,58 @@ table.colorcodes {
 
 .jump-box form {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 4px;
+    flex-direction: column;
+    gap: 3px;
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
-    padding: 2px 6px;
+    padding: 4px 6px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-    font-size: 10px;
-    color: #475569;
     box-sizing: border-box;
     width: 100%;
 }
 
-.jump-box p {
-    margin: 0;
-    display: inline-flex;
+.jump-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+}
+
+.jump-label {
+    display: flex;
     align-items: center;
-    gap: 3px;
+    gap: 4px;
     font-size: 10px;
     color: #64748b;
-    font-weight: 500;
-    width: 100%;
-    justify-content: space-between;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.jump-label .mw-svg-icon {
+    color: #64748b;
 }
 
 .jump-box input[type="text"] {
-    padding: 2px 4px;
+    padding: 3px 6px;
     border: 1px solid #cbd5e1;
-    border-radius: 3px;
-    font-size: 10px;
+    border-radius: 4px;
+    font-size: 11px;
     color: #1e293b;
     background: #f8fafc;
-    width: 65px;
+    width: 100%;
+    box-sizing: border-box;
     outline: none;
-    transition: border-color 0.15s ease;
+    transition: all 0.15s ease;
 }
 
 .jump-box input[type="text"]:focus {
     border-color: #1f6cb0;
     background: #ffffff;
+    box-shadow: 0 0 0 2px rgba(31, 108, 176, 0.15);
 }
 
 /* User Cabinet Card */
