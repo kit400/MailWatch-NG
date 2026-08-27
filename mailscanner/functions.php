@@ -1214,7 +1214,8 @@ function printNavBar()
     // 3. Global Settings Gear Dropdown (LibreNMS style for Admins)
     if ('A' === ($_SESSION['user_type'] ?? '')) {
         $adminPages = ['settings.php', 'user_manager.php', 'system_notifications.php', 'sf_version.php', 'db_status.php', 'viewmailscannerconf.php', 'rule_editor.php', 'bayes_info.php', 'grey.php', 'other.php'];
-        $isGearActive = in_array(basename($_SERVER['SCRIPT_FILENAME']), $adminPages, true);
+        $currScript = basename($_SERVER['SCRIPT_FILENAME']);
+        $isGearActive = in_array($currScript, $adminPages, true);
 
         echo '<li class="nav-item nav-gear-dropdown' . ($isGearActive ? ' active' : '') . '" id="navGearDropdown">' . "\n";
         echo '  <button type="button" class="nav-gear-toggle" onclick="toggleNavDropdown(\'navGearMenu\')" title="Global Administration">' . "\n";
@@ -1223,21 +1224,21 @@ function printNavBar()
         echo '  </button>' . "\n";
         echo '  <div class="nav-dropdown-menu dropdown-menu-wide" id="navGearMenu">' . "\n";
         echo '    <div class="dropdown-category-title">🛡️ Global Configuration</div>' . "\n";
-        echo '    <a href="settings.php" class="dropdown-item">' . "\n";
+        echo '    <a href="settings.php" class="dropdown-item' . ('settings.php' === $currScript ? ' active' : '') . '">' . "\n";
         echo '      <span class="dropdown-icon">🛡️</span>' . "\n";
         echo '      <div class="dropdown-item-text">' . "\n";
         echo '        <div class="dropdown-item-title">' . __('systemsettings10') . '</div>' . "\n";
         echo '        <div class="dropdown-item-sub">Brute force, IP whitelist, ban limits</div>' . "\n";
         echo '      </div>' . "\n";
         echo '    </a>' . "\n";
-        echo '    <a href="user_manager.php" class="dropdown-item">' . "\n";
+        echo '    <a href="user_manager.php" class="dropdown-item' . ('user_manager.php' === $currScript ? ' active' : '') . '">' . "\n";
         echo '      <span class="dropdown-icon">👥</span>' . "\n";
         echo '      <div class="dropdown-item-text">' . "\n";
         echo '        <div class="dropdown-item-title">' . __('usermgnt10') . '</div>' . "\n";
         echo '        <div class="dropdown-item-sub">Manage accounts, roles, spam limits</div>' . "\n";
         echo '      </div>' . "\n";
         echo '    </a>' . "\n";
-        echo '    <a href="system_notifications.php" class="dropdown-item">' . "\n";
+        echo '    <a href="system_notifications.php" class="dropdown-item' . ('system_notifications.php' === $currScript ? ' active' : '') . '">' . "\n";
         echo '      <span class="dropdown-icon">📢</span>' . "\n";
         echo '      <div class="dropdown-item-text">' . "\n";
         echo '        <div class="dropdown-item-title">' . __('notifications10') . '</div>' . "\n";
@@ -1246,40 +1247,40 @@ function printNavBar()
         echo '    </a>' . "\n";
         echo '    <div class="dropdown-divider"></div>' . "\n";
         echo '    <div class="dropdown-category-title">📊 System &amp; Diagnostics</div>' . "\n";
-        echo '    <a href="sf_version.php" class="dropdown-item">' . "\n";
+        echo '    <a href="sf_version.php" class="dropdown-item' . ('sf_version.php' === $currScript ? ' active' : '') . '">' . "\n";
         echo '      <span class="dropdown-icon">ℹ️</span>' . "\n";
         echo '      <div class="dropdown-item-text">' . "\n";
         echo '        <div class="dropdown-item-title">' . __('softver11') . '</div>' . "\n";
         echo '        <div class="dropdown-item-sub">MailWatch, MailScanner, OS info</div>' . "\n";
         echo '      </div>' . "\n";
         echo '    </a>' . "\n";
-        echo '    <a href="db_status.php" class="dropdown-item">' . "\n";
+        echo '    <a href="db_status.php" class="dropdown-item' . ('db_status.php' === $currScript ? ' active' : '') . '">' . "\n";
         echo '      <span class="dropdown-icon">🗄️</span>' . "\n";
         echo '      <div class="dropdown-item-text">' . "\n";
         echo '        <div class="dropdown-item-title">' . __('mysqldatabasestatus10') . '</div>' . "\n";
         echo '        <div class="dropdown-item-sub">Database health and statistics</div>' . "\n";
         echo '      </div>' . "\n";
         echo '    </a>' . "\n";
-        echo '    <a href="viewmailscannerconf.php" class="dropdown-item">' . "\n";
+        echo '    <a href="viewmailscannerconf.php" class="dropdown-item' . ('viewmailscannerconf.php' === $currScript ? ' active' : '') . '">' . "\n";
         echo '      <span class="dropdown-icon">🔍</span>' . "\n";
         echo '      <div class="dropdown-item-text">' . "\n";
         echo '        <div class="dropdown-item-title">' . __('viewconfms10') . '</div>' . "\n";
         echo '      </div>' . "\n";
         echo '    </a>' . "\n";
-        echo '    <a href="rule_editor.php" class="dropdown-item">' . "\n";
+        echo '    <a href="rule_editor.php" class="dropdown-item' . ('rule_editor.php' === $currScript ? ' active' : '') . '">' . "\n";
         echo '      <span class="dropdown-icon">📝</span>' . "\n";
         echo '      <div class="dropdown-item-text">' . "\n";
         echo '        <div class="dropdown-item-title">' . __('editmsrules10') . '</div>' . "\n";
         echo '      </div>' . "\n";
         echo '    </a>' . "\n";
-        echo '    <a href="bayes_info.php" class="dropdown-item">' . "\n";
+        echo '    <a href="bayes_info.php" class="dropdown-item' . ('bayes_info.php' === $currScript ? ' active' : '') . '">' . "\n";
         echo '      <span class="dropdown-icon">🧠</span>' . "\n";
         echo '      <div class="dropdown-item-text">' . "\n";
         echo '        <div class="dropdown-item-title">' . __('spamassassinbayesdatabaseinfo10') . '</div>' . "\n";
         echo '      </div>' . "\n";
         echo '    </a>' . "\n";
         if (defined('SHOW_GREYLIST') && true === SHOW_GREYLIST) {
-            echo '    <a href="grey.php" class="dropdown-item">' . "\n";
+            echo '    <a href="grey.php" class="dropdown-item' . ('grey.php' === $currScript ? ' active' : '') . '">' . "\n";
             echo '      <span class="dropdown-icon">⏱️</span>' . "\n";
             echo '      <div class="dropdown-item-text">' . "\n";
             echo '        <div class="dropdown-item-title">Greylist</div>' . "\n";
@@ -1287,7 +1288,7 @@ function printNavBar()
             echo '    </a>' . "\n";
         }
         if (SHOW_DOC === true) {
-            echo '    <a href="docs.php" class="dropdown-item">' . "\n";
+            echo '    <a href="docs.php" class="dropdown-item' . ('docs.php' === $currScript ? ' active' : '') . '">' . "\n";
             echo '      <span class="dropdown-icon">📖</span>' . "\n";
             echo '      <div class="dropdown-item-text">' . "\n";
             echo '        <div class="dropdown-item-title">' . __('documentation03') . '</div>' . "\n";
@@ -1295,7 +1296,7 @@ function printNavBar()
             echo '    </a>' . "\n";
         }
         echo '    <div class="dropdown-divider"></div>' . "\n";
-        echo '    <a href="other.php" class="dropdown-item dropdown-item-link">' . "\n";
+        echo '    <a href="other.php" class="dropdown-item dropdown-item-link' . ('other.php' === $currScript ? ' active' : '') . '">' . "\n";
         echo '      <span class="dropdown-icon">🔧</span>' . "\n";
         echo '      <div class="dropdown-item-text">' . "\n";
         echo '        <div class="dropdown-item-title">' . __('toolslinks10') . '</div>' . "\n";
