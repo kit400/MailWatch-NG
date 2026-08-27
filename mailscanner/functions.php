@@ -279,7 +279,7 @@ function getVirusRegex($scanner = null)
  */
 function mailwatch_version()
 {
-    return '6.0.3';
+    return '6.0.4';
 }
 
 function mailwatch_full_version()
@@ -290,6 +290,11 @@ function mailwatch_full_version()
 function mailwatch_project_url()
 {
     return 'https://github.com/kit400/MailWatch-NG';
+}
+
+function efa_project_url()
+{
+    return 'https://github.com/kit400/EFA-NG';
 }
 
 /**
@@ -305,7 +310,24 @@ function efa_version()
             return $ver;
         }
     }
-    return 'eFa-6.0.4';
+    return '6.0.4';
+}
+
+/**
+ * eFa Full Version with prefix (e.g. EFA-6.0.4)
+ *
+ * @return string
+ */
+function efa_full_version()
+{
+    $ver = efa_version();
+    if (empty($ver)) {
+        return '';
+    }
+    if (stripos($ver, 'efa') === false) {
+        return 'EFA-' . $ver;
+    }
+    return $ver;
 }
 
 /**
@@ -1606,9 +1628,9 @@ document.addEventListener("DOMContentLoaded", function() {
     }
     echo '<p class="center footer noprint">' . "\n";
     echo '<a href="' . mailwatch_project_url() . '" target="_blank" rel="noopener noreferrer">' . htmlspecialchars(mailwatch_full_version()) . '</a>';
-    $efa_ver = efa_version();
+    $efa_ver = efa_full_version();
     if (!empty($efa_ver)) {
-        echo ' running on ' . $efa_ver;
+        echo ' running on <a href="' . efa_project_url() . '" target="_blank" rel="noopener noreferrer">' . htmlspecialchars($efa_ver) . '</a>';
     }
     echo ' - &copy; 2006-' . date('Y');
     echo '</p>' . "\n";
