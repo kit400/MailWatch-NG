@@ -42,5 +42,15 @@ if ('mark_all_read' === $action) {
     exit;
 }
 
+if ('check_updates' === $action) {
+    if ('A' !== $userType) {
+        echo json_encode(['success' => false, 'error' => 'Forbidden']);
+        exit;
+    }
+    $res = SystemNotifications::checkForUpdates(true);
+    echo json_encode(['success' => true, 'result' => $res]);
+    exit;
+}
+
 echo json_encode(['success' => false, 'error' => 'Unknown action']);
 exit;

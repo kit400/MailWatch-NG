@@ -349,6 +349,168 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helve
     }
 
     /**
+     * Check for new EFA-NG / MailWatch-NG version
+     *
+     * @param bool $force Force check ignoring 12h cache
+     * @return array
+     */
+    public static function checkForUpdates($force = false)
+    {
+        self::ensureTables();
+
+        $cacheDir = defined('MAILWATCH_HOME') ? MAILWATCH_HOME . '/temp' : __DIR__ . '/temp';
+        if (!is_dir($cacheDir)) {
+            @mkdir($cacheDir, 0775, true);
+        }
+        $cacheFile = $cacheDir . '/version_check_cache.json';
+
+        // Check cache (12 hours = 43200 seconds)
+        if (!$force && file_exists($cacheFile) && (time() - filemtime($cacheFile) < 43200)) {
+            $cached = @json_decode(@file_get_contents($cacheFile), true);
+            if (is_array($cached) && isset($cached['has_update'])) {
+                return $cached;
+            }
+        }
+
+        $currentVersion = function_exists('mailwatch_version') ? mailwatch_version() : '6.0.4';
+
+        // Fetch remote version data
+        $sources = [
+            'https://raw.githubusercontent.com/kit400/EFA-NG/main/version.json',
+            'https://raw.githubusercontent.com/kit400/MailWatch-NG/main/version.json',
+        ];
+
+        $releaseData = null;
+        foreach ($sources as $url) {
+            $json = self::fetchUrlWithTimeout($url, 5);
+            if ($json) {
+                $decoded = @json_decode($json, true);
+                if (is_array($decoded) && !empty($decoded['version'])) {
+                    $releaseData = $decoded;
+                    break;
+                }
+            }
+        }
+
+        // Fallback: GitHub Releases API
+        if (!$releaseData) {
+            $apiJson = self::fetchUrlWithTimeout('https://api.github.com/repos/kit400/MailWatch-NG/releases/latest', 5);
+            if ($apiJson) {
+                $gh = @json_decode($apiJson, true);
+                if (is_array($gh) && !empty($gh['tag_name'])) {
+                    $tag = ltrim($gh['tag_name'], 'v');
+                    $releaseData = [
+                        'version' => $tag,
+                        'title' => $gh['name'] ?: "EFA-NG / MailWatch-NG v$tag",
+                        'short_description' => !empty($gh['body']) ? mb_substr(strip_tags($gh['body']), 0, 200) . '...' : "New update v$tag is available.",
+                        'changelog_url' => $gh['html_url'] ?: 'https://github.com/kit400/EFA-NG/releases',
+                        'upgrade_command' => 'dnf clean all && dnf -y update eFa MailWatch && systemctl reload php-fpm httpd',
+                    ];
+                }
+            }
+        }
+
+        if (!$releaseData) {
+            return [
+                'success' => false,
+                'has_update' => false,
+                'current_version' => $currentVersion,
+                'latest_version' => $currentVersion,
+                'error' => 'Unable to retrieve version metadata from remote repository.',
+                'checked_at' => time(),
+            ];
+        }
+
+        $latestVersion = trim($releaseData['version']);
+        $hasUpdate = version_compare($latestVersion, $currentVersion, '>');
+        $upgradeCmd = $releaseData['upgrade_command'] ?? 'dnf clean all && dnf -y update eFa MailWatch && systemctl reload php-fpm httpd';
+
+        if ($hasUpdate) {
+            // Check if notification already exists
+            dbconn();
+            $verSafe = safe_value($latestVersion);
+            $checkSql = "SELECT id FROM system_notifications WHERE version = '$verSafe' AND type = 'release' LIMIT 1";
+            $res = dbquery($checkSql);
+            if (!$res || $res->num_rows === 0) {
+                $fullContentHtml = '
+<div class="update-instructions-box" style="margin: 12px 0; padding: 14px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; font-family: sans-serif;">
+  <div style="font-weight: 600; color: #1e293b; margin-bottom: 8px;">🚀 Quick Upgrade Instructions:</div>
+  <div style="font-size: 13px; color: #475569; margin-bottom: 10px;">Connect to your server via SSH as <code>root</code> and run:</div>
+  <div style="display: flex; align-items: center; background: #0f172a; border-radius: 4px; padding: 8px 12px; gap: 8px;">
+    <code style="color: #38bdf8; font-family: monospace; font-size: 13px; word-break: break-all; flex: 1;">' . htmlspecialchars($upgradeCmd) . '</code>
+    <button type="button" class="btn-copy-cmd" onclick="copyUpdateCommand(this, \'' . htmlspecialchars(addslashes($upgradeCmd)) . '\')" style="padding: 4px 10px; background: #334155; color: #f8fafc; border: 1px solid #475569; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; white-space: nowrap;">Copy</button>
+  </div>
+</div>';
+
+                self::createNotification([
+                    'type' => 'release',
+                    'title' => "🚀 New EFA-NG Update Available: v{$latestVersion}",
+                    'version' => $latestVersion,
+                    'short_description' => $releaseData['short_description'] ?? "Version {$latestVersion} is now available with new features and improvements.",
+                    'changelog_url' => $releaseData['changelog_url'] ?? 'https://github.com/kit400/EFA-NG/releases',
+                    'full_content' => $fullContentHtml,
+                    'target_role' => 'A',
+                    'is_banner' => 1,
+                    'is_active' => 1,
+                ]);
+            }
+        }
+
+        $result = [
+            'success' => true,
+            'has_update' => $hasUpdate,
+            'current_version' => $currentVersion,
+            'latest_version' => $latestVersion,
+            'release_data' => $releaseData,
+            'upgrade_command' => $upgradeCmd,
+            'checked_at' => time(),
+        ];
+
+        @file_put_contents($cacheFile, json_encode($result, JSON_PRETTY_PRINT));
+
+        return $result;
+    }
+
+    /**
+     * Helper to fetch URL content with short timeout
+     */
+    private static function fetchUrlWithTimeout($url, $timeout = 5)
+    {
+        if (function_exists('curl_init')) {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout);
+            curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'User-Agent: EFA-NG-MailWatch-UpdateCheck',
+                'Accept: application/json, text/plain, */*',
+            ]);
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            if ($response !== false && $httpCode >= 200 && $httpCode < 300) {
+                return $response;
+            }
+        }
+
+        $ctx = stream_context_create([
+            'http' => [
+                'timeout' => $timeout,
+                'header' => "User-Agent: EFA-NG-MailWatch-UpdateCheck\r\nAccept: application/json\r\n",
+            ],
+            'ssl' => [
+                'verify_peer' => true,
+                'verify_peer_name' => true,
+            ],
+        ]);
+
+        return @file_get_contents($url, false, $ctx);
+    }
+
+    /**
      * Render the top announcement banner for active unread release/danger/warning notices
      *
      * @param string $username
@@ -397,6 +559,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helve
             $html .= '    </div>' . "\n";
 
             $html .= '    <div class="banner-right">' . "\n";
+            if ($n['type'] === 'release') {
+                $html .= '      <button type="button" class="banner-action-btn banner-btn-guide" onclick="toggleNotificationsModal()" style="background:#0284c7;color:#fff;cursor:pointer;border:none;padding:4px 10px;border-radius:4px;font-size:12px;font-weight:600;margin-right:6px;">⚡ Upgrade Guide</button>' . "\n";
+            }
             if (!empty($n['changelog_url'])) {
                 $html .= '      <a href="' . htmlspecialchars($n['changelog_url']) . '" target="_blank" class="banner-action-btn banner-btn-changelog" rel="noopener noreferrer">📖 ' . (__('changelog', false) ?: 'Changelog') . '</a>' . "\n";
             }
@@ -512,6 +677,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helve
 
                 $html .= '          <div class="notif-item-title">' . htmlspecialchars($n['title']) . '</div>' . "\n";
                 $html .= '          <div class="notif-item-desc">' . nl2br(htmlspecialchars($n['short_description'])) . '</div>' . "\n";
+                if (!empty($n['full_content'])) {
+                    $html .= '          <div class="notif-item-full">' . $n['full_content'] . '</div>' . "\n";
+                }
 
                 if (!empty($n['changelog_url'])) {
                     $html .= '          <div class="notif-item-bottom">' . "\n";
@@ -609,6 +777,33 @@ function markAllNotificationsRead() {
     xhr.open("POST", "notification_action.php", true);
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
     xhr.send("action=mark_all_read&token=' . $token . '");
+}
+function copyUpdateCommand(btn, cmd) {
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(cmd).then(function() {
+            var old = btn.textContent;
+            btn.textContent = "Copied!";
+            btn.style.backgroundColor = "#16a34a";
+            setTimeout(function() {
+                btn.textContent = old;
+                btn.style.backgroundColor = "";
+            }, 2000);
+        });
+    } else {
+        var t = document.createElement("textarea");
+        t.value = cmd;
+        document.body.appendChild(t);
+        t.select();
+        document.execCommand("copy");
+        document.body.removeChild(t);
+        var old = btn.textContent;
+        btn.textContent = "Copied!";
+        btn.style.backgroundColor = "#16a34a";
+        setTimeout(function() {
+            btn.textContent = old;
+            btn.style.backgroundColor = "";
+        }, 2000);
+    }
 }
 </script>' . "\n";
 

@@ -246,6 +246,75 @@ $components[] = [
     'version' => !empty($geoip_version) ? $geoip_version : __('nodbdown11'),
 ];
 
+// System Update Status Check (cached)
+$updateCheck = class_exists('SystemNotifications') ? SystemNotifications::checkForUpdates(false) : null;
+$hasUpdate = $updateCheck && !empty($updateCheck['has_update']);
+$latestVer = $updateCheck['latest_version'] ?? mailwatch_version();
+$currentVer = mailwatch_version();
+$checkedAt = !empty($updateCheck['checked_at']) ? date('M j, Y H:i', $updateCheck['checked_at']) : 'Never';
+$upgradeCmd = $updateCheck['upgrade_command'] ?? 'dnf clean all && dnf -y update eFa MailWatch && systemctl reload php-fpm httpd';
+$changelogUrl = $updateCheck['release_data']['changelog_url'] ?? 'https://github.com/kit400/EFA-NG/releases';
+$releaseDesc = $updateCheck['release_data']['short_description'] ?? 'New release available.';
+
+echo '<div class="version-update-card" id="versionUpdateCard" style="margin-bottom: 20px; background: #ffffff; border: 1px solid ' . ($hasUpdate ? '#38bdf8' : '#e2e8f0') . '; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); padding: 18px 20px;">' . "\n";
+echo '  <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap;">' . "\n";
+echo '    <div style="display: flex; gap: 14px; align-items: flex-start;">' . "\n";
+echo '      <div style="font-size: 26px; line-height: 1; margin-top: 2px;">' . ($hasUpdate ? '🚀' : '✅') . '</div>' . "\n";
+echo '      <div>' . "\n";
+if ($hasUpdate) {
+    echo '        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">' . "\n";
+    echo '          <span style="background: #0284c7; color: #ffffff; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 700; text-transform: uppercase;">Update Available</span>' . "\n";
+    echo '          <strong style="font-size: 15px; color: #0f172a;">New version EFA-NG v' . htmlspecialchars($latestVer) . ' is available!</strong>' . "\n";
+    echo '        </div>' . "\n";
+    echo '        <div style="color: #475569; font-size: 13px; margin-bottom: 12px;">' . htmlspecialchars($releaseDesc) . ' (Current: <code>v' . htmlspecialchars($currentVer) . '</code>)</div>' . "\n";
+    echo '        <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px; max-width: 720px;">' . "\n";
+    echo '          <div style="font-weight: 600; font-size: 12px; color: #334155; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Quick Upgrade Command (SSH as root):</div>' . "\n";
+    echo '          <div style="display: flex; align-items: center; background: #0f172a; border-radius: 4px; padding: 8px 12px; gap: 10px;">' . "\n";
+    echo '            <code style="color: #38bdf8; font-family: monospace; font-size: 13px; flex: 1; word-break: break-all;">' . htmlspecialchars($upgradeCmd) . '</code>' . "\n";
+    echo '            <button type="button" onclick="copyUpdateCommand(this, \'' . htmlspecialchars(addslashes($upgradeCmd)) . '\')" style="background: #334155; color: #f8fafc; border: 1px solid #475569; border-radius: 4px; padding: 4px 12px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;">Copy</button>' . "\n";
+    echo '          </div>' . "\n";
+    echo '        </div>' . "\n";
+} else {
+    echo '        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">' . "\n";
+    echo '          <span style="background: #16a34a; color: #ffffff; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 700; text-transform: uppercase;">Up to Date</span>' . "\n";
+    echo '          <strong style="font-size: 15px; color: #0f172a;">You are running the latest version of EFA-NG (v' . htmlspecialchars($currentVer) . ')</strong>' . "\n";
+    echo '        </div>' . "\n";
+    echo '        <div style="color: #64748b; font-size: 13px;">No new updates found. Last checked: ' . $checkedAt . '</div>' . "\n";
+}
+echo '      </div>' . "\n";
+echo '    </div>' . "\n";
+echo '    <div style="display: flex; gap: 8px; align-items: center; align-self: flex-start;">' . "\n";
+if ($hasUpdate) {
+    echo '      <a href="' . htmlspecialchars($changelogUrl) . '" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 6px 12px; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; border-radius: 6px; font-size: 13px; font-weight: 600; text-decoration: none;">📖 Changelog</a>' . "\n";
+}
+echo '      <button type="button" id="btnCheckUpdates" onclick="triggerUpdateCheck(this)" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; background: #f1f5f9; color: #1e293b; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">🔄 Check for Updates</button>' . "\n";
+echo '    </div>' . "\n";
+echo '  </div>' . "\n";
+echo '</div>' . "\n";
+
+echo '<script type="text/javascript">
+function triggerUpdateCheck(btn) {
+    var orig = btn.innerHTML;
+    btn.innerHTML = "🔄 Checking...";
+    btn.disabled = true;
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", "notification_action.php", true);
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+            btn.innerHTML = orig;
+            btn.disabled = false;
+            if (xhr.status === 200) {
+                location.reload();
+            } else {
+                alert("Failed to check for updates. Please try again.");
+            }
+        }
+    };
+    xhr.send("action=check_updates&token=' . ($_SESSION['token'] ?? '') . '");
+}
+</script>' . "\n";
+
 echo '<table width="100%" class="boxtable">' . "\n";
 echo '  <thead>' . "\n";
 echo '    <tr>' . "\n";
