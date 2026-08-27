@@ -453,7 +453,7 @@ function html_start($title, $refresh = 0, $cacheable = true, $report = false)
     }
 
     echo '    <div class="compact-right-group">' . "\n";
-    echo '      <a href="user_manager.php" class="compact-user-link" title="' . __('usermgnt12') . '">👤 ' . $username . '</a>' . "\n";
+    echo '      <a href="user_settings.php" class="compact-user-link" title="My Settings">👤 ' . $username . '</a>' . "\n";
     echo '      <span class="compact-vdiv">|</span>' . "\n";
     echo '      <a href="logout.php" class="compact-logout-link" title="' . __('logout03') . '">🚪 ' . __('logout03') . '</a>' . "\n";
     echo '    </div>' . "\n";
@@ -477,7 +477,6 @@ function html_start($title, $refresh = 0, $cacheable = true, $report = false)
     echo '            </form>' . "\n";
     echo '          </div>' . "\n";
     echo '        </div>' . "\n";
-    printUserCabinet();
     echo '      </div>' . "\n";
 
     if ('A' === $_SESSION['user_type'] || 'D' === $_SESSION['user_type']) {
@@ -1064,7 +1063,7 @@ function printTodayStatistics()
  WHERE
   date = CURRENT_DATE()
  AND
-  ' . $_SESSION['global_filter'] . '
+  ' . (!empty($_SESSION['global_filter']) ? $_SESSION['global_filter'] : '(1=1)') . '
 ';
 
     $sth = dbquery($sql);
@@ -1113,66 +1112,13 @@ function printTodayStatistics()
 
 function printUserCabinet()
 {
-    global $langCode;
-    $username = htmlspecialchars($_SESSION['fullname'] ?? $_SESSION['myusername'] ?? 'User');
-    if ('A' === ($_SESSION['user_type'] ?? '')) {
-        $userType = __('admin12');
-    } elseif ('D' === ($_SESSION['user_type'] ?? '')) {
-        $userType = __('domainadmin12');
-    } else {
-        $userType = __('user12');
-    }
-
-    echo '<div class="user-cabinet-widget">' . "\n";
-    echo '  <div class="user-cabinet-header">' . "\n";
-    echo '    <span class="user-cabinet-avatar">👤</span>' . "\n";
-    echo '    <div class="user-cabinet-info">' . "\n";
-    echo '      <a href="user_manager.php" class="user-cabinet-name" title="' . __('usermgnt12') . '">' . $username . '</a>' . "\n";
-    echo '      <span class="user-cabinet-role">' . $userType . '</span>' . "\n";
-    echo '    </div>' . "\n";
-    if (class_exists('SystemNotifications')) {
-        echo SystemNotifications::renderBellButtonHtml($_SESSION['myusername'] ?? '', $_SESSION['user_type'] ?? 'U');
-    }
-    echo '  </div>' . "\n";
-
-    echo '  <div class="user-cabinet-details">' . "\n";
-    echo '    <div class="user-cabinet-row">' . "\n";
-    echo '      <span class="user-cabinet-label">🕒 ' . __('cst03') . ':</span>' . "\n";
-    echo '      <span id="clock" class="user-cabinet-clock">&nbsp;</span>' . "\n";
-    echo '    </div>' . "\n";
-
-    if (defined('USER_SELECTABLE_LANG')) {
-        $langCodes = explode(',', USER_SELECTABLE_LANG);
-        $langCount = count($langCodes);
-        if ($langCount > 1) {
-            echo '    <div class="user-cabinet-row">' . "\n";
-            echo '      <span class="user-cabinet-label">🌐 Language:</span>' . "\n";
-            echo '      <select id="langSelect" class="user-cabinet-lang" onChange="changeLang()">' . "\n";
-            for ($i = 0; $i < $langCount; ++$i) {
-                echo '        <option value="' . $langCodes[$i] . '"'
-                    . ($langCodes[$i] === $langCode ? ' selected' : '')
-                    . '>' . __($langCodes[$i]) . '</option>' . "\n";
-            }
-            echo '      </select>' . "\n";
-            echo '    </div>' . "\n";
-        }
-    }
-
-    echo '    <div class="user-cabinet-actions">' . "\n";
-    if (isset($_SESSION['user_type']) && 'A' === $_SESSION['user_type']) {
-        echo '      <a href="settings.php" class="cabinet-btn cabinet-btn-settings" title="System Settings &amp; Security">🛡️ Settings</a>' . "\n";
-    }
-    echo '      <a href="user_manager.php" class="cabinet-btn cabinet-btn-profile">⚙️ ' . __('usermgnt10') . '</a>' . "\n";
-    echo '      <a href="logout.php" class="cabinet-btn cabinet-btn-logout">' . __('logout03') . '</a>' . "\n";
-    echo '    </div>' . "\n";
-    echo '  </div>' . "\n";
-    echo '</div>' . "\n";
+    // Integrated into the main navigation bar (LibreNMS style).
+    return;
 }
 
 function printNavBar()
 {
-    // Navigation links - put them into an array to allow them to be switched
-    // on or off as necessary and to allow for the table widths to be calculated.
+    // Navigation links - primary application navigation
     $nav = [];
     $nav['dashboard.php'] = ['title' => 'Dashboard', 'icon' => '📊'];
     $nav['status.php'] = ['title' => __('recentmessages03'), 'icon' => '📬'];
@@ -1183,20 +1129,27 @@ function printNavBar()
         $nav['quarantine.php'] = ['title' => __('quarantine03'), 'icon' => '🛡️'];
     }
     $nav['reports.php'] = ['title' => __('reports03'), 'icon' => '📈'];
-    $nav['other.php'] = ['title' => __('toolslinks03'), 'icon' => '⚙️'];
 
-    if (SHOW_SFVERSION === true && 'A' === $_SESSION['user_type']) {
-        $nav['sf_version.php'] = ['title' => __('softwareversions03'), 'icon' => 'ℹ️'];
+    // If non-admin user, provide docs and tools links in main row
+    if ('A' !== ($_SESSION['user_type'] ?? '')) {
+        if (SHOW_DOC === true) {
+            $nav['docs.php'] = ['title' => __('documentation03'), 'icon' => '📖'];
+        }
+        $nav['other.php'] = ['title' => __('toolslinks03'), 'icon' => '🔧'];
     }
 
-    if (SHOW_DOC === true) {
-        $nav['docs.php'] = ['title' => __('documentation03'), 'icon' => '📖'];
+    $rawUsername = $_SESSION['myusername'] ?? 'User';
+    $displayName = htmlspecialchars($_SESSION['fullname'] ?? $rawUsername);
+    if ('A' === ($_SESSION['user_type'] ?? '')) {
+        $userRole = __('admin12');
+    } elseif ('D' === ($_SESSION['user_type'] ?? '')) {
+        $userRole = __('domainadmin12');
+    } else {
+        $userRole = __('user12');
     }
-    // Begin eFa
-    if (isset($_SESSION['user_type']) && 'A' === $_SESSION['user_type'] && defined('SHOW_GREYLIST') && true === SHOW_GREYLIST) {
-        $nav['grey.php'] = ['title' => 'Greylist', 'icon' => '⏱️'];
-    }
-    // End eFa
+
+    $avatarBadge = get_user_avatar_badge_html($rawUsername, 20);
+    $avatarHeader = get_user_avatar_badge_html($rawUsername, 34);
 
     // Navigation table
     echo '<tr class="noprint">' . "\n";
@@ -1204,7 +1157,7 @@ function printNavBar()
 
     echo '<ul id="menu" class="modern-light-menu">' . "\n";
 
-    // Display the items
+    // Display primary navigation items (Left side)
     foreach ($nav as $url => $item) {
         $desc = is_array($item) ? $item['title'] : $item;
         $icon = is_array($item) && isset($item['icon']) ? '<span class="nav-icon">' . $item['icon'] . '</span> ' : '';
@@ -1218,8 +1171,168 @@ function printNavBar()
         echo "<li{$liClassAttr}><a href=\"$url\">{$icon}<span class=\"nav-text\">$desc</span></a></li>\n";
     }
 
+    // Flexible spacer to push User and Settings controls to the right (LibreNMS style)
+    echo '<li class="nav-spacer" style="margin-left: auto;"></li>' . "\n";
+
+    // 1. Notification Bell Icon
+    if (class_exists('SystemNotifications')) {
+        echo '<li class="nav-item nav-bell-item">' . "\n";
+        echo SystemNotifications::renderBellButtonHtml($rawUsername, $_SESSION['user_type'] ?? 'U');
+        echo '</li>' . "\n";
+    }
+
+    // 2. User Menu Dropdown (LibreNMS style)
+    $isUserActive = ('user_settings.php' === basename($_SERVER['SCRIPT_FILENAME']));
+    echo '<li class="nav-item nav-user-dropdown' . ($isUserActive ? ' active' : '') . '" id="navUserDropdown">' . "\n";
+    echo '  <button type="button" class="nav-user-toggle" onclick="toggleNavDropdown(\'navUserMenu\')" title="' . $displayName . '">' . "\n";
+    echo '    <span class="user-avatar-slot">' . $avatarBadge . '</span>' . "\n";
+    echo '    <span class="nav-user-name">' . $displayName . '</span>' . "\n";
+    echo '    <span class="nav-caret">▾</span>' . "\n";
+    echo '  </button>' . "\n";
+    echo '  <div class="nav-dropdown-menu nav-dropdown-user" id="navUserMenu">' . "\n";
+    echo '    <div class="dropdown-user-header">' . "\n";
+    echo '      <div class="dropdown-avatar">' . $avatarHeader . '</div>' . "\n";
+    echo '      <div class="dropdown-user-details">' . "\n";
+    echo '        <div class="dropdown-fullname">' . $displayName . '</div>' . "\n";
+    echo '        <div class="dropdown-username">@' . htmlspecialchars($rawUsername) . '</div>' . "\n";
+    echo '        <span class="dropdown-role-badge role-' . strtolower($_SESSION['user_type'] ?? 'u') . '">' . $userRole . '</span>' . "\n";
+    echo '      </div>' . "\n";
+    echo '    </div>' . "\n";
+    echo '    <div class="dropdown-divider"></div>' . "\n";
+    echo '    <a href="user_settings.php" class="dropdown-item' . ($isUserActive ? ' active' : '') . '">' . "\n";
+    echo '      <span class="dropdown-icon">👤</span>' . "\n";
+    echo '      <div class="dropdown-item-text">' . "\n";
+    echo '        <div class="dropdown-item-title">My Settings</div>' . "\n";
+    echo '        <div class="dropdown-item-sub">Language, avatar, password, theme</div>' . "\n";
+    echo '      </div>' . "\n";
+    echo '    </a>' . "\n";
+    echo '    <div class="dropdown-divider"></div>' . "\n";
+    echo '    <a href="logout.php" class="dropdown-item dropdown-item-danger">' . "\n";
+    echo '      <span class="dropdown-icon">🚪</span>' . "\n";
+    echo '      <div class="dropdown-item-text">' . "\n";
+    echo '        <div class="dropdown-item-title">' . __('logout03') . '</div>' . "\n";
+    echo '      </div>' . "\n";
+    echo '    </a>' . "\n";
+    echo '  </div>' . "\n";
+    echo '</li>' . "\n";
+
+    // 3. Global Settings Gear Dropdown (LibreNMS style for Admins)
+    if ('A' === ($_SESSION['user_type'] ?? '')) {
+        $adminPages = ['settings.php', 'user_manager.php', 'system_notifications.php', 'sf_version.php', 'db_status.php', 'viewmailscannerconf.php', 'rule_editor.php', 'bayes_info.php', 'grey.php', 'other.php'];
+        $isGearActive = in_array(basename($_SERVER['SCRIPT_FILENAME']), $adminPages, true);
+
+        echo '<li class="nav-item nav-gear-dropdown' . ($isGearActive ? ' active' : '') . '" id="navGearDropdown">' . "\n";
+        echo '  <button type="button" class="nav-gear-toggle" onclick="toggleNavDropdown(\'navGearMenu\')" title="Global Administration">' . "\n";
+        echo '    <span class="nav-gear-icon">⚙️</span>' . "\n";
+        echo '    <span class="nav-caret">▾</span>' . "\n";
+        echo '  </button>' . "\n";
+        echo '  <div class="nav-dropdown-menu dropdown-menu-wide" id="navGearMenu">' . "\n";
+        echo '    <div class="dropdown-category-title">🛡️ Global Configuration</div>' . "\n";
+        echo '    <a href="settings.php" class="dropdown-item">' . "\n";
+        echo '      <span class="dropdown-icon">🛡️</span>' . "\n";
+        echo '      <div class="dropdown-item-text">' . "\n";
+        echo '        <div class="dropdown-item-title">' . __('systemsettings10') . '</div>' . "\n";
+        echo '        <div class="dropdown-item-sub">Brute force, IP whitelist, ban limits</div>' . "\n";
+        echo '      </div>' . "\n";
+        echo '    </a>' . "\n";
+        echo '    <a href="user_manager.php" class="dropdown-item">' . "\n";
+        echo '      <span class="dropdown-icon">👥</span>' . "\n";
+        echo '      <div class="dropdown-item-text">' . "\n";
+        echo '        <div class="dropdown-item-title">' . __('usermgnt10') . '</div>' . "\n";
+        echo '        <div class="dropdown-item-sub">Manage accounts, roles, spam limits</div>' . "\n";
+        echo '      </div>' . "\n";
+        echo '    </a>' . "\n";
+        echo '    <a href="system_notifications.php" class="dropdown-item">' . "\n";
+        echo '      <span class="dropdown-icon">📢</span>' . "\n";
+        echo '      <div class="dropdown-item-text">' . "\n";
+        echo '        <div class="dropdown-item-title">' . __('notifications10') . '</div>' . "\n";
+        echo '        <div class="dropdown-item-sub">Broadcast announcements &amp; alerts</div>' . "\n";
+        echo '      </div>' . "\n";
+        echo '    </a>' . "\n";
+        echo '    <div class="dropdown-divider"></div>' . "\n";
+        echo '    <div class="dropdown-category-title">📊 System &amp; Diagnostics</div>' . "\n";
+        echo '    <a href="sf_version.php" class="dropdown-item">' . "\n";
+        echo '      <span class="dropdown-icon">ℹ️</span>' . "\n";
+        echo '      <div class="dropdown-item-text">' . "\n";
+        echo '        <div class="dropdown-item-title">' . __('softver11') . '</div>' . "\n";
+        echo '        <div class="dropdown-item-sub">MailWatch, MailScanner, OS info</div>' . "\n";
+        echo '      </div>' . "\n";
+        echo '    </a>' . "\n";
+        echo '    <a href="db_status.php" class="dropdown-item">' . "\n";
+        echo '      <span class="dropdown-icon">🗄️</span>' . "\n";
+        echo '      <div class="dropdown-item-text">' . "\n";
+        echo '        <div class="dropdown-item-title">' . __('mysqldatabasestatus10') . '</div>' . "\n";
+        echo '        <div class="dropdown-item-sub">Database health and statistics</div>' . "\n";
+        echo '      </div>' . "\n";
+        echo '    </a>' . "\n";
+        echo '    <a href="viewmailscannerconf.php" class="dropdown-item">' . "\n";
+        echo '      <span class="dropdown-icon">🔍</span>' . "\n";
+        echo '      <div class="dropdown-item-text">' . "\n";
+        echo '        <div class="dropdown-item-title">' . __('viewconfms10') . '</div>' . "\n";
+        echo '      </div>' . "\n";
+        echo '    </a>' . "\n";
+        echo '    <a href="rule_editor.php" class="dropdown-item">' . "\n";
+        echo '      <span class="dropdown-icon">📝</span>' . "\n";
+        echo '      <div class="dropdown-item-text">' . "\n";
+        echo '        <div class="dropdown-item-title">' . __('editmsrules10') . '</div>' . "\n";
+        echo '      </div>' . "\n";
+        echo '    </a>' . "\n";
+        echo '    <a href="bayes_info.php" class="dropdown-item">' . "\n";
+        echo '      <span class="dropdown-icon">🧠</span>' . "\n";
+        echo '      <div class="dropdown-item-text">' . "\n";
+        echo '        <div class="dropdown-item-title">' . __('spamassassinbayesdatabaseinfo10') . '</div>' . "\n";
+        echo '      </div>' . "\n";
+        echo '    </a>' . "\n";
+        if (defined('SHOW_GREYLIST') && true === SHOW_GREYLIST) {
+            echo '    <a href="grey.php" class="dropdown-item">' . "\n";
+            echo '      <span class="dropdown-icon">⏱️</span>' . "\n";
+            echo '      <div class="dropdown-item-text">' . "\n";
+            echo '        <div class="dropdown-item-title">Greylist</div>' . "\n";
+            echo '      </div>' . "\n";
+            echo '    </a>' . "\n";
+        }
+        if (SHOW_DOC === true) {
+            echo '    <a href="docs.php" class="dropdown-item">' . "\n";
+            echo '      <span class="dropdown-icon">📖</span>' . "\n";
+            echo '      <div class="dropdown-item-text">' . "\n";
+            echo '        <div class="dropdown-item-title">' . __('documentation03') . '</div>' . "\n";
+            echo '      </div>' . "\n";
+            echo '    </a>' . "\n";
+        }
+        echo '    <div class="dropdown-divider"></div>' . "\n";
+        echo '    <a href="other.php" class="dropdown-item dropdown-item-link">' . "\n";
+        echo '      <span class="dropdown-icon">🔧</span>' . "\n";
+        echo '      <div class="dropdown-item-text">' . "\n";
+        echo '        <div class="dropdown-item-title">' . __('toolslinks10') . '</div>' . "\n";
+        echo '        <div class="dropdown-item-sub">All administrative tools and links</div>' . "\n";
+        echo '      </div>' . "\n";
+        echo '    </a>' . "\n";
+        echo '  </div>' . "\n";
+        echo '</li>' . "\n";
+    }
+
     echo '
  </ul>
+ <script>
+ function toggleNavDropdown(id) {
+     var target = document.getElementById(id);
+     if (!target) return;
+     var wasOpen = target.classList.contains("is-open");
+     document.querySelectorAll(".nav-dropdown-menu").forEach(function(m) {
+         m.classList.remove("is-open");
+     });
+     if (!wasOpen) {
+         target.classList.add("is-open");
+     }
+ }
+ document.addEventListener("click", function(e) {
+     if (!e.target.closest(".nav-user-dropdown, .nav-gear-dropdown")) {
+         document.querySelectorAll(".nav-dropdown-menu").forEach(function(m) {
+             m.classList.remove("is-open");
+         });
+     }
+ });
+ </script>
  </td>
  </tr>';
 }
@@ -5460,6 +5573,9 @@ function generateFormToken($formstring)
         header('Location: login.php?error=pagetimeout');
         exit;
     }
+    if (!isset($_SESSION['formtoken'])) {
+        $_SESSION['formtoken'] = generateToken();
+    }
 
     return hash_hmac('sha256', $formstring . $_SESSION['token'], $_SESSION['formtoken']);
 }
@@ -6503,5 +6619,164 @@ function verify_login_captcha($userInput)
 
     return (!empty($expected) && !empty($actual) && hash_equals($expected, $actual));
 }
+
+/**
+ * Ensure user_preferences table exists in database.
+ */
+function ensure_user_preferences_table()
+{
+    static $ensured = false;
+    if ($ensured) {
+        return;
+    }
+    dbconn();
+    $sql = "CREATE TABLE IF NOT EXISTS `user_preferences` (
+        `username` VARCHAR(191) NOT NULL PRIMARY KEY,
+        `email` VARCHAR(255) DEFAULT '',
+        `language` VARCHAR(20) DEFAULT 'en',
+        `avatar` VARCHAR(255) DEFAULT 'default',
+        `default_dashboard` VARCHAR(100) DEFAULT 'dashboard.php',
+        `theme` VARCHAR(50) DEFAULT 'default',
+        `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+    @dbquery($sql);
+    $ensured = true;
+}
+
+/**
+ * Get all preferences for a given user.
+ *
+ * @param string $username
+ * @return array
+ */
+function get_user_preferences($username)
+{
+    static $cache = [];
+    if (isset($cache[$username])) {
+        return $cache[$username];
+    }
+
+    ensure_user_preferences_table();
+    dbconn();
+    $safeUser = safe_value($username);
+    $sql = "SELECT * FROM `user_preferences` WHERE `username` = '$safeUser' LIMIT 1";
+    $res = @dbquery($sql);
+
+    $defaults = [
+        'username' => $username,
+        'email' => '',
+        'language' => defined('LANG') ? LANG : 'en',
+        'avatar' => 'default',
+        'default_dashboard' => 'dashboard.php',
+        'theme' => 'default',
+    ];
+
+    if ($res && $res->num_rows > 0) {
+        $row = $res->fetch_assoc();
+        $cache[$username] = array_merge($defaults, $row);
+    } else {
+        // Fallback: check users table for quarantine_rcpt if email is empty
+        $uRes = @dbquery("SELECT `quarantine_rcpt` FROM `users` WHERE `username` = '$safeUser' LIMIT 1");
+        if ($uRes && $uRes->num_rows > 0) {
+            $uRow = $uRes->fetch_assoc();
+            if (!empty($uRow['quarantine_rcpt'])) {
+                $defaults['email'] = $uRow['quarantine_rcpt'];
+            }
+        }
+        $cache[$username] = $defaults;
+    }
+
+    return $cache[$username];
+}
+
+/**
+ * Get a single preference for a user.
+ *
+ * @param string $username
+ * @param string $key
+ * @param mixed $default
+ * @return mixed
+ */
+function get_user_preference($username, $key, $default = null)
+{
+    $prefs = get_user_preferences($username);
+    return $prefs[$key] ?? $default;
+}
+
+/**
+ * Save user preferences.
+ *
+ * @param string $username
+ * @param array $prefs
+ * @return bool
+ */
+function save_user_preferences($username, array $prefs)
+{
+    ensure_user_preferences_table();
+    dbconn();
+    $safeUser = safe_value($username);
+    $safeEmail = safe_value($prefs['email'] ?? '');
+    $safeLang = safe_value($prefs['language'] ?? 'en');
+    $safeAvatar = safe_value($prefs['avatar'] ?? 'default');
+    $safeDash = safe_value($prefs['default_dashboard'] ?? 'dashboard.php');
+    $safeTheme = safe_value($prefs['theme'] ?? 'default');
+
+    $sql = "INSERT INTO `user_preferences` (`username`, `email`, `language`, `avatar`, `default_dashboard`, `theme`)
+            VALUES ('$safeUser', '$safeEmail', '$safeLang', '$safeAvatar', '$safeDash', '$safeTheme')
+            ON DUPLICATE KEY UPDATE
+            `email` = VALUES(`email`),
+            `language` = VALUES(`language`),
+            `avatar` = VALUES(`avatar`),
+            `default_dashboard` = VALUES(`default_dashboard`),
+            `theme` = VALUES(`theme`)";
+    $res = @dbquery($sql);
+
+    // Also update users.quarantine_rcpt if email provided
+    if (!empty($safeEmail)) {
+        @dbquery("UPDATE `users` SET `quarantine_rcpt` = '$safeEmail' WHERE `username` = '$safeUser'");
+    }
+
+    return ($res !== false);
+}
+
+/**
+ * Get user avatar display HTML or emoji badge.
+ *
+ * @param string $username
+ * @param int $size
+ * @return string HTML
+ */
+function get_user_avatar_badge_html($username, $size = 24)
+{
+    $avatar = get_user_preference($username, 'avatar', 'default');
+    
+    $presetEmojis = [
+        'default' => '👤',
+        'admin'   => '👨‍💼',
+        'tech'    => '👩‍💻',
+        'shield'  => '🛡️',
+        'pilot'   => '🚀',
+        'owl'     => '🦉',
+        'fox'     => '🦊',
+        'tux'     => '🐧',
+        'cyber'   => '🧑‍💻',
+        'star'    => '⭐',
+    ];
+
+    if (isset($presetEmojis[$avatar])) {
+        $fontSize = max(10, round($size * 0.65));
+        return '<span class="user-avatar-badge" style="display:inline-flex;align-items:center;justify-content:center;width:' . $size . 'px;height:' . $size . 'px;line-height:1;font-size:' . $fontSize . 'px;border-radius:50%;background:#e2e8f0;flex-shrink:0;">' . $presetEmojis[$avatar] . '</span>';
+    }
+
+    // If it's a URL or gravatar
+    if (0 === strpos($avatar, 'http://') || 0 === strpos($avatar, 'https://')) {
+        return '<img src="' . htmlspecialchars($avatar) . '" class="user-avatar-img" style="width:' . $size . 'px;height:' . $size . 'px;border-radius:50%;object-fit:cover;flex-shrink:0;vertical-align:middle;" alt="Avatar" onerror="this.onerror=null;this.src=\'images/favicon.png\';">';
+    }
+
+    $fontSize = max(10, round($size * 0.65));
+    return '<span class="user-avatar-badge" style="display:inline-flex;align-items:center;justify-content:center;width:' . $size . 'px;height:' . $size . 'px;line-height:1;font-size:' . $fontSize . 'px;border-radius:50%;background:#e2e8f0;flex-shrink:0;">👤</span>';
+}
+
 
 

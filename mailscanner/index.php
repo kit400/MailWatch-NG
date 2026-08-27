@@ -30,8 +30,15 @@ header('Last-Modified: ' . gmdate('D, M d Y H:i:s') . ' GMT');
 header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Cache-Control: post-check=0, pre-check=0', false);
 
+require_once __DIR__ . '/functions.php';
+
+$target = 'dashboard.php';
+if (isset($_SESSION['myusername'])) {
+    $target = get_user_preference($_SESSION['myusername'], 'default_dashboard', 'dashboard.php');
+}
+
 if (isset($_GET['httpbasic'])) {
-    header('Location: dashboard.php?httpbasic');
+    header('Location: ' . $target . (false !== strpos($target, '?') ? '&' : '?') . 'httpbasic');
 } else {
-    header('Location: dashboard.php');
+    header('Location: ' . $target);
 }

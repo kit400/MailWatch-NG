@@ -420,6 +420,9 @@ return [
     'updategeoip10' => 'Update GeoIP Database',
     'systemsettings10' => 'System Settings & Security',
     'notifications10' => 'System Notifications & Broadcast',
+    'mysettings10' => 'My Settings',
+    'mysettingsdesc10' => 'User profile, preferences, password, avatar and theme',
+    'globaladmin10' => 'Global Administration',
     'changelog' => 'Changelog',
     'links10' => 'Links',
 
