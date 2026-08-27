@@ -976,6 +976,12 @@ table.colorcodes {
     width: 100%;
 }
 
+.header-brand-top a.logo {
+    display: block;
+    width: 100%;
+    text-decoration: none;
+}
+
 /* ==========================================================================
    Header Row & Equal Height Card Layout
    ========================================================================== */
@@ -1041,10 +1047,10 @@ table.colorcodes {
 }
 
 .header-logo-img {
-    max-height: 32px;
-    max-width: 105px;
+    width: 100%;
+    max-width: 100%;
     height: auto;
-    width: auto;
+    max-height: 48px;
     object-fit: contain;
     display: block;
 }
