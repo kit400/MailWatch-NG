@@ -448,11 +448,11 @@ function html_start($title, $refresh = 0, $cacheable = true, $report = false)
     // 1. COMPACT COLLAPSED 1-LINE HEADER
     echo '  <div class="header-compact-bar">' . "\n";
     echo '    <div class="compact-left-group">' . "\n";
+    echo '      <button type="button" class="header-toggle-btn header-toggle-expand" onclick="toggleHeaderWidgets()" title="Expand full widgets">▼</button>' . "\n";
     echo '      <a href="index.php" class="compact-brand" title="EFA-NG MailWatch">' . "\n";
     echo '        <img src=".' . IMAGES_DIR . 'favicon.png" alt="EFA-NG" class="compact-brand-icon">' . "\n";
     echo '        <span class="compact-brand-name">EFA<span class="compact-brand-ng">-NG</span></span>' . "\n";
     echo '      </a>' . "\n";
-    echo '      <button type="button" class="header-toggle-btn header-toggle-expand" onclick="toggleHeaderWidgets()" title="Expand full widgets"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>' . "\n";
     echo '      <span class="compact-vdiv">|</span>' . "\n";
     echo '      <div class="compact-jump-box">' . "\n";
     echo '        <form action="./detail.php" method="get" class="compact-jump-form">' . "\n";
@@ -485,7 +485,6 @@ function html_start($title, $refresh = 0, $cacheable = true, $report = false)
     echo '        <div class="header-brand-box">' . "\n";
     echo '          <div class="header-brand-top">' . "\n";
     echo '            <a href="index.php" class="logo"><img src=".' . IMAGES_DIR . MW_LOGO . '" alt="' . __('mailwatchtitle03') . '" class="header-logo-img"></a>' . "\n";
-    echo '            <button type="button" class="header-toggle-btn header-toggle-collapse" onclick="toggleHeaderWidgets()" title="Compact header view"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg></button>' . "\n";
     echo '          </div>' . "\n";
     echo '          <div class="jump-box">' . "\n";
     echo '            <form action="./detail.php">' . "\n";
@@ -495,6 +494,9 @@ function html_start($title, $refresh = 0, $cacheable = true, $report = false)
     echo '              </div>' . "\n";
     echo '              <input type="hidden" name="token" value="' . htmlspecialchars($_SESSION['token'] ?? '') . '">' . "\n";
     echo '            </form>' . "\n";
+    echo '          </div>' . "\n";
+    echo '          <div class="header-brand-bottom">' . "\n";
+    echo '            <button type="button" class="header-toggle-btn header-toggle-collapse" onclick="toggleHeaderWidgets()" title="Compact header view">▲</button>' . "\n";
     echo '          </div>' . "\n";
     echo '        </div>' . "\n";
     echo '      </div>' . "\n";

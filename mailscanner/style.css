@@ -940,21 +940,22 @@ table.colorcodes {
     border-color: #fca5a5;
 }
 
-/* Header Toggle Buttons (Collapse/Expand 30% smaller) */
+/* Header Toggle Buttons (Collapse/Expand - matches Search & Reports 7.5px size) */
 .header-toggle-btn {
-    background: #f1f5f9;
-    color: #475569;
+    background: #ffffff;
+    color: #64748b;
     border: 1px solid #cbd5e1;
     border-radius: 4px;
-    width: 17px;
-    height: 17px;
-    min-width: 17px;
-    min-height: 17px;
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    min-height: 18px;
     padding: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 7px;
+    font-size: 7.5px;
+    font-weight: 700;
     line-height: 1;
     cursor: pointer;
     transition: all 0.15s ease;
@@ -962,34 +963,17 @@ table.colorcodes {
     box-sizing: border-box;
 }
 
-.header-toggle-btn svg {
-    width: 7.5px;
-    height: 7.5px;
-    stroke-width: 2.5;
-    display: block;
-}
-
 .header-toggle-btn:hover {
-    background: #e2e8f0;
-    color: #0f172a;
-    border-color: #94a3b8;
+    background: #f1f5f9;
+    color: #1f6cb0;
+    border-color: #1f6cb0;
 }
 
 .header-brand-top {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     width: 100%;
-    gap: 4px;
-}
-
-.header-toggle-collapse {
-    color: #64748b;
-}
-
-.header-toggle-collapse:hover {
-    color: #0f172a;
-    background: #e2e8f0;
 }
 
 /* ==========================================================================
@@ -1035,13 +1019,25 @@ table.colorcodes {
     flex: 0.79 1 0;
 }
 
-/* Brand Box (Logo + Jump box) */
+/* Brand Box (Logo + Jump box + Collapse button in bottom-left) */
 .header-brand-box {
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
     align-items: flex-start;
     gap: 4px;
     width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.header-brand-bottom {
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+    width: 100%;
+    margin-top: auto;
+    padding-top: 4px;
 }
 
 .header-logo-img {
