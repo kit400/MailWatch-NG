@@ -2,27 +2,7 @@
 
 /*
  * MailWatch for MailScanner
- * Copyright (C) 2003-2011  Steve Freegard (steve@freegard.name)
- * Copyright (C) 2011  Garrod Alwood (garrod.alwood@lorodoes.com)
- * Copyright (C) 2014-2021  MailWatch Team (https://github.com/mailwatch/1.2.0/graphs/contributors)
- *
- * This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later
- * version.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
- *
- * In addition, as a special exception, the copyright holder gives permission to link the code of this program with
- * those files in the PEAR library that are licensed under the PHP License (or with modified versions of those files
- * that use the same license as those files), and distribute linked combinations including the two.
- * You must obey the GNU General Public License in all respects for all of the code used other than those files in the
- * PEAR library that are licensed under the PHP License. If you modify this program, you may extend this exception to
- * your version of the program, but you are not obligated to do so.
- * If you do not wish to do so, delete this exception statement from your version.
- *
- * You should have received a copy of the GNU General Public License along with this program; if not, write to the Free
- * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (C) 2003-2026 MailWatch Team
  */
 
 // Include of necessary functions
@@ -33,87 +13,203 @@ require __DIR__ . '/login.function.php';
 
 html_start(__('toolslinks10'), 0, false, false);
 
-echo '<table width="100%" class="boxtable">';
-echo '<tr><th>' . __('toolslinks03') . '</th></tr>';
-echo '<tr>
-        <td>
-         <p>' . __('tools10') . '</p>
-      <ul>';
+$virusScanner = get_conf_var('VirusScanners');
+$userType = $_SESSION['user_type'] ?? 'U';
+$isAdmin = ('A' === $userType);
+?>
 
-echo '<li><a href="user_manager.php">' . __('usermgnt10') . '</a>';
-if ('A' === $_SESSION['user_type']) {
-    echo '<li><a href="settings.php">🛡️ ' . (__('systemsettings10', false) ?: 'System Settings &amp; Security') . '</a>';
-    echo '<li><a href="system_notifications.php">📢 ' . (__('notifications10', false) ?: 'System Notifications &amp; Broadcast') . '</a>';
-    $virusScanner = get_conf_var('VirusScanners');
+<div class="tools-links-container">
 
-    if (preg_match('/sophos/i', $virusScanner)) {
-        echo '<li><a href="sophos_status.php">' . __('avsophosstatus10') . '</a>';
-    }
-    if (preg_match('/f-secure-12/i', $virusScanner)) {
-        echo '<li><a href="f-secure12_status.php">' . __('avfsecure12status10') . '</a>';
-    }
-    if (preg_match('/f-secured?(?!-12)/i', $virusScanner)) {
-        echo '<li><a href="f-secure_status.php">' . __('avfsecurestatus10') . '</a>';
-    }
-    if (preg_match('/clam/i', $virusScanner)) {
-        echo '<li><a href="clamav_status.php">' . __('avclamavstatus10') . '</a>';
-    }
-    if (preg_match('/mcafee/i', $virusScanner)) {
-        echo '<li><a href="mcafee_status.php">' . __('avmcafeestatus10') . '</a>';
-    }
-    if (preg_match('/f-prot/i', $virusScanner)) {
-        echo '<li><a href="f-prot_status.php">' . __('avfprotstatus10') . '</a>';
-    }
+  <!-- Left Column: Tools -->
+  <div class="tools-card">
+    <div class="tools-card-header">
+      <span class="tools-card-icon">🔧</span>
+      <h3 class="tools-card-title"><?php echo __('tools10'); ?></h3>
+    </div>
+    <ul class="tools-list">
+      <li>
+        <a href="user_manager.php">
+          <span class="tool-item-icon">👥</span>
+          <span><?php echo __('usermgnt10'); ?></span>
+        </a>
+      </li>
 
-    echo '<li><a href="mysql_status.php">' . __('mysqldatabasestatus10') . '</a>';
-    echo '<li><a href="msconfig.php">' . __('viewconfms10') . '</a>';
-    if (defined('MSRE') && MSRE === true) {
-        echo '<li><a href="msre_index.php">' . __('editmsrules10') . '</a>';
-    }
-    if (!DISTRIBUTED_SETUP && true === get_conf_truefalse('UseSpamAssassin')) {
-        echo '
-     <li><a href="bayes_info.php">' . __('spamassassinbayesdatabaseinfo10') . '</a>
-     <li><a href="sa_lint.php">SpamAssassin Lint (Test)</a>
-     <li><a href="ms_lint.php">MailScanner Lint (Test)</a>
-     <li><a href="sa_rules_update.php">' . __('updatesadesc10') . '</a>';
-    }
-    if (!DISTRIBUTED_SETUP && true === get_conf_truefalse('MCPChecks')) {
-        echo '<li><a href="mcp_rules_update.php">' . __('updatemcpdesc10') . '</a>';
-    }
-    echo '<li><a href="geoip_update.php">' . __('updategeoip10') . '</a>';
-}
-echo '</ul>';
+      <?php if ($isAdmin): ?>
+      <li>
+        <a href="settings.php">
+          <span class="tool-item-icon">🛡️</span>
+          <span><?php echo (__('systemsettings10', false) ?: 'System Settings &amp; Security'); ?></span>
+        </a>
+      </li>
+      <li>
+        <a href="system_notifications.php">
+          <span class="tool-item-icon">📢</span>
+          <span><?php echo (__('notifications10', false) ?: 'System Notifications &amp; Broadcast'); ?></span>
+        </a>
+      </li>
 
-if ('A' === $_SESSION['user_type']) {
-    echo '
-   <p>' . __('links10') . '</p>
-   <ul>
-    <li><a href="https://mailwatch.org">MailWatch for MailScanner</a>
-    <li><a href="https://www.mailscanner.info">MailScanner</a>';
+      <?php
+      if (preg_match('/sophos/i', $virusScanner)) {
+          echo '<li><a href="sophos_status.php"><span class="tool-item-icon">🛡️</span><span>' . __('avsophosstatus10') . '</span></a></li>';
+      }
+      if (preg_match('/f-secure-12/i', $virusScanner)) {
+          echo '<li><a href="f-secure12_status.php"><span class="tool-item-icon">🛡️</span><span>' . __('avfsecure12status10') . '</span></a></li>';
+      }
+      if (preg_match('/f-secured?(?!-12)/i', $virusScanner)) {
+          echo '<li><a href="f-secure_status.php"><span class="tool-item-icon">🛡️</span><span>' . __('avfsecurestatus10') . '</span></a></li>';
+      }
+      if (preg_match('/clam/i', $virusScanner)) {
+          echo '<li><a href="clamav_status.php"><span class="tool-item-icon">🛡️</span><span>' . __('avclamavstatus10') . '</span></a></li>';
+      }
+      if (preg_match('/mcafee/i', $virusScanner)) {
+          echo '<li><a href="mcafee_status.php"><span class="tool-item-icon">🛡️</span><span>' . __('avmcafeestatus10') . '</span></a></li>';
+      }
+      if (preg_match('/f-prot/i', $virusScanner)) {
+          echo '<li><a href="f-prot_status.php"><span class="tool-item-icon">🛡️</span><span>' . __('avfprotstatus10') . '</span></a></li>';
+      }
+      ?>
 
-    if (true === get_conf_truefalse('UseSpamAssassin')) {
-        echo '<li><a href="https://spamassassin.apache.org/">SpamAssassin</a>';
-    }
+      <li>
+        <a href="mysql_status.php">
+          <span class="tool-item-icon">🗄️</span>
+          <span><?php echo __('mysqldatabasestatus10'); ?></span>
+        </a>
+      </li>
+      <li>
+        <a href="msconfig.php">
+          <span class="tool-item-icon">🔍</span>
+          <span><?php echo __('viewconfms10'); ?></span>
+        </a>
+      </li>
+      <?php if (defined('MSRE') && MSRE === true): ?>
+      <li>
+        <a href="msre_index.php">
+          <span class="tool-item-icon">📝</span>
+          <span><?php echo __('editmsrules10'); ?></span>
+        </a>
+      </li>
+      <?php endif; ?>
 
-    if (preg_match('/sophos/i', $virusScanner)) {
-        echo '<li><a href="https://www.sophos.com">Sophos</a>';
-    }
+      <?php if (!DISTRIBUTED_SETUP && true === get_conf_truefalse('UseSpamAssassin')): ?>
+      <li>
+        <a href="bayes_info.php">
+          <span class="tool-item-icon">🧠</span>
+          <span><?php echo __('spamassassinbayesdatabaseinfo10'); ?></span>
+        </a>
+      </li>
+      <li>
+        <a href="sa_lint.php">
+          <span class="tool-item-icon">🧪</span>
+          <span>SpamAssassin Lint (Test)</span>
+        </a>
+      </li>
+      <li>
+        <a href="ms_lint.php">
+          <span class="tool-item-icon">🧪</span>
+          <span>MailScanner Lint (Test)</span>
+        </a>
+      </li>
+      <li>
+        <a href="sa_rules_update.php">
+          <span class="tool-item-icon">🔄</span>
+          <span><?php echo __('updatesadesc10'); ?></span>
+        </a>
+      </li>
+      <?php endif; ?>
 
-    if (preg_match('/clam/i', $virusScanner)) {
-        echo '<li><a href="https://clamav.net">ClamAV</A>';
-    }
+      <?php if (!DISTRIBUTED_SETUP && true === get_conf_truefalse('MCPChecks')): ?>
+      <li>
+        <a href="mcp_rules_update.php">
+          <span class="tool-item-icon">🔄</span>
+          <span><?php echo __('updatemcpdesc10'); ?></span>
+        </a>
+      </li>
+      <?php endif; ?>
 
-    echo '
-    <li><a href="https://mxtoolbox.com/NetworkTools.aspx">MXToolbox Network Tools</a>
-    <li><a href="https://multirbl.valli.org/">Multi-RBL Check</a>
-   </ul>';
-}
+      <li>
+        <a href="geoip_update.php">
+          <span class="tool-item-icon">🌐</span>
+          <span><?php echo __('updategeoip10'); ?></span>
+        </a>
+      </li>
+      <?php endif; ?>
+    </ul>
+  </div>
 
-echo '
-   </td>
- </tr>
-</table>';
+  <!-- Right Column: Links -->
+  <?php if ($isAdmin): ?>
+  <div class="tools-card">
+    <div class="tools-card-header">
+      <span class="tools-card-icon">🔗</span>
+      <h3 class="tools-card-title"><?php echo __('links10'); ?></h3>
+    </div>
+    <ul class="tools-list">
+      <li>
+        <a href="https://mailwatch.org" target="_blank" rel="noopener noreferrer">
+          <span class="tool-item-icon">🛡️</span>
+          <span>MailWatch for MailScanner</span>
+          <span class="external-arrow">↗</span>
+        </a>
+      </li>
+      <li>
+        <a href="https://www.mailscanner.info" target="_blank" rel="noopener noreferrer">
+          <span class="tool-item-icon">📦</span>
+          <span>MailScanner Official Site</span>
+          <span class="external-arrow">↗</span>
+        </a>
+      </li>
 
+      <?php if (true === get_conf_truefalse('UseSpamAssassin')): ?>
+      <li>
+        <a href="https://spamassassin.apache.org/" target="_blank" rel="noopener noreferrer">
+          <span class="tool-item-icon">🏹</span>
+          <span>Apache SpamAssassin</span>
+          <span class="external-arrow">↗</span>
+        </a>
+      </li>
+      <?php endif; ?>
+
+      <?php if (preg_match('/sophos/i', $virusScanner)): ?>
+      <li>
+        <a href="https://www.sophos.com" target="_blank" rel="noopener noreferrer">
+          <span class="tool-item-icon">🛡️</span>
+          <span>Sophos Antivirus</span>
+          <span class="external-arrow">↗</span>
+        </a>
+      </li>
+      <?php endif; ?>
+
+      <?php if (preg_match('/clam/i', $virusScanner)): ?>
+      <li>
+        <a href="https://clamav.net" target="_blank" rel="noopener noreferrer">
+          <span class="tool-item-icon">🦠</span>
+          <span>ClamAV Antivirus</span>
+          <span class="external-arrow">↗</span>
+        </a>
+      </li>
+      <?php endif; ?>
+
+      <li>
+        <a href="https://mxtoolbox.com/NetworkTools.aspx" target="_blank" rel="noopener noreferrer">
+          <span class="tool-item-icon">🛠️</span>
+          <span>MXToolbox Network Tools</span>
+          <span class="external-arrow">↗</span>
+        </a>
+      </li>
+      <li>
+        <a href="https://multirbl.valli.org/" target="_blank" rel="noopener noreferrer">
+          <span class="tool-item-icon">🚫</span>
+          <span>Multi-RBL Blacklist Check</span>
+          <span class="external-arrow">↗</span>
+        </a>
+      </li>
+    </ul>
+  </div>
+  <?php endif; ?>
+
+</div>
+
+<?php
 // Add footer
 html_end();
 // Close any open db connections
