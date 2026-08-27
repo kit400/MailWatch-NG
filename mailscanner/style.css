@@ -1406,14 +1406,18 @@ span.no {
     align-items: center;
     margin: 0;
     padding: 0;
+    height: 32px;
 }
 
 #menu li a {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
-    padding: 5px 12px;
-    line-height: 1.2;
+    height: 32px;
+    box-sizing: border-box;
+    padding: 0 12px;
+    line-height: 30px;
     color: #334155;
     text-decoration: none;
     border-radius: 6px;
@@ -5777,6 +5781,7 @@ input:checked + .slider:before {
     padding: 0;
     display: inline-flex;
     align-items: center;
+    height: 32px;
 }
 
 /* User & Gear Toggle Buttons */
@@ -5784,25 +5789,29 @@ input:checked + .slider:before {
 .nav-gear-toggle {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 7px;
-    padding: 4px 10px 4px 6px;
+    height: 32px;
+    box-sizing: border-box;
+    padding: 0 10px 0 6px;
     background: #f8fafc;
     border: 1px solid #cbd5e1;
-    border-radius: 20px;
+    border-radius: 16px;
     color: #334155;
-    font-size: 12px;
+    font-size: 12.5px;
     font-weight: 600;
     cursor: pointer;
-    line-height: 1.2;
+    line-height: 1;
     transition: all 0.15s ease-in-out;
     outline: none;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .nav-gear-toggle {
-    padding: 4px 9px;
-    border-radius: 8px;
+    padding: 0 10px;
+    border-radius: 6px;
     background: #f8fafc;
+    gap: 5px;
 }
 
 .nav-user-toggle:hover,
@@ -5831,11 +5840,17 @@ input:checked + .slider:before {
 }
 
 .nav-bell-item .notif-bell-btn {
-    padding: 4px 8px;
-    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    box-sizing: border-box;
+    padding: 0;
+    border-radius: 6px;
     background: #f8fafc;
     border: 1px solid #cbd5e1;
-    margin-right: 4px;
+    margin: 0 4px 0 0;
 }
 
 .nav-bell-item .notif-bell-btn:hover {

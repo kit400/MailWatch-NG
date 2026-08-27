@@ -452,11 +452,6 @@ function html_start($title, $refresh = 0, $cacheable = true, $report = false)
         echo '    </div>' . "\n";
     }
 
-    echo '    <div class="compact-right-group">' . "\n";
-    echo '      <a href="user_settings.php" class="compact-user-link" title="My Settings">👤 ' . $username . '</a>' . "\n";
-    echo '      <span class="compact-vdiv">|</span>' . "\n";
-    echo '      <a href="logout.php" class="compact-logout-link" title="' . __('logout03') . '">🚪 ' . __('logout03') . '</a>' . "\n";
-    echo '    </div>' . "\n";
     echo '  </div>' . "\n";
 
     // 2. FULL EXPANDED VIEW
