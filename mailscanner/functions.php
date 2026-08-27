@@ -1105,6 +1105,103 @@ function printTodayStatistics()
     }
 }
 
+/**
+ * Render a crisp, monochrome SVG icon with uniform dimensions (LibreNMS style)
+ *
+ * @param string $name Name of the icon
+ * @param string $extraClass Additional CSS class names
+ * @param int $size Width/height in pixels (default: 16)
+ * @return string HTML SVG element
+ */
+function mw_icon($name, $extraClass = '', $size = 16)
+{
+    $size = (int)$size;
+    $class = 'mw-svg-icon mw-svg-' . htmlspecialchars($name);
+    if ($extraClass) {
+        $class .= ' ' . htmlspecialchars($extraClass);
+    }
+
+    $svgOpen = '<svg class="' . $class . '" width="' . $size . '" height="' . $size . '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">';
+    $svgClose = '</svg>';
+
+    switch ($name) {
+        case 'dashboard':
+            $body = '<path d="M3 13a9 9 0 1 0 18 0M12 17l4-5"/>';
+            break;
+        case 'messages':
+        case 'mail':
+            $body = '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>';
+            break;
+        case 'lists':
+            $body = '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>';
+            break;
+        case 'quarantine':
+            $body = '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>';
+            break;
+        case 'reports':
+            $body = '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/>';
+            break;
+        case 'bell':
+            $body = '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>';
+            break;
+        case 'user':
+            $body = '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>';
+            break;
+        case 'gear':
+        case 'cog':
+            $body = '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>';
+            break;
+        case 'caret':
+            return '<svg class="' . $class . '" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
+        case 'sliders':
+        case 'settings':
+            $body = '<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>';
+            break;
+        case 'logout':
+            $body = '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>';
+            break;
+        case 'shield':
+            $body = '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>';
+            break;
+        case 'users':
+            $body = '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>';
+            break;
+        case 'broadcast':
+        case 'bullhorn':
+            $body = '<path d="m3 11 18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>';
+            break;
+        case 'info':
+            $body = '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>';
+            break;
+        case 'database':
+            $body = '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>';
+            break;
+        case 'search':
+            $body = '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>';
+            break;
+        case 'edit':
+            $body = '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>';
+            break;
+        case 'brain':
+        case 'chip':
+            $body = '<rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/>';
+            break;
+        case 'clock':
+            $body = '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>';
+            break;
+        case 'book':
+            $body = '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>';
+            break;
+        case 'tools':
+        case 'wrench':
+        default:
+            $body = '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>';
+            break;
+    }
+
+    return $svgOpen . $body . $svgClose;
+}
+
 function printUserCabinet()
 {
     // Integrated into the main navigation bar (LibreNMS style).
@@ -1115,22 +1212,22 @@ function printNavBar()
 {
     // Navigation links - primary application navigation
     $nav = [];
-    $nav['dashboard.php'] = ['title' => 'Dashboard', 'icon' => '📊'];
-    $nav['status.php'] = ['title' => __('recentmessages03'), 'icon' => '📬'];
+    $nav['dashboard.php'] = ['title' => 'Dashboard', 'icon' => mw_icon('dashboard', 'nav-icon', 15)];
+    $nav['status.php'] = ['title' => __('recentmessages03'), 'icon' => mw_icon('messages', 'nav-icon', 15)];
     if (LISTS) {
-        $nav['lists.php'] = ['title' => __('lists03'), 'icon' => '📋'];
+        $nav['lists.php'] = ['title' => __('lists03'), 'icon' => mw_icon('lists', 'nav-icon', 15)];
     }
     if (!DISTRIBUTED_SETUP) {
-        $nav['quarantine.php'] = ['title' => __('quarantine03'), 'icon' => '🛡️'];
+        $nav['quarantine.php'] = ['title' => __('quarantine03'), 'icon' => mw_icon('quarantine', 'nav-icon', 15)];
     }
-    $nav['reports.php'] = ['title' => __('reports03'), 'icon' => '📈'];
+    $nav['reports.php'] = ['title' => __('reports03'), 'icon' => mw_icon('reports', 'nav-icon', 15)];
 
     // If non-admin user, provide docs and tools links in main row
     if ('A' !== ($_SESSION['user_type'] ?? '')) {
         if (SHOW_DOC === true) {
-            $nav['docs.php'] = ['title' => __('documentation03'), 'icon' => '📖'];
+            $nav['docs.php'] = ['title' => __('documentation03'), 'icon' => mw_icon('book', 'nav-icon', 15)];
         }
-        $nav['other.php'] = ['title' => __('toolslinks03'), 'icon' => '🔧'];
+        $nav['other.php'] = ['title' => __('toolslinks03'), 'icon' => mw_icon('tools', 'nav-icon', 15)];
     }
 
     $rawUsername = $_SESSION['myusername'] ?? 'User';
@@ -1155,7 +1252,7 @@ function printNavBar()
     // Display primary navigation items (Left side)
     foreach ($nav as $url => $item) {
         $desc = is_array($item) ? $item['title'] : $item;
-        $icon = is_array($item) && isset($item['icon']) ? '<span class="nav-icon">' . $item['icon'] . '</span> ' : '';
+        $icon = is_array($item) && isset($item['icon']) ? $item['icon'] . ' ' : '';
         $extraClass = is_array($item) && isset($item['class']) ? ' ' . $item['class'] : '';
 
         $active_url = MAILWATCH_HOME . '/' . $url;
@@ -1182,7 +1279,7 @@ function printNavBar()
     echo '  <button type="button" class="nav-user-toggle" onclick="toggleNavDropdown(\'navUserMenu\')" title="' . $displayName . '">' . "\n";
     echo '    <span class="user-avatar-slot">' . $avatarBadge . '</span>' . "\n";
     echo '    <span class="nav-user-name">' . $displayName . '</span>' . "\n";
-    echo '    <span class="nav-caret">▾</span>' . "\n";
+    echo '    <span class="nav-caret">' . mw_icon('caret', '', 10) . '</span>' . "\n";
     echo '  </button>' . "\n";
     echo '  <div class="nav-dropdown-menu nav-dropdown-user" id="navUserMenu">' . "\n";
     echo '    <div class="dropdown-user-header">' . "\n";
@@ -1195,7 +1292,7 @@ function printNavBar()
     echo '    </div>' . "\n";
     echo '    <div class="dropdown-divider"></div>' . "\n";
     echo '    <a href="user_settings.php" class="dropdown-item' . ($isUserActive ? ' active' : '') . '">' . "\n";
-    echo '      <span class="dropdown-icon">👤</span>' . "\n";
+    echo '      <span class="dropdown-icon">' . mw_icon('sliders', '', 16) . '</span>' . "\n";
     echo '      <div class="dropdown-item-text">' . "\n";
     echo '        <div class="dropdown-item-title">My Settings</div>' . "\n";
     echo '        <div class="dropdown-item-sub">Language, avatar, password, theme</div>' . "\n";
@@ -1203,7 +1300,7 @@ function printNavBar()
     echo '    </a>' . "\n";
     echo '    <div class="dropdown-divider"></div>' . "\n";
     echo '    <a href="logout.php" class="dropdown-item dropdown-item-danger">' . "\n";
-    echo '      <span class="dropdown-icon">🚪</span>' . "\n";
+    echo '      <span class="dropdown-icon">' . mw_icon('logout', '', 16) . '</span>' . "\n";
     echo '      <div class="dropdown-item-text">' . "\n";
     echo '        <div class="dropdown-item-title">' . __('logout03') . '</div>' . "\n";
     echo '      </div>' . "\n";
@@ -1219,50 +1316,50 @@ function printNavBar()
 
         echo '<li class="nav-item nav-gear-dropdown' . ($isGearActive ? ' active' : '') . '" id="navGearDropdown">' . "\n";
         echo '  <button type="button" class="nav-gear-toggle" onclick="toggleNavDropdown(\'navGearMenu\')" title="Global Administration">' . "\n";
-        echo '    <span class="nav-gear-icon">⚙️</span>' . "\n";
-        echo '    <span class="nav-caret">▾</span>' . "\n";
+        echo '    <span class="nav-gear-icon">' . mw_icon('gear', '', 16) . '</span>' . "\n";
+        echo '    <span class="nav-caret">' . mw_icon('caret', '', 10) . '</span>' . "\n";
         echo '  </button>' . "\n";
         echo '  <div class="nav-dropdown-menu dropdown-menu-wide" id="navGearMenu">' . "\n";
-        echo '    <div class="dropdown-category-title">🛡️ Global Configuration</div>' . "\n";
+        echo '    <div class="dropdown-category-title">Global Configuration</div>' . "\n";
         echo '    <a href="settings.php" class="dropdown-item' . ('settings.php' === $currScript ? ' active' : '') . '">' . "\n";
-        echo '      <span class="dropdown-icon">🛡️</span>' . "\n";
+        echo '      <span class="dropdown-icon">' . mw_icon('shield', '', 16) . '</span>' . "\n";
         echo '      <div class="dropdown-item-text">' . "\n";
         echo '        <div class="dropdown-item-title">' . __('systemsettings10') . '</div>' . "\n";
         echo '        <div class="dropdown-item-sub">Brute force, IP whitelist, ban limits</div>' . "\n";
         echo '      </div>' . "\n";
         echo '    </a>' . "\n";
         echo '    <a href="user_manager.php" class="dropdown-item' . ('user_manager.php' === $currScript ? ' active' : '') . '">' . "\n";
-        echo '      <span class="dropdown-icon">👥</span>' . "\n";
+        echo '      <span class="dropdown-icon">' . mw_icon('users', '', 16) . '</span>' . "\n";
         echo '      <div class="dropdown-item-text">' . "\n";
         echo '        <div class="dropdown-item-title">' . __('usermgnt10') . '</div>' . "\n";
         echo '        <div class="dropdown-item-sub">Manage accounts, roles, spam limits</div>' . "\n";
         echo '      </div>' . "\n";
         echo '    </a>' . "\n";
         echo '    <a href="system_notifications.php" class="dropdown-item' . ('system_notifications.php' === $currScript ? ' active' : '') . '">' . "\n";
-        echo '      <span class="dropdown-icon">📢</span>' . "\n";
+        echo '      <span class="dropdown-icon">' . mw_icon('broadcast', '', 16) . '</span>' . "\n";
         echo '      <div class="dropdown-item-text">' . "\n";
         echo '        <div class="dropdown-item-title">' . __('notifications10') . '</div>' . "\n";
         echo '        <div class="dropdown-item-sub">Broadcast announcements &amp; alerts</div>' . "\n";
         echo '      </div>' . "\n";
         echo '    </a>' . "\n";
         echo '    <div class="dropdown-divider"></div>' . "\n";
-        echo '    <div class="dropdown-category-title">📊 System &amp; Diagnostics</div>' . "\n";
+        echo '    <div class="dropdown-category-title">System &amp; Diagnostics</div>' . "\n";
         echo '    <a href="sf_version.php" class="dropdown-item' . ('sf_version.php' === $currScript ? ' active' : '') . '">' . "\n";
-        echo '      <span class="dropdown-icon">ℹ️</span>' . "\n";
+        echo '      <span class="dropdown-icon">' . mw_icon('info', '', 16) . '</span>' . "\n";
         echo '      <div class="dropdown-item-text">' . "\n";
         echo '        <div class="dropdown-item-title">' . __('softver11') . '</div>' . "\n";
         echo '        <div class="dropdown-item-sub">MailWatch, MailScanner, OS info</div>' . "\n";
         echo '      </div>' . "\n";
         echo '    </a>' . "\n";
         echo '    <a href="mysql_status.php" class="dropdown-item' . ('mysql_status.php' === $currScript ? ' active' : '') . '">' . "\n";
-        echo '      <span class="dropdown-icon">🗄️</span>' . "\n";
+        echo '      <span class="dropdown-icon">' . mw_icon('database', '', 16) . '</span>' . "\n";
         echo '      <div class="dropdown-item-text">' . "\n";
         echo '        <div class="dropdown-item-title">' . __('mysqldatabasestatus10') . '</div>' . "\n";
         echo '        <div class="dropdown-item-sub">Database health and statistics</div>' . "\n";
         echo '      </div>' . "\n";
         echo '    </a>' . "\n";
         echo '    <a href="msconfig.php" class="dropdown-item' . ('msconfig.php' === $currScript ? ' active' : '') . '">' . "\n";
-        echo '      <span class="dropdown-icon">🔍</span>' . "\n";
+        echo '      <span class="dropdown-icon">' . mw_icon('search', '', 16) . '</span>' . "\n";
         echo '      <div class="dropdown-item-text">' . "\n";
         echo '        <div class="dropdown-item-title">' . __('viewconfms10') . '</div>' . "\n";
         echo '        <div class="dropdown-item-sub">Active MailScanner configuration</div>' . "\n";
@@ -1270,7 +1367,7 @@ function printNavBar()
         echo '    </a>' . "\n";
         if (defined('MSRE') && MSRE === true) {
             echo '    <a href="msre_index.php" class="dropdown-item' . ('msre_index.php' === $currScript || 'msre_edit.php' === $currScript ? ' active' : '') . '">' . "\n";
-            echo '      <span class="dropdown-icon">📝</span>' . "\n";
+            echo '      <span class="dropdown-icon">' . mw_icon('edit', '', 16) . '</span>' . "\n";
             echo '      <div class="dropdown-item-text">' . "\n";
             echo '        <div class="dropdown-item-title">' . __('editmsrules10') . '</div>' . "\n";
             echo '        <div class="dropdown-item-sub">MailScanner ruleset editor</div>' . "\n";
@@ -1278,14 +1375,14 @@ function printNavBar()
             echo '    </a>' . "\n";
         }
         echo '    <a href="bayes_info.php" class="dropdown-item' . ('bayes_info.php' === $currScript ? ' active' : '') . '">' . "\n";
-        echo '      <span class="dropdown-icon">🧠</span>' . "\n";
+        echo '      <span class="dropdown-icon">' . mw_icon('brain', '', 16) . '</span>' . "\n";
         echo '      <div class="dropdown-item-text">' . "\n";
         echo '        <div class="dropdown-item-title">' . __('spamassassinbayesdatabaseinfo10') . '</div>' . "\n";
         echo '      </div>' . "\n";
         echo '    </a>' . "\n";
         if (defined('SHOW_GREYLIST') && true === SHOW_GREYLIST) {
             echo '    <a href="grey.php" class="dropdown-item' . ('grey.php' === $currScript ? ' active' : '') . '">' . "\n";
-            echo '      <span class="dropdown-icon">⏱️</span>' . "\n";
+            echo '      <span class="dropdown-icon">' . mw_icon('clock', '', 16) . '</span>' . "\n";
             echo '      <div class="dropdown-item-text">' . "\n";
             echo '        <div class="dropdown-item-title">Greylist</div>' . "\n";
             echo '      </div>' . "\n";
@@ -1293,7 +1390,7 @@ function printNavBar()
         }
         if (SHOW_DOC === true) {
             echo '    <a href="docs.php" class="dropdown-item' . ('docs.php' === $currScript ? ' active' : '') . '">' . "\n";
-            echo '      <span class="dropdown-icon">📖</span>' . "\n";
+            echo '      <span class="dropdown-icon">' . mw_icon('book', '', 16) . '</span>' . "\n";
             echo '      <div class="dropdown-item-text">' . "\n";
             echo '        <div class="dropdown-item-title">' . __('documentation03') . '</div>' . "\n";
             echo '      </div>' . "\n";
@@ -1301,7 +1398,7 @@ function printNavBar()
         }
         echo '    <div class="dropdown-divider"></div>' . "\n";
         echo '    <a href="other.php" class="dropdown-item dropdown-item-link' . ('other.php' === $currScript ? ' active' : '') . '">' . "\n";
-        echo '      <span class="dropdown-icon">🔧</span>' . "\n";
+        echo '      <span class="dropdown-icon">' . mw_icon('tools', '', 16) . '</span>' . "\n";
         echo '      <div class="dropdown-item-text">' . "\n";
         echo '        <div class="dropdown-item-title">' . __('toolslinks10') . '</div>' . "\n";
         echo '        <div class="dropdown-item-sub">All administrative tools and links</div>' . "\n";

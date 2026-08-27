@@ -5829,14 +5829,29 @@ input:checked + .slider:before {
 }
 
 .nav-caret {
-    font-size: 9px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     color: #64748b;
+    margin-left: 2px;
     transition: transform 0.15s ease;
 }
 
 .nav-gear-icon {
-    font-size: 15px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #475569;
     line-height: 1;
+    transition: color 0.15s ease;
+}
+
+.nav-gear-toggle:hover .nav-gear-icon {
+    color: #0f172a;
+}
+
+#menu .nav-gear-dropdown.active > .nav-gear-toggle .nav-gear-icon {
+    color: #ffffff;
 }
 
 .nav-bell-item .notif-bell-btn {
@@ -6010,6 +6025,31 @@ input:checked + .slider:before {
     color: #2563eb !important;
 }
 
+/* LibreNMS Monochrome SVG Icon Styling */
+.mw-svg-icon {
+    display: inline-block;
+    vertical-align: middle;
+    flex-shrink: 0;
+    stroke: currentColor;
+    fill: none;
+}
+
+.nav-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    transition: color 0.15s ease;
+}
+
+#menu li a:hover .nav-icon {
+    color: #1f6cb0;
+}
+
+#menu > li.active > a .nav-icon {
+    color: #ffffff;
+}
+
 .dropdown-item .dropdown-icon {
     display: inline-flex;
     align-items: center;
@@ -6017,12 +6057,23 @@ input:checked + .slider:before {
     width: 24px;
     min-width: 24px;
     max-width: 24px;
-    height: 20px;
-    font-size: 16px;
-    line-height: 20px;
+    height: 24px;
+    color: #64748b;
     flex-shrink: 0;
     text-align: center;
-    margin-top: 1px;
+    transition: color 0.12s ease;
+}
+
+#menu .nav-dropdown-menu a.dropdown-item:hover .dropdown-icon {
+    color: #1f6cb0;
+}
+
+#menu .nav-dropdown-menu a.dropdown-item.active .dropdown-icon {
+    color: #1d4ed8;
+}
+
+.dropdown-item-danger .dropdown-icon {
+    color: #dc2626 !important;
 }
 
 .dropdown-item-text {
@@ -6416,7 +6467,10 @@ input:checked + .slider:before {
 }
 
 .tools-card-icon {
-    font-size: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #1f6cb0;
     line-height: 1;
 }
 
@@ -6462,10 +6516,18 @@ input:checked + .slider:before {
 }
 
 .tools-list .tool-item-icon {
-    font-size: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     width: 22px;
     text-align: center;
     flex-shrink: 0;
+    color: #64748b;
+    transition: color 0.15s ease;
+}
+
+.tools-list li a:hover .tool-item-icon {
+    color: #1f6cb0;
 }
 
 .tools-list .external-arrow {
