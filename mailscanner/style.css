@@ -3338,7 +3338,7 @@ p.footer {
 
 /* Bell Button in User Cabinet */
 .notif-bell-btn {
-    background: #f1f5f9;
+    background: #f8fafc;
     border: 1px solid #cbd5e1;
     border-radius: 6px;
     width: 32px;
@@ -3351,21 +3351,27 @@ p.footer {
     transition: all 0.2s ease;
     margin-left: 6px;
     padding: 0;
+    color: #334155 !important;
 }
 
 .notif-bell-btn:hover {
     background: #e2e8f0;
     border-color: #94a3b8;
+    color: #0f172a !important;
     transform: translateY(-1px);
 }
 
 .notif-bell-btn.has-unread {
-    background: #e0f0fe;
-    border-color: #7dd3fc;
+    background: #eff6ff;
+    border-color: #93c5fd;
+    color: #1d4ed8 !important;
 }
 
 .notif-bell-btn .bell-icon {
-    font-size: 15px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: inherit;
     line-height: 1;
 }
 
@@ -5877,7 +5883,8 @@ input:checked + .slider:before {
 }
 
 #menu .nav-gear-dropdown.active > .nav-gear-toggle .nav-gear-icon {
-    color: #ffffff;
+    color: #ffffff !important;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4));
 }
 
 .nav-bell-item .notif-bell-btn {
@@ -5891,11 +5898,29 @@ input:checked + .slider:before {
     border-radius: 6px;
     background: #f8fafc;
     border: 1px solid #cbd5e1;
+    color: #334155 !important;
     margin: 0 4px 0 0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .nav-bell-item .notif-bell-btn:hover {
     background: #e2e8f0;
+    border-color: #94a3b8;
+    color: #0f172a !important;
+}
+
+.nav-bell-item .notif-bell-btn.has-unread {
+    background: #eff6ff;
+    border-color: #93c5fd;
+    color: #1d4ed8 !important;
+}
+
+.nav-bell-item .notif-bell-btn .bell-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: inherit;
+    line-height: 1;
 }
 
 /* Dropdown Menus */
@@ -6141,7 +6166,7 @@ input:checked + .slider:before {
 
 #menu .nav-user-dropdown.active > .nav-user-toggle .nav-caret,
 #menu .nav-gear-dropdown.active > .nav-gear-toggle .nav-caret {
-    color: rgba(255, 255, 255, 0.85);
+    color: #ffffff;
 }
 
 /* ==========================================================================
