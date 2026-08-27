@@ -374,9 +374,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helve
 
         $currentVersion = function_exists('mailwatch_version') ? mailwatch_version() : '6.0.4';
 
-        // Fetch remote version data
+        // Fetch remote version data (API endpoints + Raw CDN)
         $sources = [
+            'https://api.github.com/repos/kit400/EFA-NG/contents/version.json',
             'https://raw.githubusercontent.com/kit400/EFA-NG/main/version.json',
+            'https://api.github.com/repos/kit400/MailWatch-NG/contents/version.json',
             'https://raw.githubusercontent.com/kit400/MailWatch-NG/main/version.json',
         ];
 
@@ -486,7 +488,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helve
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
             curl_setopt($ch, CURLOPT_HTTPHEADER, [
                 'User-Agent: EFA-NG-MailWatch-UpdateCheck',
-                'Accept: application/json, text/plain, */*',
+                'Accept: application/vnd.github.v3.raw, application/json, text/plain, */*',
             ]);
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -499,7 +501,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helve
         $ctx = stream_context_create([
             'http' => [
                 'timeout' => $timeout,
-                'header' => "User-Agent: EFA-NG-MailWatch-UpdateCheck\r\nAccept: application/json\r\n",
+                'header' => "User-Agent: EFA-NG-MailWatch-UpdateCheck\r\nAccept: application/vnd.github.v3.raw, application/json\r\n",
             ],
             'ssl' => [
                 'verify_peer' => true,

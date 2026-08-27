@@ -38,6 +38,13 @@ if (!@is_file($pathToFunctions)) {
 require $pathToFunctions;
 
 if (!defined('MAXMIND_LICENSE_KEY') || !validateInput(MAXMIND_LICENSE_KEY, 'maxmind')) {
+    // MaxMind license key is not configured. Fallback to free strato-do/ip-geo database update.
+    $updateScript = MAILWATCH_HOME . '/tools/update_geoip.php';
+    if (file_exists($updateScript)) {
+        echo "No MaxMind license key found. Updating free strato-do/ip-geo database...\n";
+        passthru('/usr/bin/php ' . escapeshellarg($updateScript), $exitCode);
+        exit($exitCode);
+    }
     $error_message = __('geoipnokey15') . "\n\n";
     exit($error_message);
 }

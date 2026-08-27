@@ -5,3 +5,4 @@
 MYSQLPW=`grep MAILWATCHSQLPWD /etc/eFa/MailWatch-Config | awk -F':' '{print $2}'` 
 mysql -u mailwatch -p$MYSQLPW --database=mailscanner -e "DELETE FROM mtalog_ids WHERE smtp_id not in (SELECT msg_id FROM mtalog);" >/dev/null 2>&1
 MYSQLPW=
+/usr/bin/php /var/www/html/mailscanner/tools/check_version.php >/dev/null 2>&1
