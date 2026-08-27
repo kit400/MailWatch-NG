@@ -5843,6 +5843,7 @@ input:checked + .slider:before {
     padding: 0 10px;
     border-radius: 6px;
     background: #f8fafc;
+    color: #1e293b;
     gap: 5px;
 }
 
@@ -5873,7 +5874,7 @@ input:checked + .slider:before {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: #475569;
+    color: #1e293b;
     line-height: 1;
     transition: color 0.15s ease;
 }
@@ -5898,7 +5899,7 @@ input:checked + .slider:before {
     border-radius: 6px;
     background: #f8fafc;
     border: 1px solid #cbd5e1;
-    color: #334155 !important;
+    color: #1e293b !important;
     margin: 0 4px 0 0;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
@@ -6083,6 +6084,28 @@ input:checked + .slider:before {
     flex-shrink: 0;
     stroke: currentColor;
     fill: none;
+}
+
+.mw-svg-icon.mw-svg-solid,
+.mw-svg-icon.mw-svg-gear,
+.mw-svg-icon.mw-svg-cog,
+.mw-svg-icon.mw-svg-bell,
+svg.mw-svg-solid,
+svg.mw-svg-gear,
+svg.mw-svg-cog,
+svg.mw-svg-bell {
+    fill: currentColor !important;
+    stroke: none !important;
+}
+
+.mw-svg-icon.mw-svg-solid path,
+.mw-svg-icon.mw-svg-gear path,
+.mw-svg-icon.mw-svg-cog path,
+.mw-svg-icon.mw-svg-bell path,
+svg.mw-svg-gear path,
+svg.mw-svg-bell path {
+    fill: currentColor !important;
+    stroke: none !important;
 }
 
 .nav-icon {

@@ -365,7 +365,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helve
         $count = count($unread);
         $hasUnread = $count > 0;
 
-        $bellIcon = function_exists('mw_icon') ? mw_icon('bell', '', 16) : '🔔';
+        $bellIcon = function_exists('mw_icon') ? mw_icon('bell', '', 17) : '🔔';
         $html = '<button type="button" class="notif-bell-btn' . ($hasUnread ? ' has-unread' : '') . '" id="notifBellBtn" onclick="toggleNotificationsModal()" title="Notifications">' . "\n";
         $html .= '  <span class="bell-icon">' . $bellIcon . '</span>' . "\n";
         if ($hasUnread) {
