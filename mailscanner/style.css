@@ -1612,8 +1612,8 @@ input[type="submit"],
 input[type="button"],
 input[type="reset"],
 button[type="submit"],
-button[type="button"],
-button {
+button[type="button"]:not(#menu button),
+button:not(#menu button) {
     background: linear-gradient(135deg, #1f6cb0 0%, #185890 100%);
     color: #ffffff;
     border: 1px solid #1f6cb0;
@@ -1634,8 +1634,8 @@ button {
 input[type="submit"]:hover,
 input[type="button"]:hover,
 button[type="submit"]:hover,
-button[type="button"]:hover,
-button:hover {
+button[type="button"]:not(#menu button):hover,
+button:not(#menu button):hover {
     background: linear-gradient(135deg, #185890 0%, #134674 100%);
     border-color: #185890;
     color: #ffffff;
@@ -5817,41 +5817,85 @@ input:checked + .slider:before {
 }
 
 /* User & Gear Toggle Buttons */
-.nav-user-toggle,
-.nav-gear-toggle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    height: 32px;
-    box-sizing: border-box;
-    padding: 0 10px 0 8px;
-    background: #f1f5f9;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    color: #0f172a;
-    font-size: 12.5px;
-    font-weight: 600;
-    cursor: pointer;
-    line-height: 1;
-    transition: all 0.15s ease-in-out;
-    outline: none;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+/* Right-hand Navbar Utility Buttons (User, Gear, Bell) */
+#menu .nav-user-toggle,
+#menu .nav-gear-toggle,
+#menu .notif-bell-btn,
+button.nav-user-toggle,
+button.nav-gear-toggle,
+button.notif-bell-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    max-height: 32px !important;
+    box-sizing: border-box !important;
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    color: #0f172a !important;
+    font-family: inherit !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    line-height: 1 !important;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease !important;
+    outline: none !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+    transform: none !important;
+    text-decoration: none !important;
 }
 
-.nav-user-toggle {
-    gap: 7px;
+#menu .nav-user-toggle,
+button.nav-user-toggle {
+    padding: 0 10px 0 8px !important;
+    gap: 7px !important;
 }
 
-.nav-gear-toggle {
-    padding: 0 10px;
-    gap: 5px;
+#menu .nav-gear-toggle,
+button.nav-gear-toggle {
+    padding: 0 10px !important;
+    gap: 5px !important;
 }
 
-.nav-user-toggle:hover,
-.nav-gear-toggle:hover {
-    background: #e2e8f0;
-    border-color: #94a3b8;
-    color: #0f172a;
+#menu .notif-bell-btn,
+button.notif-bell-btn {
+    width: 32px !important;
+    min-width: 32px !important;
+    max-width: 32px !important;
+    padding: 0 !important;
+    margin: 0 4px 0 0 !important;
+}
+
+/* Hover State - strictly gray (#e2e8f0), NO blue, identical size */
+#menu .nav-user-toggle:hover,
+#menu .nav-gear-toggle:hover,
+#menu .notif-bell-btn:hover,
+button.nav-user-toggle:hover,
+button.nav-gear-toggle:hover,
+button.notif-bell-btn:hover {
+    background: #e2e8f0 !important;
+    border-color: #94a3b8 !important;
+    color: #0f172a !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+    transform: none !important;
+}
+
+/* Active State (dropdown open or on active settings subpage) - strictly gray (#e2e8f0), NO blue, identical size */
+#menu .nav-user-dropdown.active > .nav-user-toggle,
+#menu .nav-gear-dropdown.active > .nav-gear-toggle,
+#menu .nav-user-dropdown.is-open > .nav-user-toggle,
+#menu .nav-gear-dropdown.is-open > .nav-gear-toggle,
+#menu .nav-user-dropdown.active > button.nav-user-toggle,
+#menu .nav-gear-dropdown.active > button.nav-gear-toggle,
+#menu .nav-user-dropdown.is-open > button.nav-user-toggle,
+#menu .nav-gear-dropdown.is-open > button.nav-gear-toggle {
+    background: #e2e8f0 !important;
+    border-color: #94a3b8 !important;
+    color: #0f172a !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+    transform: none !important;
 }
 
 .nav-user-name {
@@ -5859,69 +5903,66 @@ input:checked + .slider:before {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    color: #0f172a !important;
 }
 
-.nav-caret {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    color: #64748b;
-    margin-left: 2px;
-    transition: transform 0.15s ease;
+#menu .nav-user-toggle .nav-caret,
+#menu .nav-gear-toggle .nav-caret,
+button.nav-user-toggle .nav-caret,
+button.nav-gear-toggle .nav-caret {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #64748b !important;
+    margin-left: 2px !important;
+    transition: transform 0.15s ease, color 0.15s ease !important;
 }
 
-.nav-gear-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    color: #0f172a;
-    line-height: 1;
-    transition: color 0.15s ease;
+#menu .nav-user-toggle:hover .nav-caret,
+#menu .nav-gear-toggle:hover .nav-caret,
+#menu .nav-user-dropdown.active > .nav-user-toggle .nav-caret,
+#menu .nav-gear-dropdown.active > .nav-gear-toggle .nav-caret,
+#menu .nav-user-dropdown.is-open > .nav-user-toggle .nav-caret,
+#menu .nav-gear-dropdown.is-open > .nav-gear-toggle .nav-caret {
+    color: #0f172a !important;
 }
 
-.nav-gear-toggle:hover .nav-gear-icon {
-    color: #0f172a;
+#menu .nav-gear-toggle .nav-gear-icon,
+button.nav-gear-toggle .nav-gear-icon {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #0f172a !important;
+    line-height: 1 !important;
+    filter: none !important;
 }
 
-#menu .nav-gear-dropdown.active > .nav-gear-toggle .nav-gear-icon {
+#menu .nav-gear-toggle:hover .nav-gear-icon,
+#menu .nav-gear-dropdown.active > .nav-gear-toggle .nav-gear-icon,
+#menu .nav-gear-dropdown.is-open > .nav-gear-toggle .nav-gear-icon {
     color: #0f172a !important;
     filter: none !important;
 }
 
-.nav-bell-item .notif-bell-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    box-sizing: border-box;
-    padding: 0;
-    border-radius: 6px;
-    background: #f1f5f9;
-    border: 1px solid #cbd5e1;
+#menu .notif-bell-btn .bell-icon,
+button.notif-bell-btn .bell-icon {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     color: #0f172a !important;
-    margin: 0 4px 0 0;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    line-height: 1 !important;
 }
 
-.nav-bell-item .notif-bell-btn:hover {
-    background: #e2e8f0;
-    border-color: #94a3b8;
-    color: #0f172a !important;
-}
-
-.nav-bell-item .notif-bell-btn.has-unread {
-    background: #eff6ff;
-    border-color: #93c5fd;
+#menu .notif-bell-btn.has-unread,
+button.notif-bell-btn.has-unread {
+    background: #eff6ff !important;
+    border-color: #93c5fd !important;
     color: #1d4ed8 !important;
 }
 
-.nav-bell-item .notif-bell-btn .bell-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    color: inherit;
-    line-height: 1;
+#menu .notif-bell-btn.has-unread .bell-icon,
+button.notif-bell-btn.has-unread .bell-icon {
+    color: #1d4ed8 !important;
 }
 
 /* Dropdown Menus */
