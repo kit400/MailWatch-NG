@@ -3338,7 +3338,7 @@ p.footer {
 
 /* Bell Button in User Cabinet */
 .notif-bell-btn {
-    background: #f8fafc;
+    background: #f1f5f9;
     border: 1px solid #cbd5e1;
     border-radius: 6px;
     width: 32px;
@@ -3351,7 +3351,7 @@ p.footer {
     transition: all 0.2s ease;
     margin-left: 6px;
     padding: 0;
-    color: #334155 !important;
+    color: #0f172a !important;
 }
 
 .notif-bell-btn:hover {
@@ -5822,14 +5822,13 @@ input:checked + .slider:before {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 7px;
     height: 32px;
     box-sizing: border-box;
-    padding: 0 10px 0 6px;
-    background: #f8fafc;
+    padding: 0 10px 0 8px;
+    background: #f1f5f9;
     border: 1px solid #cbd5e1;
-    border-radius: 16px;
-    color: #334155;
+    border-radius: 6px;
+    color: #0f172a;
     font-size: 12.5px;
     font-weight: 600;
     cursor: pointer;
@@ -5839,11 +5838,12 @@ input:checked + .slider:before {
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
+.nav-user-toggle {
+    gap: 7px;
+}
+
 .nav-gear-toggle {
     padding: 0 10px;
-    border-radius: 6px;
-    background: #f8fafc;
-    color: #1e293b;
     gap: 5px;
 }
 
@@ -5874,7 +5874,7 @@ input:checked + .slider:before {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: #1e293b;
+    color: #0f172a;
     line-height: 1;
     transition: color 0.15s ease;
 }
@@ -5884,8 +5884,8 @@ input:checked + .slider:before {
 }
 
 #menu .nav-gear-dropdown.active > .nav-gear-toggle .nav-gear-icon {
-    color: #ffffff !important;
-    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4));
+    color: #0f172a !important;
+    filter: none !important;
 }
 
 .nav-bell-item .notif-bell-btn {
@@ -5897,9 +5897,9 @@ input:checked + .slider:before {
     box-sizing: border-box;
     padding: 0;
     border-radius: 6px;
-    background: #f8fafc;
+    background: #f1f5f9;
     border: 1px solid #cbd5e1;
-    color: #1e293b !important;
+    color: #0f172a !important;
     margin: 0 4px 0 0;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
@@ -6181,15 +6181,15 @@ svg.mw-svg-bell path {
 /* Active State for Right-Hand Dropdown Toggle Buttons */
 #menu .nav-user-dropdown.active > .nav-user-toggle,
 #menu .nav-gear-dropdown.active > .nav-gear-toggle {
-    background: linear-gradient(135deg, #1f6cb0 0%, #185890 100%);
-    color: #ffffff;
-    border-color: #1f6cb0;
-    box-shadow: 0 2px 4px rgba(31, 108, 176, 0.25);
+    background: #e2e8f0 !important;
+    color: #0f172a !important;
+    border-color: #94a3b8 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
 }
 
 #menu .nav-user-dropdown.active > .nav-user-toggle .nav-caret,
 #menu .nav-gear-dropdown.active > .nav-gear-toggle .nav-caret {
-    color: #ffffff;
+    color: #0f172a !important;
 }
 
 /* ==========================================================================
