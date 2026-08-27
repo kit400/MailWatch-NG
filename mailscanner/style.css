@@ -940,19 +940,33 @@ table.colorcodes {
     border-color: #fca5a5;
 }
 
-/* Header Toggle Buttons */
+/* Header Toggle Buttons (Collapse/Expand 30% smaller) */
 .header-toggle-btn {
     background: #f1f5f9;
     color: #475569;
     border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    padding: 2px 7px;
-    font-size: 10px;
-    font-weight: 700;
+    border-radius: 4px;
+    width: 17px;
+    height: 17px;
+    min-width: 17px;
+    min-height: 17px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 7px;
+    line-height: 1;
     cursor: pointer;
-    line-height: 1.3;
     transition: all 0.15s ease;
     white-space: nowrap;
+    box-sizing: border-box;
+}
+
+.header-toggle-btn svg {
+    width: 7.5px;
+    height: 7.5px;
+    stroke-width: 2.5;
+    display: block;
 }
 
 .header-toggle-btn:hover {
@@ -970,8 +984,6 @@ table.colorcodes {
 }
 
 .header-toggle-collapse {
-    font-size: 11px;
-    padding: 2px 6px;
     color: #64748b;
 }
 
