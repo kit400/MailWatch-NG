@@ -310,14 +310,6 @@ define('RPC_ONLY', false);
 // Do you want an audit trail?
 define('AUDIT', true);
 
-// Show software versions in header / navigation?
-define('SHOW_SFVERSION', true);
-
-// Show docs in navigation?
-define('SHOW_DOC', false);
-
-// Show greylisting management menu in navigation?
-define('SHOW_GREYLIST', true);
 
 // Do you want the allowlist/blocklist functionality enabled?
 // You'll need to configure MailScanner to use it accordingly.

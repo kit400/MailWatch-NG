@@ -13,6 +13,53 @@
 
 class SystemNotifications
 {
+    private static $tablesChecked = false;
+
+    /**
+     * Ensure required tables exist in database
+     */
+    public static function ensureTables()
+    {
+        if (self::$tablesChecked) {
+            return;
+        }
+        self::$tablesChecked = true;
+
+        try {
+            dbconn();
+            $sql1 = "CREATE TABLE IF NOT EXISTS `system_notifications` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `type` enum('release','danger','warning','info','tip') NOT NULL DEFAULT 'info',
+              `title` varchar(255) NOT NULL,
+              `version` varchar(50) DEFAULT NULL,
+              `short_description` text NOT NULL,
+              `changelog_url` varchar(255) DEFAULT NULL,
+              `full_content` longtext DEFAULT NULL,
+              `target_role` enum('ALL','A','D','U') NOT NULL DEFAULT 'ALL',
+              `is_banner` tinyint(1) NOT NULL DEFAULT 1,
+              `is_active` tinyint(1) NOT NULL DEFAULT 1,
+              `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              `expires_at` datetime DEFAULT NULL,
+              PRIMARY KEY (`id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;";
+
+            $sql2 = "CREATE TABLE IF NOT EXISTS `user_notifications_read` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `notification_id` int(11) NOT NULL,
+              `username` varchar(191) NOT NULL,
+              `read_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (`id`),
+              UNIQUE KEY `user_notification_uniq` (`notification_id`,`username`),
+              KEY `user_idx` (`username`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;";
+
+            dbquery($sql1);
+            dbquery($sql2);
+        } catch (\Throwable $e) {
+            // Suppress table creation errors during bootstrap/readonly
+        }
+    }
+
     /**
      * Get unread notifications for a specific user
      *
@@ -22,26 +69,31 @@ class SystemNotifications
      */
     public static function getUnreadNotifications($username, $userType)
     {
-        dbconn();
-        $usernameSafe = safe_value($username);
-        $roleFilter = "AND (target_role = 'ALL' OR target_role = '" . safe_value($userType) . "')";
+        self::ensureTables();
+        try {
+            dbconn();
+            $usernameSafe = safe_value($username);
+            $roleFilter = "AND (target_role = 'ALL' OR target_role = '" . safe_value($userType) . "')";
 
-        $sql = "SELECT n.* FROM system_notifications n
-                LEFT JOIN user_notifications_read r ON n.id = r.notification_id AND r.username = '$usernameSafe'
-                WHERE n.is_active = 1
-                  AND (n.expires_at IS NULL OR n.expires_at > NOW())
-                  AND r.id IS NULL
-                  $roleFilter
-                ORDER BY n.created_at DESC";
+            $sql = "SELECT n.* FROM system_notifications n
+                    LEFT JOIN user_notifications_read r ON n.id = r.notification_id AND r.username = '$usernameSafe'
+                    WHERE n.is_active = 1
+                      AND (n.expires_at IS NULL OR n.expires_at > NOW())
+                      AND r.id IS NULL
+                      $roleFilter
+                    ORDER BY n.created_at DESC";
 
-        $res = dbquery($sql);
-        $notifications = [];
-        if ($res) {
-            while ($row = $res->fetch_assoc()) {
-                $notifications[] = $row;
+            $res = dbquery($sql);
+            $notifications = [];
+            if ($res) {
+                while ($row = $res->fetch_assoc()) {
+                    $notifications[] = $row;
+                }
             }
+            return $notifications;
+        } catch (\Throwable $e) {
+            return [];
         }
-        return $notifications;
     }
 
     /**
@@ -54,27 +106,32 @@ class SystemNotifications
      */
     public static function getAllNotifications($username, $userType, $limit = 50)
     {
-        dbconn();
-        $usernameSafe = safe_value($username);
-        $roleFilter = "AND (target_role = 'ALL' OR target_role = '" . safe_value($userType) . "')";
+        self::ensureTables();
+        try {
+            dbconn();
+            $usernameSafe = safe_value($username);
+            $roleFilter = "AND (target_role = 'ALL' OR target_role = '" . safe_value($userType) . "')";
 
-        $sql = "SELECT n.*, (CASE WHEN r.id IS NOT NULL THEN 1 ELSE 0 END) AS is_read
-                FROM system_notifications n
-                LEFT JOIN user_notifications_read r ON n.id = r.notification_id AND r.username = '$usernameSafe'
-                WHERE n.is_active = 1
-                  AND (n.expires_at IS NULL OR n.expires_at > NOW())
-                  $roleFilter
-                ORDER BY n.created_at DESC
-                LIMIT " . (int)$limit;
+            $sql = "SELECT n.*, (CASE WHEN r.id IS NOT NULL THEN 1 ELSE 0 END) AS is_read
+                    FROM system_notifications n
+                    LEFT JOIN user_notifications_read r ON n.id = r.notification_id AND r.username = '$usernameSafe'
+                    WHERE n.is_active = 1
+                      AND (n.expires_at IS NULL OR n.expires_at > NOW())
+                      $roleFilter
+                    ORDER BY n.created_at DESC
+                    LIMIT " . (int)$limit;
 
-        $res = dbquery($sql);
-        $notifications = [];
-        if ($res) {
-            while ($row = $res->fetch_assoc()) {
-                $notifications[] = $row;
+            $res = dbquery($sql);
+            $notifications = [];
+            if ($res) {
+                while ($row = $res->fetch_assoc()) {
+                    $notifications[] = $row;
+                }
             }
+            return $notifications;
+        } catch (\Throwable $e) {
+            return [];
         }
-        return $notifications;
     }
 
     /**
