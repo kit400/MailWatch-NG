@@ -244,20 +244,26 @@ function printLineGraph(chartId, settings) {
       }
     },
     legend: {
-      show: !isHeaderTraffic && legendData.length > 1,
+      show: isHeaderTraffic ? true : (legendData.length > 1),
       data: legendData,
-      top: settings.chartTitle ? 32 : 10,
-      right: 15,
+      orient: 'horizontal',
+      top: isHeaderTraffic ? 'auto' : (settings.chartTitle ? 32 : 10),
+      bottom: isHeaderTraffic ? 0 : 'auto',
+      left: isHeaderTraffic ? 'center' : 'auto',
+      right: isHeaderTraffic ? 'auto' : 15,
+      itemWidth: isHeaderTraffic ? 12 : 14,
+      itemHeight: isHeaderTraffic ? 6 : 10,
+      itemGap: isHeaderTraffic ? 12 : 12,
       textStyle: {
         color: '#475569',
-        fontSize: 11
+        fontSize: isHeaderTraffic ? 9.5 : 11
       }
     },
     grid: {
       left: isHeaderTraffic ? 8 : 50,
       right: isHeaderTraffic ? 8 : (hasMultipleAxes ? 65 : 25),
-      bottom: isHeaderTraffic ? 6 : (labels.length > 20 ? 38 : 28),
-      top: isHeaderTraffic ? 8 : (settings.chartTitle ? 55 : 35),
+      bottom: isHeaderTraffic ? 20 : (labels.length > 20 ? 38 : 28),
+      top: isHeaderTraffic ? 6 : (settings.chartTitle ? 55 : 35),
       containLabel: true
     },
     xAxis: {
