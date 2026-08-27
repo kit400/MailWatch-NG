@@ -92,12 +92,12 @@ function printPieGraph(chartId, settings) {
       itemWidth: 12,
       itemHeight: 12,
       itemStyle: {
-        borderColor: '#94a3b8',
-        borderWidth: 1,
+        borderColor: '#1e293b',
+        borderWidth: 1.5,
         borderRadius: 2
       },
       textStyle: {
-        color: '#475569',
+        color: '#334155',
         fontSize: 11
       },
       formatter: function(name) {
@@ -115,7 +115,7 @@ function printPieGraph(chartId, settings) {
         padAngle: 3,
         itemStyle: {
           borderRadius: 6,
-          borderColor: '#94a3b8',
+          borderColor: '#1e293b',
           borderWidth: 1.5
         },
         label: {
@@ -131,11 +131,11 @@ function printPieGraph(chartId, settings) {
             formatter: '{b}\n{d}%'
           },
           itemStyle: {
-            borderColor: '#475569',
-            borderWidth: 2,
+            borderColor: '#0f172a',
+            borderWidth: 2.5,
             shadowBlur: 10,
             shadowOffsetX: 0,
-            shadowColor: 'rgba(0, 0, 0, 0.15)'
+            shadowColor: 'rgba(0, 0, 0, 0.2)'
           }
         },
         labelLine: {

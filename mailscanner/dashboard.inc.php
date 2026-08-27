@@ -522,28 +522,30 @@ function render_widget_threat_donut($timeRange, $widgetId)
         var option = {
             tooltip: { trigger: "item", formatter: "{b}: {c} ({d}%)" },
             legend: { 
-                orient: "horizontal", 
-                bottom: 0, 
+                orient: "vertical", 
+                right: 8, 
+                top: "middle", 
+                itemGap: 8,
                 itemWidth: 12, 
                 itemHeight: 12, 
                 itemStyle: { 
-                    borderColor: "#94a3b8", 
-                    borderWidth: 1, 
+                    borderColor: "#1e293b", 
+                    borderWidth: 1.5, 
                     borderRadius: 2 
                 }, 
-                textStyle: { fontSize: 10, color: "#475569" } 
+                textStyle: { fontSize: 11, color: "#334155" } 
             },
             series: [{
                 name: "Threat Distribution",
                 type: "pie",
                 radius: ["42%", "72%"],
-                center: ["50%", "45%"],
+                center: ["36%", "50%"],
                 avoidLabelOverlap: false,
-                itemStyle: { borderRadius: 4, borderColor: "#94a3b8", borderWidth: 1.5 },
+                itemStyle: { borderRadius: 4, borderColor: "#1e293b", borderWidth: 1.5 },
                 label: { show: false, position: "center" },
                 emphasis: { 
                     label: { show: true, fontSize: 13, fontWeight: "bold" },
-                    itemStyle: { borderColor: "#475569", borderWidth: 2 }
+                    itemStyle: { borderColor: "#0f172a", borderWidth: 2.5 }
                 },
                 data: ' . $jsonData . '
             }]

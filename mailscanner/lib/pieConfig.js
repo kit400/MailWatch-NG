@@ -64,7 +64,7 @@ function printPieGraph(chartId, settings) {
         label: settings.chartTitle,
         data: settings.chartNumericData,
         backgroundColor: getChartBgColors(settings.chartNumericData.length),
-        borderColor: '#94a3b8',
+        borderColor: '#1e293b',
         borderWidth: 1.5
       }]
     },
