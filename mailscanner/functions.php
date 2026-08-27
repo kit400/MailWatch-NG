@@ -1213,7 +1213,7 @@ function printNavBar()
 
     // 3. Global Settings Gear Dropdown (LibreNMS style for Admins)
     if ('A' === ($_SESSION['user_type'] ?? '')) {
-        $adminPages = ['settings.php', 'user_manager.php', 'system_notifications.php', 'sf_version.php', 'db_status.php', 'viewmailscannerconf.php', 'rule_editor.php', 'bayes_info.php', 'grey.php', 'other.php'];
+        $adminPages = ['settings.php', 'user_manager.php', 'system_notifications.php', 'sf_version.php', 'mysql_status.php', 'msconfig.php', 'msre_index.php', 'msre_edit.php', 'bayes_info.php', 'grey.php', 'other.php'];
         $currScript = basename($_SERVER['SCRIPT_FILENAME']);
         $isGearActive = in_array($currScript, $adminPages, true);
 
@@ -1254,25 +1254,29 @@ function printNavBar()
         echo '        <div class="dropdown-item-sub">MailWatch, MailScanner, OS info</div>' . "\n";
         echo '      </div>' . "\n";
         echo '    </a>' . "\n";
-        echo '    <a href="db_status.php" class="dropdown-item' . ('db_status.php' === $currScript ? ' active' : '') . '">' . "\n";
+        echo '    <a href="mysql_status.php" class="dropdown-item' . ('mysql_status.php' === $currScript ? ' active' : '') . '">' . "\n";
         echo '      <span class="dropdown-icon">🗄️</span>' . "\n";
         echo '      <div class="dropdown-item-text">' . "\n";
         echo '        <div class="dropdown-item-title">' . __('mysqldatabasestatus10') . '</div>' . "\n";
         echo '        <div class="dropdown-item-sub">Database health and statistics</div>' . "\n";
         echo '      </div>' . "\n";
         echo '    </a>' . "\n";
-        echo '    <a href="viewmailscannerconf.php" class="dropdown-item' . ('viewmailscannerconf.php' === $currScript ? ' active' : '') . '">' . "\n";
+        echo '    <a href="msconfig.php" class="dropdown-item' . ('msconfig.php' === $currScript ? ' active' : '') . '">' . "\n";
         echo '      <span class="dropdown-icon">🔍</span>' . "\n";
         echo '      <div class="dropdown-item-text">' . "\n";
         echo '        <div class="dropdown-item-title">' . __('viewconfms10') . '</div>' . "\n";
+        echo '        <div class="dropdown-item-sub">Active MailScanner configuration</div>' . "\n";
         echo '      </div>' . "\n";
         echo '    </a>' . "\n";
-        echo '    <a href="rule_editor.php" class="dropdown-item' . ('rule_editor.php' === $currScript ? ' active' : '') . '">' . "\n";
-        echo '      <span class="dropdown-icon">📝</span>' . "\n";
-        echo '      <div class="dropdown-item-text">' . "\n";
-        echo '        <div class="dropdown-item-title">' . __('editmsrules10') . '</div>' . "\n";
-        echo '      </div>' . "\n";
-        echo '    </a>' . "\n";
+        if (defined('MSRE') && MSRE === true) {
+            echo '    <a href="msre_index.php" class="dropdown-item' . ('msre_index.php' === $currScript || 'msre_edit.php' === $currScript ? ' active' : '') . '">' . "\n";
+            echo '      <span class="dropdown-icon">📝</span>' . "\n";
+            echo '      <div class="dropdown-item-text">' . "\n";
+            echo '        <div class="dropdown-item-title">' . __('editmsrules10') . '</div>' . "\n";
+            echo '        <div class="dropdown-item-sub">MailScanner ruleset editor</div>' . "\n";
+            echo '      </div>' . "\n";
+            echo '    </a>' . "\n";
+        }
         echo '    <a href="bayes_info.php" class="dropdown-item' . ('bayes_info.php' === $currScript ? ' active' : '') . '">' . "\n";
         echo '      <span class="dropdown-icon">🧠</span>' . "\n";
         echo '      <div class="dropdown-item-text">' . "\n";
