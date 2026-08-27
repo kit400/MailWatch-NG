@@ -510,6 +510,7 @@ function html_start($title, $refresh = 0, $cacheable = true, $report = false)
         echo '            <table class="card-table">' . "\n";
         printServiceStatus();
         printAverageLoad();
+        printRamStatus();
         echo '            </table>' . "\n";
         echo '          </div>' . "\n";
         echo '        </div>' . "\n";
@@ -792,6 +793,75 @@ function printAverageLoad()
     }
 }
 
+/**
+ * Parse /proc/meminfo to retrieve RAM and Swap statistics
+ *
+ * @return array
+ */
+function get_system_memory_info()
+{
+    static $mem = null;
+    if (null !== $mem) {
+        return $mem;
+    }
+    $mem = [
+        'ram_total' => 0,
+        'ram_available' => 0,
+        'ram_free' => 0,
+        'ram_used' => 0,
+        'ram_pct_free' => 0,
+        'ram_pct_used' => 0,
+        'swap_total' => 0,
+        'swap_free' => 0,
+        'swap_used' => 0,
+        'swap_pct_free' => 0,
+        'swap_pct_used' => 0,
+    ];
+
+    if (!DISTRIBUTED_SETUP && is_readable('/proc/meminfo')) {
+        $lines = file('/proc/meminfo');
+        $raw = [];
+        foreach ($lines as $line) {
+            if (preg_match('/^([A-Za-z0-9_()]+):\s+(\d+)/', $line, $m)) {
+                $raw[$m[1]] = (int)$m[2]; // in kB
+            }
+        }
+
+        if (isset($raw['MemTotal']) && $raw['MemTotal'] > 0) {
+            $mem['ram_total'] = $raw['MemTotal'] * 1024;
+            $avail = isset($raw['MemAvailable'])
+                ? $raw['MemAvailable']
+                : ((isset($raw['MemFree']) ? $raw['MemFree'] : 0) + (isset($raw['Buffers']) ? $raw['Buffers'] : 0) + (isset($raw['Cached']) ? $raw['Cached'] : 0));
+            $mem['ram_available'] = $avail * 1024;
+            $mem['ram_free'] = (isset($raw['MemFree']) ? $raw['MemFree'] : 0) * 1024;
+            $mem['ram_used'] = max(0, $mem['ram_total'] - $mem['ram_available']);
+            $mem['ram_pct_free'] = round(($mem['ram_available'] / $mem['ram_total']) * 100, 1);
+            $mem['ram_pct_used'] = round(100 - $mem['ram_pct_free'], 1);
+        }
+
+        if (isset($raw['SwapTotal']) && $raw['SwapTotal'] > 0) {
+            $mem['swap_total'] = $raw['SwapTotal'] * 1024;
+            $mem['swap_free'] = (isset($raw['SwapFree']) ? $raw['SwapFree'] : 0) * 1024;
+            $mem['swap_used'] = max(0, $mem['swap_total'] - $mem['swap_free']);
+            $mem['swap_pct_free'] = round(($mem['swap_free'] / $mem['swap_total']) * 100, 1);
+            $mem['swap_pct_used'] = round(100 - $mem['swap_pct_free'], 1);
+        }
+    }
+
+    return $mem;
+}
+
+function printRamStatus()
+{
+    if (!DISTRIBUTED_SETUP) {
+        $mem = get_system_memory_info();
+        if ($mem['ram_total'] > 0) {
+            $percent = '<span class="badge-count">' . round($mem['ram_pct_free']) . '% free</span>';
+            echo '    <tr title="Total: ' . formatSize($mem['ram_total']) . ', Used: ' . formatSize($mem['ram_used']) . ', Available: ' . formatSize($mem['ram_available']) . '"><td>RAM' . __('colon99') . '</td><td align="right" style="color: #64748b;">' . formatSize($mem['ram_available']) . '</td><td align="right">' . $percent . '</td></tr>' . "\n";
+        }
+    }
+}
+
 function printMTAQueue()
 {
     // Display the MTA queue
@@ -910,6 +980,13 @@ function printFreeDiskSpace()
             $pct = round($free_space / $total_space, 2) * 100;
             $percent = ' <span class="badge-count">' . $pct . '% free</span>';
             echo '    <tr><td>' . $disk['mountpoint'] . '</td><td colspan="2" align="right">' . formatSize($free_space) . $percent . '</td></tr>' . "\n";
+        }
+
+        // Swap display
+        $mem = get_system_memory_info();
+        if ($mem['swap_total'] > 0) {
+            $swapPercent = ' <span class="badge-count">' . round($mem['swap_pct_free']) . '% free</span>';
+            echo '    <tr title="Total: ' . formatSize($mem['swap_total']) . ', Used: ' . formatSize($mem['swap_used']) . ', Free: ' . formatSize($mem['swap_free']) . '"><td>Swap</td><td colspan="2" align="right">' . formatSize($mem['swap_free']) . $swapPercent . '</td></tr>' . "\n";
         }
     }
 }
