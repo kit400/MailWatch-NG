@@ -168,7 +168,7 @@ function render_single_widget_card($w, $timeRange)
             </div>
 
             <!-- Manual Refresh -->
-            <button type="button" id="btnManualRefresh" class="dash-btn dash-btn-square" onclick="refreshDashboard()" title="Refresh all widgets" style="padding: 0; width: 30px; height: 30px; min-width: 30px; display: inline-flex; align-items: center; justify-content: center;">🔄</button>
+            <button type="button" id="btnManualRefresh" class="dash-btn dash-btn-square" onclick="refreshDashboard()" title="Refresh all widgets" style="padding: 0; width: 28px; height: 28px; min-width: 28px; display: inline-flex; align-items: center; justify-content: center; margin: 0; vertical-align: middle;">🔄</button>
 
             <!-- Add Widget -->
             <button type="button" class="dash-btn dash-btn-primary" onclick="openAddWidgetModal()">+ Add Widget</button>
