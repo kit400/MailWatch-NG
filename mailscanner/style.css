@@ -4650,6 +4650,20 @@ th.col-sortable.is-sorted {
     color: #0f172a;
 }
 
+.dash-btn-square,
+#btnManualRefresh {
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    justify-content: center;
+    text-align: center;
+    box-sizing: border-box;
+    font-size: 13px;
+    line-height: 1;
+    transform-origin: center center;
+}
+
 .dash-btn-primary {
     background: #0284c7;
     color: #ffffff;
