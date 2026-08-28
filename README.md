@@ -1,8 +1,14 @@
-![](/mailscanner/images/mailwatch-logo.png?raw=true)
+# MailWatch-NG for MailScanner
 
-# MailWatch for MailScanner
+[![License: GPL v2](https://img.shields.io/badge/License-GPLv2-blue.svg)](LICENSE)
+[![Platform: CentOS Stream 10 / EL10](https://img.shields.io/badge/Platform-CentOS%20Stream%2010%20%7C%20EL10-red.svg)](https://centos.org)
+[![Telegram Channel](https://img.shields.io/badge/Telegram-Official%20Channel-24A1DE.svg?logo=telegram&logoColor=white)](https://t.me/EFA_NG)
 
-MailWatch for MailScanner is a web-based front-end to MailScanner written in PHP, MySQL, Chart.js and others usefull libraries 
+MailWatch-NG is a modernized web-based front-end to MailScanner, re-engineered for PHP 8.3/8.4 and MariaDB 10.11+ as part of the [EFA-NG](https://github.com/kit400/EFA-NG) ecosystem.
+
+* **Official Support Channel (Telegram)**: [https://t.me/EFA_NG](https://t.me/EFA_NG)
+* **Official Project Portal**: [https://efa-ng.space.ua](https://efa-ng.space.ua)
+* **Main EFA-NG Appliance**: [https://github.com/kit400/EFA-NG](https://github.com/kit400/EFA-NG)
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 

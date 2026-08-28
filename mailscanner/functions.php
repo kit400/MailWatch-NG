@@ -297,6 +297,16 @@ function efa_project_url()
     return 'https://github.com/kit400/EFA-NG';
 }
 
+function efa_support_url()
+{
+    return 'https://t.me/EFA_NG';
+}
+
+function efa_portal_url()
+{
+    return 'https://efa-ng.space.ua';
+}
+
 /**
  * eFa Version
  *
@@ -1712,6 +1722,7 @@ document.addEventListener("DOMContentLoaded", function() {
     if (!empty($efa_ver)) {
         echo ' running on <a href="' . efa_project_url() . '" target="_blank" rel="noopener noreferrer">' . htmlspecialchars($efa_ver) . '</a>';
     }
+    echo ' | <a href="' . efa_support_url() . '" target="_blank" rel="noopener noreferrer" style="color: #24A1DE; text-decoration: none;"><i class="fa fa-paper-plane" aria-hidden="true"></i> Telegram Support</a>';
     echo ' - &copy; 2006-' . date('Y');
     echo '</p>' . "\n";
     echo '</body>' . "\n";

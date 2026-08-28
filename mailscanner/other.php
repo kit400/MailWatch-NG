@@ -145,6 +145,20 @@ $isAdmin = ('A' === $userType);
     </div>
     <ul class="tools-list">
       <li>
+        <a href="https://t.me/EFA_NG" target="_blank" rel="noopener noreferrer" style="font-weight: 600;">
+          <span class="tool-item-icon"><i class="fa fa-paper-plane" style="color: #24A1DE;"></i></span>
+          <span>EFA-NG Official Telegram Channel</span>
+          <span class="external-arrow" style="color: #24A1DE;">↗</span>
+        </a>
+      </li>
+      <li>
+        <a href="https://efa-ng.space.ua" target="_blank" rel="noopener noreferrer">
+          <span class="tool-item-icon"><?php echo mw_icon('globe', '', 16); ?></span>
+          <span>EFA-NG Project Portal</span>
+          <span class="external-arrow">↗</span>
+        </a>
+      </li>
+      <li>
         <a href="https://mailwatch.org" target="_blank" rel="noopener noreferrer">
           <span class="tool-item-icon"><?php echo mw_icon('shield', '', 16); ?></span>
           <span>MailWatch for MailScanner</span>

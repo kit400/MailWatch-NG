@@ -191,6 +191,11 @@ if (file_exists(__DIR__ . '/conf.php')) {
         <p class="error">' . __('cannot_read_conf') . '</p>';
 }
 echo '
+        <div style="margin-top: 18px; text-align: center; font-size: 11px; opacity: 0.8;">
+            <a href="https://t.me/EFA_NG" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: none;">
+                <i class="fa fa-paper-plane" style="color: #24A1DE;"></i> Official Telegram Support: <strong>@EFA_NG</strong>
+            </a>
+        </div>
     </div>
 </div>
 </body>
