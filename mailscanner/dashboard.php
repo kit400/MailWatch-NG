@@ -121,7 +121,7 @@ function render_single_widget_card($w, $timeRange)
                 <span class="dash-widget-title-text">' . $widgetTitle . '</span>
             </div>
             <div class="dash-widget-tools">
-                <button type="button" class="btn-dash-tool btn-dash-refresh" onclick="refreshWidget(this)" title="Refresh widget">🔄</button>
+                <button type="button" class="btn-dash-tool btn-dash-refresh" onclick="refreshWidget(this)" title="Refresh widget" style="padding: 0; width: 24px; height: 24px; min-width: 24px; display: inline-flex; align-items: center; justify-content: center;">🔄</button>
             </div>
         </div>
         <div class="dash-widget-body">
