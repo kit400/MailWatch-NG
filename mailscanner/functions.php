@@ -279,7 +279,7 @@ function getVirusRegex($scanner = null)
  */
 function mailwatch_version()
 {
-    return '6.0.4';
+    return '6.0.5';
 }
 
 function mailwatch_full_version()
@@ -320,7 +320,7 @@ function efa_version()
             return $ver;
         }
     }
-    return '6.0.4';
+    return '6.0.5';
 }
 
 /**
