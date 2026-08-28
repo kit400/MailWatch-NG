@@ -267,13 +267,27 @@ if ($hasUpdate) {
     echo '          <strong style="font-size: 15px; color: #0f172a;">New version EFA-NG v' . htmlspecialchars($latestVer) . ' is available!</strong>' . "\n";
     echo '        </div>' . "\n";
     echo '        <div style="color: #475569; font-size: 13px; margin-bottom: 12px;">' . htmlspecialchars($releaseDesc) . ' (Current: <code>v' . htmlspecialchars($currentVer) . '</code>)</div>' . "\n";
-    echo '        <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px; max-width: 720px;">' . "\n";
-    echo '          <div style="font-weight: 600; font-size: 12px; color: #334155; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Quick Upgrade Command (SSH as root):</div>' . "\n";
-    echo '          <div style="display: flex; align-items: center; background: #0f172a; border-radius: 4px; padding: 8px 12px; gap: 10px;">' . "\n";
-    echo '            <code style="color: #38bdf8; font-family: monospace; font-size: 13px; flex: 1; word-break: break-all;">' . htmlspecialchars($upgradeCmd) . '</code>' . "\n";
-    echo '            <button type="button" onclick="copyUpdateCommand(this, \'' . htmlspecialchars(addslashes($upgradeCmd)) . '\')" style="background: #334155; color: #f8fafc; border: 1px solid #475569; border-radius: 4px; padding: 4px 12px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;">Copy</button>' . "\n";
-    echo '          </div>' . "\n";
-    echo '        </div>' . "\n";
+    echo '        <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 14px; max-width: 760px;">
+          <div style="font-weight: 700; font-size: 13px; color: #1e293b; margin-bottom: 10px;">🚀 Quick Upgrade Instructions (SSH as root):</div>
+
+          <div style="margin-bottom: 12px;">
+            <div style="font-weight: 600; font-size: 11px; color: #0284c7; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Option 1: Interactive CLI Console (Recommended)</div>
+            <div style="font-size: 12px; color: #475569; margin-bottom: 6px;">Launch console and choose <strong>13) Update System & Packages</strong>:</div>
+            <div style="display: flex; align-items: center; background: #0f172a; border-radius: 4px; padding: 8px 12px; gap: 10px;">
+              <code style="color: #38bdf8; font-family: monospace; font-size: 13px; flex: 1;">eFa-Configure</code>
+              <button type="button" onclick="copyUpdateCommand(this, \'eFa-Configure\')" style="background: #334155; color: #f8fafc; border: 1px solid #475569; border-radius: 4px; padding: 4px 12px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;">Copy</button>
+            </div>
+          </div>
+
+          <div>
+            <div style="font-weight: 600; font-size: 11px; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Option 2: Direct Shell Command</div>
+            <div style="font-size: 12px; color: #475569; margin-bottom: 6px;">Execute package upgrade and reload daemons:</div>
+            <div style="display: flex; align-items: center; background: #0f172a; border-radius: 4px; padding: 8px 12px; gap: 10px;">
+              <code style="color: #38bdf8; font-family: monospace; font-size: 13px; flex: 1; word-break: break-all;">' . htmlspecialchars($upgradeCmd) . '</code>
+              <button type="button" onclick="copyUpdateCommand(this, \'' . htmlspecialchars(addslashes($upgradeCmd)) . '\')" style="background: #334155; color: #f8fafc; border: 1px solid #475569; border-radius: 4px; padding: 4px 12px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;">Copy</button>
+            </div>
+          </div>
+        </div>' . "\n";
 } else {
     echo '        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">' . "\n";
     echo '          <span style="background: #16a34a; color: #ffffff; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 700; text-transform: uppercase;">Up to Date</span>' . "\n";

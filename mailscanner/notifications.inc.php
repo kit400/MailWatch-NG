@@ -436,11 +436,24 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helve
             if (!$res || $res->num_rows === 0) {
                 $fullContentHtml = '
 <div class="update-instructions-box" style="margin: 12px 0; padding: 14px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; font-family: sans-serif;">
-  <div style="font-weight: 600; color: #1e293b; margin-bottom: 8px;">🚀 Quick Upgrade Instructions:</div>
-  <div style="font-size: 13px; color: #475569; margin-bottom: 10px;">Connect to your server via SSH as <code>root</code> and run:</div>
-  <div style="display: flex; align-items: center; background: #0f172a; border-radius: 4px; padding: 8px 12px; gap: 8px;">
-    <code style="color: #38bdf8; font-family: monospace; font-size: 13px; word-break: break-all; flex: 1;">' . htmlspecialchars($upgradeCmd) . '</code>
-    <button type="button" class="btn-copy-cmd" onclick="copyUpdateCommand(this, \'' . htmlspecialchars(addslashes($upgradeCmd)) . '\')" style="padding: 4px 10px; background: #334155; color: #f8fafc; border: 1px solid #475569; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; white-space: nowrap;">Copy</button>
+  <div style="font-weight: 700; color: #1e293b; margin-bottom: 10px; font-size: 13px;">🚀 Quick Upgrade Instructions (SSH as root):</div>
+  
+  <div style="margin-bottom: 12px;">
+    <div style="font-weight: 600; font-size: 11px; color: #0284c7; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Option 1: Interactive CLI Console (Recommended)</div>
+    <div style="font-size: 12px; color: #475569; margin-bottom: 6px;">Launch console and choose <strong>13) Update System & Packages</strong>:</div>
+    <div style="display: flex; align-items: center; background: #0f172a; border-radius: 4px; padding: 8px 12px; gap: 8px;">
+      <code style="color: #38bdf8; font-family: monospace; font-size: 13px; word-break: break-all; flex: 1;">eFa-Configure</code>
+      <button type="button" class="btn-copy-cmd" onclick="copyUpdateCommand(this, \'eFa-Configure\')" style="padding: 4px 10px; background: #334155; color: #f8fafc; border: 1px solid #475569; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; white-space: nowrap;">Copy</button>
+    </div>
+  </div>
+
+  <div>
+    <div style="font-weight: 600; font-size: 11px; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Option 2: Direct Shell Command</div>
+    <div style="font-size: 12px; color: #475569; margin-bottom: 6px;">Execute package upgrade and reload daemons:</div>
+    <div style="display: flex; align-items: center; background: #0f172a; border-radius: 4px; padding: 8px 12px; gap: 8px;">
+      <code style="color: #38bdf8; font-family: monospace; font-size: 13px; word-break: break-all; flex: 1;">' . htmlspecialchars($upgradeCmd) . '</code>
+      <button type="button" class="btn-copy-cmd" onclick="copyUpdateCommand(this, \'' . htmlspecialchars(addslashes($upgradeCmd)) . '\')" style="padding: 4px 10px; background: #334155; color: #f8fafc; border: 1px solid #475569; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; white-space: nowrap;">Copy</button>
+    </div>
   </div>
 </div>';
 

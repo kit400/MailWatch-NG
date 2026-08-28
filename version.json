@@ -6,5 +6,5 @@
   "short_description": "Official Telegram support channel (t.me/EFA_NG), modernized eFa-Configure multi-mode console, mathematical terminal border alignment, and system update improvements.",
   "changelog_url": "https://efa-ng.space.ua/docs/08-changelog",
   "upgrade_command": "dnf clean all && dnf -y update eFa MailWatch && systemctl reload php-fpm httpd",
-  "instructions": "Connect to your server via SSH as root and execute the command above to upgrade to the latest version."
+  "instructions": "Option 1 (Interactive CLI Console): Run 'eFa-Configure' via SSH and select '13) Update System & Packages'. Option 2 (Direct Shell Command): dnf clean all && dnf -y update eFa MailWatch && systemctl reload php-fpm httpd"
 }
