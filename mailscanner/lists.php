@@ -758,41 +758,55 @@ html_start(__('wblists07'), 0, false, false);
 .toolbar-left-group {
     display: flex;
     align-items: center;
-    gap: 10px;
-    flex-grow: 1;
-    max-width: 700px;
+    gap: 12px;
+    flex: 1 1 650px;
+    flex-wrap: wrap;
 }
 
 .search-input-wrapper {
     position: relative;
-    flex-grow: 1;
+    flex: 2 1 360px;
+    min-width: 320px;
+    display: flex;
+    align-items: center;
 }
 
 .search-icon {
     position: absolute;
-    left: 11px;
+    left: 12px;
     top: 50%;
     transform: translateY(-50%);
     color: #94a3b8;
     pointer-events: none;
-    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    line-height: 1;
+    z-index: 2;
 }
 
+input[type="text"].search-input,
 .search-input {
-    width: 100%;
-    height: 36px;
-    padding-left: 34px;
-    padding-right: 28px;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    font-size: 13px;
-    box-sizing: border-box;
-    background: #ffffff;
+    width: 100% !important;
+    min-width: 320px !important;
+    height: 38px !important;
+    padding-left: 40px !important;
+    padding-right: 34px !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    font-size: 13px !important;
+    box-sizing: border-box !important;
+    background: #ffffff !important;
+    color: #1e293b !important;
 }
+
+input[type="text"].search-input:focus,
 .search-input:focus {
-    border-color: #1f6cb0;
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(31,108,176,0.12);
+    border-color: #1f6cb0 !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(31,108,176,0.15) !important;
 }
 
 .search-clear-btn {
@@ -804,20 +818,26 @@ html_start(__('wblists07'), 0, false, false);
     background: none;
     border: none;
     color: #94a3b8;
-    font-size: 16px;
+    font-size: 18px;
+    line-height: 1;
+    padding: 2px 6px;
     display: none;
+    z-index: 2;
 }
 .search-clear-btn:hover { color: #475569; }
 
+select.filter-select,
 .filter-select {
-    height: 36px;
-    padding: 0 10px;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    font-size: 12.5px;
-    color: #334155;
-    background: #ffffff;
+    height: 38px !important;
+    padding: 0 12px !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    font-size: 12.5px !important;
+    color: #334155 !important;
+    background-color: #ffffff !important;
     cursor: pointer;
+    flex: 1 1 180px;
+    min-width: 160px;
 }
 
 .toolbar-right-group {
@@ -1245,7 +1265,12 @@ html_start(__('wblists07'), 0, false, false);
             <div class="toolbar-left-group">
                 <!-- Live Search Box -->
                 <div class="search-input-wrapper">
-                    <span class="search-icon">🔍</span>
+                    <span class="search-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                    </span>
                     <input type="text" id="filterSearchInput" class="search-input" placeholder="Search by sender, domain, recipient, or IP address..." oninput="handleSearchChange(this.value)">
                     <button type="button" class="search-clear-btn" id="searchClearBtn" onclick="clearSearchInput()" title="Clear search">&times;</button>
                 </div>
