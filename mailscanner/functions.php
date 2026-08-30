@@ -279,7 +279,7 @@ function getVirusRegex($scanner = null)
  */
 function mailwatch_version()
 {
-    return '6.0.5';
+    return '6.0.6';
 }
 
 function mailwatch_full_version()

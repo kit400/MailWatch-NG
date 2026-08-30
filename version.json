@@ -1,9 +1,9 @@
 {
-  "version": "6.0.5",
+  "version": "6.0.6",
   "name": "EFA-NG / MailWatch-NG",
-  "release_date": "2026-08-28",
-  "title": "EFA-NG 6.0.5 Released",
-  "short_description": "Official Telegram support channel (t.me/EFA_NG), modernized eFa-Configure multi-mode console, mathematical terminal border alignment, and system update improvements.",
+  "release_date": "2026-08-30",
+  "title": "EFA-NG 6.0.6 Released",
+  "short_description": "Server Migration & Backup Wizard (eFa-Migrate), config audit & parameter diff engine, 48,000x faster dashboard caching with non-blocking UDP PTR DNS lookups, and square refresh controls.",
   "changelog_url": "https://efa-ng.space.ua/docs/08-changelog",
   "upgrade_command": "dnf clean all && dnf -y update eFa MailWatch && systemctl reload php-fpm httpd",
   "instructions": "Option 1 (Interactive CLI Console): Run 'eFa-Configure' via SSH and select '13) Update System & Packages'. Option 2 (Direct Shell Command): dnf clean all && dnf -y update eFa MailWatch && systemctl reload php-fpm httpd"
