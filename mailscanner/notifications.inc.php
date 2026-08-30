@@ -363,16 +363,26 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helve
             @mkdir($cacheDir, 0775, true);
         }
         $cacheFile = $cacheDir . '/version_check_cache.json';
+        $currentVersion = function_exists('mailwatch_version') ? mailwatch_version() : '6.0.4';
 
-        // Check cache (12 hours = 43200 seconds)
-        if (!$force && file_exists($cacheFile) && (time() - filemtime($cacheFile) < 43200)) {
+        // Check cache (1 hour = 3600 seconds)
+        if (!$force && file_exists($cacheFile) && (time() - filemtime($cacheFile) < 3600)) {
             $cached = @json_decode(@file_get_contents($cacheFile), true);
-            if (is_array($cached) && isset($cached['has_update'])) {
-                return $cached;
+            if (is_array($cached) && isset($cached['has_update']) && ($cached['current_version'] ?? '') === $currentVersion) {
+                if (!empty($cached['has_update'])) {
+                    return $cached;
+                } else {
+                    $dRes = dbquery("SELECT id, version FROM system_notifications WHERE type = 'release' AND is_active = 1 ORDER BY id DESC LIMIT 1");
+                    if (!$dRes || $dRes->num_rows === 0) {
+                        return $cached;
+                    }
+                    $dRow = $dRes->fetch_assoc();
+                    if (empty($dRow['version']) || !version_compare($currentVersion, $dRow['version'], '<')) {
+                        return $cached;
+                    }
+                }
             }
         }
-
-        $currentVersion = function_exists('mailwatch_version') ? mailwatch_version() : '6.0.4';
 
         // Fetch remote version data (API endpoints + Raw CDN)
         $sources = [
@@ -428,9 +438,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helve
         $upgradeCmd = $releaseData['upgrade_command'] ?? 'dnf clean all && dnf -y update eFa MailWatch && systemctl reload php-fpm httpd';
 
         if ($hasUpdate) {
-            // Check if notification already exists
             dbconn();
             $verSafe = safe_value($latestVersion);
+
+            // Deactivate any previous release notifications so only the newest release is active
+            dbquery("UPDATE system_notifications SET is_active = 0, is_banner = 0 WHERE type = 'release' AND version != '$verSafe'");
+
+            // Check if notification already exists
             $checkSql = "SELECT id FROM system_notifications WHERE version = '$verSafe' AND type = 'release' LIMIT 1";
             $res = dbquery($checkSql);
             if (!$res || $res->num_rows === 0) {
@@ -459,7 +473,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helve
 
                 self::createNotification([
                     'type' => 'release',
-                    'title' => "🚀 New EFA-NG Update Available: v{$latestVersion}",
+                    'title' => "EFA-NG Update Available",
                     'version' => $latestVersion,
                     'short_description' => $releaseData['short_description'] ?? "Version {$latestVersion} is now available with new features and improvements.",
                     'changelog_url' => $releaseData['changelog_url'] ?? 'https://github.com/kit400/EFA-NG/releases',
@@ -569,7 +583,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helve
             if (!empty($n['version'])) {
                 $html .= '      <span class="banner-version">v' . htmlspecialchars($n['version']) . '</span>' . "\n";
             }
-            $html .= '      <strong class="banner-title">' . htmlspecialchars($n['title']) . ':</strong>' . "\n";
+            $bannerTitle = preg_replace('/^[\x{1F300}-\x{1F9FF}\x{2600}-\x{26FF}\s]+/u', '', $n['title']);
+            $bannerTitle = preg_replace('/:\s*v?[0-9.]+\s*$/i', '', $bannerTitle);
+            $html .= '      <strong class="banner-title">' . htmlspecialchars($bannerTitle) . ':</strong>' . "\n";
             $html .= '      <span class="banner-desc">' . htmlspecialchars($n['short_description']) . '</span>' . "\n";
             $html .= '    </div>' . "\n";
 

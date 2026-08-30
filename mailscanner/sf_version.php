@@ -247,14 +247,29 @@ $components[] = [
 ];
 
 // System Update Status Check (cached)
+$currentVer = mailwatch_version();
 $updateCheck = class_exists('SystemNotifications') ? SystemNotifications::checkForUpdates(false) : null;
 $hasUpdate = $updateCheck && !empty($updateCheck['has_update']);
-$latestVer = $updateCheck['latest_version'] ?? mailwatch_version();
-$currentVer = mailwatch_version();
+$latestVer = $updateCheck['latest_version'] ?? $currentVer;
 $checkedAt = !empty($updateCheck['checked_at']) ? date('M j, Y H:i', $updateCheck['checked_at']) : 'Never';
 $upgradeCmd = $updateCheck['upgrade_command'] ?? 'dnf clean all && dnf -y update eFa MailWatch && systemctl reload php-fpm httpd';
 $changelogUrl = $updateCheck['release_data']['changelog_url'] ?? 'https://github.com/kit400/EFA-NG/releases';
 $releaseDesc = $updateCheck['release_data']['short_description'] ?? 'New release available.';
+
+// Fallback sync: if cached status is not updated but database has active release notification for newer version
+if (!$hasUpdate && class_exists('SystemNotifications')) {
+    dbconn();
+    $dRes = dbquery("SELECT * FROM system_notifications WHERE type = 'release' AND is_active = 1 ORDER BY id DESC LIMIT 1");
+    if ($dRes && $dRes->num_rows > 0) {
+        $rRow = $dRes->fetch_assoc();
+        if (!empty($rRow['version']) && version_compare($currentVer, $rRow['version'], '<')) {
+            $hasUpdate = true;
+            $latestVer = $rRow['version'];
+            $releaseDesc = !empty($rRow['short_description']) ? $rRow['short_description'] : 'New release available.';
+            $changelogUrl = !empty($rRow['changelog_url']) ? $rRow['changelog_url'] : $changelogUrl;
+        }
+    }
+}
 
 echo '<div class="version-update-card" id="versionUpdateCard" style="margin-bottom: 20px; background: #ffffff; border: 1px solid ' . ($hasUpdate ? '#38bdf8' : '#e2e8f0') . '; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); padding: 18px 20px;">' . "\n";
 echo '  <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap;">' . "\n";
