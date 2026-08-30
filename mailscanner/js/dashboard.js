@@ -280,7 +280,7 @@
         btn.classList.add('rotating');
         if (body) body.classList.add('dash-body-refreshing');
 
-        fetch('dashboard.php?action=get_widget_body&type=' + encodeURIComponent(type) + '&widget_id=' + encodeURIComponent(widgetId) + '&range=' + encodeURIComponent(timeRange))
+        fetch('dashboard.php?action=get_widget_body&type=' + encodeURIComponent(type) + '&widget_id=' + encodeURIComponent(widgetId) + '&range=' + encodeURIComponent(timeRange) + '&force=1')
             .then(function (res) { return res.text(); })
             .then(function (html) {
                 if (body) {

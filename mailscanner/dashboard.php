@@ -29,6 +29,7 @@ if (isset($_REQUEST['action'])) {
             exit;
         }
         $res = save_user_dashboard_layout($username, $layoutArray);
+        clear_dashboard_widget_cache();
         echo json_encode(['success' => (bool)$res]);
         exit;
     }
@@ -40,6 +41,7 @@ if (isset($_REQUEST['action'])) {
             exit;
         }
         $res = reset_user_dashboard_layout($username);
+        clear_dashboard_widget_cache();
         echo json_encode(['success' => (bool)$res]);
         exit;
     }
@@ -48,7 +50,8 @@ if (isset($_REQUEST['action'])) {
         $type = $_GET['type'] ?? '';
         $timeRange = $_GET['range'] ?? '24h';
         $widgetId = $_GET['widget_id'] ?? ($type . '_widget');
-        echo render_dashboard_widget_content($type, $timeRange, $widgetId);
+        $force = !empty($_GET['force']);
+        echo render_dashboard_widget_content($type, $timeRange, $widgetId, $force);
         exit;
     }
 
@@ -56,6 +59,7 @@ if (isset($_REQUEST['action'])) {
         $type = $_GET['type'] ?? '';
         $timeRange = $_GET['range'] ?? '24h';
         $widgetId = $_GET['widget_id'] ?? ($type . '_widget');
+        $force = !empty($_GET['force']);
         $catalog = get_available_widgets_catalog();
         $widgetMeta = $catalog[$type] ?? ['title' => 'Widget', 'icon' => '📊'];
 
@@ -64,7 +68,7 @@ if (isset($_REQUEST['action'])) {
             'type' => $type,
             'width' => $_GET['width'] ?? ($widgetMeta['default_width'] ?? 'col-6'),
             'title' => $widgetMeta['title']
-        ], $timeRange);
+        ], $timeRange, $force);
         exit;
     }
 }
@@ -75,6 +79,7 @@ $validRanges = ['today', '24h', '7d', '30d'];
 if (!in_array($timeRange, $validRanges, true)) {
     $timeRange = '24h';
 }
+$forceRefresh = !empty($_GET['refresh']);
 
 html_start('Dashboard', 0, false, false);
 dbconn();
@@ -86,7 +91,7 @@ $catalog = get_available_widgets_catalog();
 /**
  * Helper to render an individual widget card inside wrapper
  */
-function render_single_widget_card($w, $timeRange)
+function render_single_widget_card($w, $timeRange, $force = false)
 {
     $widgetId = htmlspecialchars($w['id'] ?? ($w['type'] . '_' . rand(100, 999)));
     $widgetType = htmlspecialchars($w['type']);
@@ -125,7 +130,7 @@ function render_single_widget_card($w, $timeRange)
             </div>
         </div>
         <div class="dash-widget-body">
-            ' . render_dashboard_widget_content($w['type'], $timeRange, $w['id']) . '
+            ' . render_dashboard_widget_content($w['type'], $timeRange, $w['id'], $force) . '
         </div>
     </div>';
 
@@ -201,7 +206,7 @@ function render_single_widget_card($w, $timeRange)
             <div class="dash-widget-wrapper <?php echo htmlspecialchars($wWidth); ?>"
                  data-widget-id="<?php echo htmlspecialchars($wId); ?>"
                  data-widget-type="<?php echo htmlspecialchars($wType); ?>">
-                <?php echo render_single_widget_card($w, $timeRange); ?>
+                <?php echo render_single_widget_card($w, $timeRange, $forceRefresh); ?>
             </div>
         <?php endforeach; ?>
     </div>

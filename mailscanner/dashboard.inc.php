@@ -204,36 +204,243 @@ function get_dashboard_time_filter($timeRange = '24h')
 }
 
 /**
- * Master dispatcher to render a widget body
+ * Get or set dashboard widget cache
  */
-function render_dashboard_widget_content($type, $timeRange = '24h', $widgetId = '')
+function get_dashboard_widget_cache($key, $ttl = 60)
 {
+    $cacheDir = __DIR__ . '/temp/dash_cache';
+    if (!is_dir($cacheDir)) {
+        @mkdir($cacheDir, 0775, true);
+    }
+    $file = $cacheDir . '/' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $key) . '.cache';
+    if (file_exists($file)) {
+        $mtime = @filemtime($file);
+        if ($mtime && (time() - $mtime) < $ttl) {
+            return @file_get_contents($file);
+        }
+    }
+    return false;
+}
+
+function set_dashboard_widget_cache($key, $content)
+{
+    $cacheDir = __DIR__ . '/temp/dash_cache';
+    if (!is_dir($cacheDir)) {
+        @mkdir($cacheDir, 0775, true);
+    }
+    $file = $cacheDir . '/' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $key) . '.cache';
+    @file_put_contents($file, $content, LOCK_EX);
+}
+
+function clear_dashboard_widget_cache($widgetType = null)
+{
+    $cacheDir = __DIR__ . '/temp/dash_cache';
+    if (!is_dir($cacheDir)) return;
+    $files = glob($cacheDir . '/*.cache');
+    if (!$files) return;
+    foreach ($files as $f) {
+        if ($widgetType === null || strpos(basename($f), $widgetType) !== false) {
+            @unlink($f);
+        }
+    }
+}
+
+/**
+ * Fast DNS PTR query via local UDP resolver with strict 150ms timeout
+ */
+function dash_fast_ptr_lookup($ip, $timeoutSec = 0.15)
+{
+    if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+        return '-';
+    }
+    $arpa = implode('.', array_reverse(explode('.', $ip))) . '.in-addr.arpa';
+    $id = rand(1, 65535);
+    $header = pack('nnnnnn', $id, 0x0100, 1, 0, 0, 0);
+    $question = '';
+    foreach (explode('.', $arpa) as $part) {
+        $question .= chr(strlen($part)) . $part;
+    }
+    $question .= "\x00" . pack('nn', 12, 1);
+    $packet = $header . $question;
+
+    $fp = @stream_socket_client('udp://127.0.0.1:53', $errno, $errstr, $timeoutSec);
+    if (!$fp) return '-';
+
+    $sec = (int)$timeoutSec;
+    $usec = (int)(($timeoutSec - $sec) * 1000000);
+    stream_set_timeout($fp, $sec, $usec);
+    @fwrite($fp, $packet);
+    $resp = @fread($fp, 512);
+    @fclose($fp);
+
+    if (!$resp || strlen($resp) < 12) return '-';
+    $flags = unpack('n', substr($resp, 2, 2))[1] ?? 0;
+    if (($flags & 0x000F) !== 0) return '-';
+
+    $ancount = unpack('n', substr($resp, 6, 2))[1] ?? 0;
+    if ($ancount < 1) return '-';
+
+    // Skip question section
+    $offset = 12;
+    while ($offset < strlen($resp) && ord($resp[$offset]) !== 0) {
+        $len = ord($resp[$offset]);
+        if ($len >= 192) { $offset += 2; break; }
+        $offset += $len + 1;
+    }
+    if ($offset < strlen($resp) && ord($resp[$offset]) === 0) $offset++;
+    $offset += 4;
+
+    if ($offset >= strlen($resp)) return '-';
+    if (ord($resp[$offset]) >= 192) { $offset += 2; }
+    else {
+        while ($offset < strlen($resp) && ord($resp[$offset]) !== 0) { $offset += ord($resp[$offset]) + 1; }
+        $offset++;
+    }
+    $type = unpack('n', substr($resp, $offset, 2))[1] ?? 0;
+    $offset += 8;
+    $rdlen = unpack('n', substr($resp, $offset, 2))[1] ?? 0;
+    $offset += 2;
+    if ($type !== 12) return '-';
+
+    $hostname = '';
+    $rdataEnd = $offset + $rdlen;
+    while ($offset < strlen($resp) && $offset < $rdataEnd) {
+        $len = ord($resp[$offset]);
+        if ($len === 0) break;
+        if ($len >= 192) {
+            $ptrOffset = (($len & 0x3F) << 8) | ord($resp[$offset + 1]);
+            while ($ptrOffset < strlen($resp) && ord($resp[$ptrOffset]) !== 0) {
+                $pLen = ord($resp[$ptrOffset]);
+                $hostname .= substr($resp, $ptrOffset + 1, $pLen) . '.';
+                $ptrOffset += $pLen + 1;
+            }
+            break;
+        } else {
+            $hostname .= substr($resp, $offset + 1, $len) . '.';
+            $offset += $len + 1;
+        }
+    }
+    return rtrim($hostname, '.') ?: '-';
+}
+
+/**
+ * Get cached reverse DNS with fast fallback and persistent 24h cache
+ */
+function dash_get_cached_reverse_dns($ip)
+{
+    static $memoryCache = [];
+    if (isset($memoryCache[$ip])) {
+        return $memoryCache[$ip];
+    }
+
+    $cacheFile = __DIR__ . '/temp/dash_dns_cache.json';
+    static $fileCache = null;
+    if ($fileCache === null) {
+        if (file_exists($cacheFile)) {
+            $json = @file_get_contents($cacheFile);
+            $fileCache = json_decode($json, true) ?: [];
+        } else {
+            $fileCache = [];
+        }
+    }
+
+    if (isset($fileCache[$ip]) && is_array($fileCache[$ip])) {
+        if (isset($fileCache[$ip]['host']) && (time() - ($fileCache[$ip]['time'] ?? 0)) < 86400) {
+            $memoryCache[$ip] = $fileCache[$ip]['host'];
+            return $fileCache[$ip]['host'];
+        }
+    }
+
+    // Fast UDP lookup with strict 150ms timeout
+    $host = dash_fast_ptr_lookup($ip, 0.15);
+
+    $memoryCache[$ip] = $host;
+    $fileCache[$ip] = ['host' => $host, 'time' => time()];
+
+    if (count($fileCache) > 200) {
+        $fileCache = array_slice($fileCache, -150, null, true);
+    }
+    @file_put_contents($cacheFile, json_encode($fileCache), LOCK_EX);
+
+    return $host;
+}
+
+/**
+ * Master dispatcher to render a widget body with caching
+ */
+function render_dashboard_widget_content($type, $timeRange = '24h', $widgetId = '', $force = false)
+{
+    $globalFilter = $_SESSION['global_filter'] ?? '1=1';
+    $cacheKey = "w_{$type}_{$timeRange}_" . md5($globalFilter . '_' . $widgetId);
+
+    // Per-widget TTL in seconds
+    $ttls = [
+        'kpi_summary'            => 45,
+        'traffic_chart'          => 60,
+        'threat_donut'           => 60,
+        'top_relays_asn'         => 60,
+        'top_senders_recipients' => 60,
+        'spam_rules_top'         => 60,
+        'quarantine_stats'       => 60,
+        'recent_threats'         => 20,
+        'recent_messages'        => 20,
+        'system_services'        => 15,
+        'quick_actions'          => 300
+    ];
+    $ttl = $ttls[$type] ?? 30;
+
+    if (!$force) {
+        $cached = get_dashboard_widget_cache($cacheKey, $ttl);
+        if ($cached !== false && $cached !== '') {
+            return $cached;
+        }
+    }
+
+    $out = '';
     switch ($type) {
         case 'kpi_summary':
-            return render_widget_kpi_summary($timeRange);
+            $out = render_widget_kpi_summary($timeRange);
+            break;
         case 'traffic_chart':
-            return render_widget_traffic_chart($timeRange, $widgetId);
+            $out = render_widget_traffic_chart($timeRange, $widgetId);
+            break;
         case 'threat_donut':
-            return render_widget_threat_donut($timeRange, $widgetId);
+            $out = render_widget_threat_donut($timeRange, $widgetId);
+            break;
         case 'top_relays_asn':
-            return render_widget_top_relays_asn($timeRange);
+            $out = render_widget_top_relays_asn($timeRange);
+            break;
         case 'top_senders_recipients':
-            return render_widget_top_senders_recipients($timeRange);
+            $out = render_widget_top_senders_recipients($timeRange);
+            break;
         case 'recent_threats':
-            return render_widget_recent_threats($timeRange);
+            $out = render_widget_recent_threats($timeRange);
+            break;
         case 'recent_messages':
-            return render_widget_recent_messages($timeRange);
+            $out = render_widget_recent_messages($timeRange);
+            break;
         case 'system_services':
-            return render_widget_system_services();
+            $out = render_widget_system_services();
+            break;
         case 'spam_rules_top':
-            return render_widget_spam_rules_top($timeRange);
+            $out = render_widget_spam_rules_top($timeRange);
+            break;
         case 'quarantine_stats':
-            return render_widget_quarantine_stats();
+            $out = render_widget_quarantine_stats();
+            break;
         case 'quick_actions':
-            return render_widget_quick_actions();
+            $out = render_widget_quick_actions();
+            break;
         default:
-            return '<div class="p-3 text-muted">Unknown widget type: ' . htmlspecialchars($type) . '</div>';
+            $out = '<div class="p-3 text-muted">Unknown widget type: ' . htmlspecialchars($type) . '</div>';
+            break;
     }
+
+    if ($out !== '') {
+        set_dashboard_widget_cache($cacheKey, $out);
+    }
+
+    return $out;
 }
 
 // ----------------------------------------------------------------------------
@@ -598,8 +805,7 @@ function render_widget_top_relays_asn($timeRange)
         $ip = stripPortFromIp(trim($row['clientip']));
         $host = '-';
         if (filter_var($ip, FILTER_VALIDATE_IP)) {
-            $resolved = @gethostbyaddr($ip);
-            $host = ($resolved && $resolved !== $ip) ? $resolved : '-';
+            $host = dash_get_cached_reverse_dns($ip);
         }
 
         $locStr = '-';
@@ -899,13 +1105,18 @@ function render_widget_system_services()
     $out .= '<div style="font-size:11px;font-weight:700;color:#475569;margin-bottom:6px;text-transform:uppercase;">Core Daemons Status</div>';
     $out .= '<div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:6px;margin-bottom:14px;">';
 
+    $svcKeys = array_keys($services);
+    $cmd = "systemctl is-active " . implode(' ', array_map('escapeshellarg', $svcKeys)) . " 2>/dev/null";
+    exec($cmd, $outLines, $ret);
+
+    $svcRunning = [];
+    foreach ($svcKeys as $idx => $svc) {
+        $st = isset($outLines[$idx]) ? trim($outLines[$idx]) : '';
+        $svcRunning[$svc] = ($st === 'active');
+    }
+
     foreach ($services as $svc => $label) {
-        $isRunning = false;
-        exec("systemctl is-active " . escapeshellarg($svc) . " 2>/dev/null", $outArr, $ret);
-        if ($ret === 0 && isset($outArr[0]) && trim($outArr[0]) === 'active') {
-            $isRunning = true;
-        }
-        $outArr = [];
+        $isRunning = !empty($svcRunning[$svc]);
 
         $badgeClass = $isRunning ? 'pill-green' : 'pill-slate';
         $badgeText = $isRunning ? '● RUNNING' : '○ STOPPED';
