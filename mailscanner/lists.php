@@ -826,8 +826,8 @@ input[type="text"].search-input:focus,
 }
 .search-clear-btn:hover { color: #475569; }
 
-select.filter-select,
-.filter-select {
+.rules-toolbar select.filter-select,
+.rules-toolbar .filter-select {
     height: 38px !important;
     padding: 0 12px !important;
     border: 1px solid #cbd5e1 !important;

@@ -6822,6 +6822,17 @@ svg.mw-svg-bell path {
 }
 
 /* Lists Toolbar, Search & Filters */
+.rules-toolbar {
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: #ffffff;
+    border-bottom: 1px solid #f1f5f9;
+    flex-wrap: wrap;
+}
+
 .toolbar-left-group {
     display: flex;
     align-items: center;
@@ -6830,7 +6841,7 @@ svg.mw-svg-bell path {
     flex-wrap: wrap;
 }
 
-.search-input-wrapper {
+.rules-toolbar .search-input-wrapper {
     position: relative;
     flex: 2 1 360px;
     min-width: 320px;
@@ -6838,7 +6849,7 @@ svg.mw-svg-bell path {
     align-items: center;
 }
 
-.search-icon {
+.rules-toolbar .search-icon {
     position: absolute;
     left: 12px;
     top: 50%;
@@ -6854,8 +6865,8 @@ svg.mw-svg-bell path {
     z-index: 2;
 }
 
-input[type="text"].search-input,
-.search-input {
+.rules-toolbar input[type="text"].search-input,
+.rules-toolbar .search-input {
     width: 100% !important;
     min-width: 320px !important;
     height: 38px !important;
@@ -6869,14 +6880,14 @@ input[type="text"].search-input,
     color: #1e293b !important;
 }
 
-input[type="text"].search-input:focus,
-.search-input:focus {
+.rules-toolbar input[type="text"].search-input:focus,
+.rules-toolbar .search-input:focus {
     border-color: #1f6cb0 !important;
     outline: none !important;
     box-shadow: 0 0 0 3px rgba(31,108,176,0.15) !important;
 }
 
-.search-clear-btn {
+.rules-toolbar .search-clear-btn {
     position: absolute;
     right: 8px;
     top: 50%;
@@ -6891,10 +6902,10 @@ input[type="text"].search-input:focus,
     display: none;
     z-index: 2;
 }
-.search-clear-btn:hover { color: #475569; }
+.rules-toolbar .search-clear-btn:hover { color: #475569; }
 
-select.filter-select,
-.filter-select {
+.rules-toolbar select.filter-select,
+.rules-toolbar .filter-select {
     height: 38px !important;
     padding: 0 12px !important;
     border: 1px solid #cbd5e1 !important;
@@ -6906,3 +6917,4 @@ select.filter-select,
     flex: 1 1 180px;
     min-width: 160px;
 }
+
