@@ -431,6 +431,8 @@ function html_start($title, $refresh = 0, $cacheable = true, $report = false)
     if (is_file(__DIR__ . '/skin.css')) {
         echo '<link rel="stylesheet" href="./skin.css" type="text/css">';
     }
+    echo '<script src="js/tableExport.js"></script>' . "\n";
+
 
     if ($refresh > 0) {
         echo '<meta http-equiv="refresh" content="' . $refresh . '">' . "\n";

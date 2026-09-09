@@ -777,6 +777,8 @@ return [
     'volume39' => 'Volume',
     'share' => 'Share',
     'totals' => 'Totals',
+    'export_csv' => 'Export CSV',
+    'records' => 'records',
 
     // 40-rep_top_recipient_domains_by_quantity.php
     'toprecipdomqt40' => 'Top Recipients Domains by Quantity',

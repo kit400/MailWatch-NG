@@ -244,10 +244,24 @@ if ($totalMessages > 0 && !empty($chartNumericData)) {
 
 // Table of top TLDs
 if (!empty($tldList)) {
+    $exportFileName = 'top_tlds_' . $scope . '_' . date('Ymd') . '.csv';
     ?>
-    <table class="reportTable">
+    <div class="report-table-wrapper">
+      <div class="report-table-toolbar">
+        <div class="report-table-toolbar-title">
+          <span>📋</span> <?php echo htmlspecialchars($reportTitle); ?>
+          <span class="report-table-toolbar-count">(<?php echo count($tldList); ?> <?php echo __('records', false) ?: 'records'; ?>)</span>
+        </div>
+        <div>
+          <button type="button" class="btn-report-export" onclick="exportTableToCSV(this.closest('.report-table-wrapper').querySelector('table'), '<?php echo $exportFileName; ?>')" title="<?php echo __('export_csv', false) ?: 'Export CSV'; ?>">
+            <span>⬇</span> <?php echo __('export_csv', false) ?: 'Export CSV'; ?>
+          </button>
+        </div>
+      </div>
+      <table class="reportTable">
       <thead>
         <tr>
+
           <th style="width:50px; text-align:center;">#</th>
           <th style="width:140px;">TLD (Top-Level Domain)</th>
           <th>Type / Description</th>
@@ -315,6 +329,7 @@ if (!empty($tldList)) {
         </tr>
       </tfoot>
     </table>
+    </div>
     <?php
 }
 

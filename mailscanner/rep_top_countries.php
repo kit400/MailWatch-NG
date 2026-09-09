@@ -240,9 +240,23 @@ if ($totalMessages > 0 && !empty($chartNumericData)) {
 if (!empty($countries)) {
     $tableLimit = 50;
     $topCountriesTable = array_slice($countries, 0, $tableLimit);
+    $exportFileName = 'top_countries_' . date('Ymd') . '.csv';
     ?>
-    <table class="reportTable">
+    <div class="report-table-wrapper">
+      <div class="report-table-toolbar">
+        <div class="report-table-toolbar-title">
+          <span>📋</span> <?php echo htmlspecialchars($reportTitle); ?>
+          <span class="report-table-toolbar-count">(<?php echo count($topCountriesTable); ?> <?php echo __('records', false) ?: 'records'; ?>)</span>
+        </div>
+        <div>
+          <button type="button" class="btn-report-export" onclick="exportTableToCSV(this.closest('.report-table-wrapper').querySelector('table'), '<?php echo $exportFileName; ?>')" title="<?php echo __('export_csv', false) ?: 'Export CSV'; ?>">
+            <span>⬇</span> <?php echo __('export_csv', false) ?: 'Export CSV'; ?>
+          </button>
+        </div>
+      </div>
+      <table class="reportTable">
       <thead>
+
         <tr>
           <th style="width:50px; text-align:center;">#</th>
           <th><?php echo __('country39', false) ?: 'Country'; ?></th>
@@ -300,6 +314,7 @@ if (!empty($countries)) {
         </tr>
       </tfoot>
     </table>
+    </div>
     <?php
 }
 

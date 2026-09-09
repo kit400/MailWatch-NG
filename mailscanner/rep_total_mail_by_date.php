@@ -252,7 +252,23 @@ if (count($graph_labels) > 20) {
 
 format_report_volume($data_total_size, $size_info);
 
+$exportFileName = 'total_mail_by_date_' . date('Ymd') . '.csv';
+echo '<div class="report-table-wrapper">' . "\n";
+echo '  <div class="report-table-toolbar">' . "\n";
+echo '    <div class="report-table-toolbar-title">';
+echo '      <span>📋</span> ' . (__('totalmailbydate49', false) ?: 'Total Mail by Date');
+if (!empty($data_total_mail)) {
+    echo '      <span class="report-table-toolbar-count">(' . count($data_total_mail) . ' ' . (__('records', false) ?: 'records') . ')</span>';
+}
+echo '    </div>' . "\n";
+echo '    <div>';
+echo '      <button type="button" class="btn-report-export" onclick="exportTableToCSV(this.closest(\'.report-table-wrapper\').querySelector(\'table\'), \'' . $exportFileName . '\')" title="' . (__('export_csv', false) ?: 'Export CSV') . '">';
+echo '        <span>⬇</span> ' . (__('export_csv', false) ?: 'Export CSV');
+echo '      </button>';
+echo '    </div>';
+echo '  </div>' . "\n";
 echo '<TABLE class="reportTable rowhover">' . "\n";
+
 echo ' <TR style="background-color: #F7CE4A">' . "\n";
 echo "  <TH rowspan='2'>" . __('date49') . '</TH>' . "\n";
 echo "  <TH rowspan='2' align='right'>" . __('total49') . '</TH>' . "\n";
@@ -339,6 +355,7 @@ if (SHOW_MORE_INFO_ON_REPORT_GRAPH === true) {
 }
 echo '</TR>' . "\n";
 echo '</TABLE>' . "\n";
+echo '</div>' . "\n";
 
 // Add footer
 html_end();

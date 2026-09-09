@@ -183,7 +183,21 @@ echo '<TABLE BORDER="0" CELLPADDING="10" CELLSPACING="0" WIDTH="100%">';
 echo '<TR><TD CLASS="titleReport">' . __('virusreport50') . '<BR></TD></TR>';
 echo '<TR>';
 echo '<TD ALIGN="CENTER">';
-echo '<TABLE WIDTH="840">';
+echo '<div class="report-table-wrapper" style="max-width:840px; margin:12px auto;">' . "\n";
+echo '  <div class="report-table-toolbar">' . "\n";
+echo '    <div class="report-table-toolbar-title">';
+echo '      <span>📋</span> ' . (__('virusreport50', false) ?: 'Virus Report');
+if ($count > 0) {
+    echo '      <span class="report-table-toolbar-count">(' . $count . ' ' . (__('records', false) ?: 'records') . ')</span>';
+}
+echo '    </div>' . "\n";
+echo '    <div>';
+echo '      <button type="button" class="btn-report-export" onclick="exportTableToCSV(this.closest(\'.report-table-wrapper\').querySelector(\'table\'), \'virus_report_' . date('Ymd') . '.csv\')" title="' . (__('export_csv', false) ?: 'Export CSV') . '">';
+echo '        <span>⬇</span> ' . (__('export_csv', false) ?: 'Export CSV');
+echo '      </button>';
+echo '    </div>';
+echo '  </div>' . "\n";
+echo '<TABLE class="reportTable" style="width:100%;">';
 echo '<TR BGCOLOR="#F7CE4A">';
 echo '<TH>' . __('virus50') . '</TH>';
 echo '<TH>' . __('scanner50') . '</TH>';
@@ -203,6 +217,7 @@ for ($i = 0, $count_data_names = count($data_names); $i < $count_data_names; ++$
 
 echo '
   </TABLE>
+  </div>
  </TD>
 </TR>
 </TABLE>';

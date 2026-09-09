@@ -403,8 +403,26 @@ class GraphGenerator
         if (true !== $this->printTable) {
             return;
         }
+        $exportTitle = !empty($this->graphTitle) ? $this->graphTitle : 'report';
+        $exportFileName = preg_replace('/[^a-zA-Z0-9_-]/', '_', strtolower($exportTitle)) . '_' . date('Ymd') . '.csv';
+
         // HTML to display the table
-        echo '<table class="reportTable">';
+        echo '<div class="report-table-wrapper">' . "\n";
+        echo '  <div class="report-table-toolbar">' . "\n";
+        echo '    <div class="report-table-toolbar-title">';
+        echo '      <span>📋</span> ' . htmlspecialchars($exportTitle);
+        if ($this->numResult > 0) {
+            echo '      <span class="report-table-toolbar-count">(' . $this->numResult . ' ' . (__('records', false) ?: 'records') . ')</span>';
+        }
+        echo '    </div>' . "\n";
+        echo '    <div>';
+        echo '      <button type="button" class="btn-report-export" onclick="exportTableToCSV(this.closest(\'.report-table-wrapper\').querySelector(\'table\'), \'' . htmlspecialchars($exportFileName, ENT_QUOTES) . '\')" title="' . (__('export_csv', false) ?: 'Export CSV') . '">';
+        echo '        <span>⬇</span> ' . (__('export_csv', false) ?: 'Export CSV');
+        echo '      </button>';
+        echo '    </div>';
+        echo '  </div>' . "\n";
+
+        echo '  <table class="reportTable">' . "\n";
         echo '    <tr>' . "\n";
         foreach ($this->tableColumns as $columnName => $columnTitle) {
             echo '     <th>' . $columnTitle . '</th>' . "\n";
@@ -419,5 +437,7 @@ class GraphGenerator
             echo '    </tr>' . "\n";
         }
         echo '   </table>' . "\n";
+        echo '</div>' . "\n";
     }
+
 }
