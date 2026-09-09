@@ -2165,8 +2165,14 @@ p.footer {
 }
 
 /* ==========================================================================
-   Compact Active Filter Bar (Single Line directly under #menu)
+   Compact Active Filter Bar & Collapsible Add Filter Panel
    ========================================================================== */
+.filter-bar-wrapper {
+    width: 100%;
+    margin: 6px 0 10px 0;
+    box-sizing: border-box;
+}
+
 .active-filter-bar {
     width: 100%;
     box-sizing: border-box;
@@ -2174,7 +2180,6 @@ p.footer {
     border: 1px solid #e2e8f0;
     border-radius: 8px;
     padding: 6px 12px;
-    margin: 6px 0 10px 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -2296,6 +2301,40 @@ p.footer {
     white-space: nowrap;
 }
 
+.filter-bar-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #1f6cb0;
+    text-decoration: none;
+    padding: 3px 10px;
+    border-radius: 4px;
+    background: #f0f7fc;
+    border: 1px solid #bae6fd;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+}
+
+.filter-bar-toggle-btn:hover,
+.filter-bar-toggle-btn.is-active {
+    background: #1f6cb0;
+    color: #ffffff;
+    border-color: #1f6cb0;
+}
+
+.filter-bar-toggle-btn .toggle-arrow {
+    font-size: 8px;
+    display: inline-block;
+    transition: transform 0.15s;
+}
+
+.filter-bar-toggle-btn.is-active .toggle-arrow {
+    transform: rotate(180deg);
+}
+
 .filter-bar-action-btn {
     display: inline-flex;
     align-items: center;
@@ -2315,6 +2354,71 @@ p.footer {
     background: #1f6cb0;
     color: #ffffff;
     border-color: #1f6cb0;
+}
+
+/* Collapsible Add Filter Container (Directly under Active Filters) */
+.filter-builder-collapse {
+    margin-top: 8px;
+    animation: filterSlideDown 0.18s ease;
+}
+
+@keyframes filterSlideDown {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.filter-builder-card {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    padding: 10px 14px;
+    box-sizing: border-box;
+}
+
+.filter-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.filter-card-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+    font-size: 12px;
+    color: #1e293b;
+}
+
+.filter-card-icon {
+    font-size: 12px;
+    color: #1f6cb0;
+}
+
+.filter-card-collapse-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+}
+
+.filter-card-collapse-btn:hover {
+    background: #fee2e2;
+    border-color: #fca5a5;
+    color: #b91c1c;
 }
 
 /* ==========================================================================
@@ -2623,41 +2727,63 @@ p.footer {
 .badge-warning { background-color: #d97706; color: #fff; }
 .badge-secondary { background-color: #64748b; color: #fff; }
 
-.sidebar-filter-wrapper {
-    padding: 4px 3px;
-}
-
-/* Filter Builder Form inside Sidebar */
+/* Filter Builder Form (Top Horizontal Card Layout) */
 .filter-builder-form {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    font-size: 10.5px;
+    gap: 8px;
+    font-size: 11px;
 }
 
-.filter-field-group {
+.filter-form-main-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.filter-field-col {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
+}
+
+.filter-col-field {
+    flex: 0 1 200px;
+    min-width: 150px;
+}
+
+.filter-col-op {
+    flex: 0 1 150px;
+    min-width: 120px;
+}
+
+.filter-col-val {
+    flex: 1 1 260px;
+    min-width: 180px;
+}
+
+.filter-col-btn {
+    flex: 0 0 auto;
 }
 
 .filter-label {
     font-weight: 600;
     color: #475569;
-    font-size: 10px;
+    font-size: 10.5px;
 }
 
 .filter-select,
 .filter-input {
-    width: 100%;
     box-sizing: border-box;
-    padding: 3px 5px;
+    padding: 4px 8px;
     border: 1px solid #cbd5e1;
-    border-radius: 3px;
-    font-size: 10.5px;
+    border-radius: 4px;
+    font-size: 11px;
     color: #1e293b;
     background: #ffffff;
     font-family: inherit;
+    height: 28px;
 }
 
 .filter-select:focus,
@@ -2667,17 +2793,15 @@ p.footer {
     box-shadow: 0 0 0 2px rgba(31, 108, 176, 0.12);
 }
 
-.filter-input-row {
-    display: flex;
-    gap: 3px;
-    align-items: center;
-}
-
 .filter-btn {
-    padding: 3px 6px;
-    font-size: 10.5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 4px 10px;
+    font-size: 11px;
     font-weight: 600;
-    border-radius: 3px;
+    border-radius: 4px;
     border: 1px solid #cbd5e1;
     background: #f8fafc;
     color: #334155;
@@ -2685,6 +2809,8 @@ p.footer {
     white-space: nowrap;
     transition: all 0.12s;
     font-family: inherit;
+    height: 28px;
+    box-sizing: border-box;
 }
 
 .filter-btn:hover {
@@ -2704,40 +2830,143 @@ p.footer {
     color: #ffffff;
 }
 
+.filter-btn-load {
+    background: #f0f7fc;
+    color: #1f6cb0;
+    border-color: #bae6fd;
+}
+
+.filter-btn-load:hover {
+    background: #1f6cb0;
+    color: #ffffff;
+    border-color: #1f6cb0;
+}
+
+.filter-btn-del {
+    color: #ef4444;
+    border-color: #fca5a5;
+    background: #ffffff;
+}
+
+.filter-btn-del:hover {
+    background: #fee2e2;
+    color: #b91c1c;
+    border-color: #ef4444;
+}
+
 .filter-help-text {
-    font-size: 9.5px;
-    color: #94a3b8;
+    font-size: 10px;
+    color: #64748b;
     font-style: italic;
+    margin-top: -2px;
 }
 
-.filter-saved-section {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 5px;
-    padding: 5px 6px;
+.filter-saved-bar {
     display: flex;
-    flex-direction: column;
-    gap: 3px;
-    margin-top: 3px;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed #e2e8f0;
+    font-size: 11px;
 }
 
-.filter-saved-title {
+.filter-saved-section-title {
     font-weight: 700;
     color: #475569;
+    white-space: nowrap;
+    font-size: 11px;
+}
+
+.filter-saved-save-box,
+.filter-saved-load-box {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.filter-saved-divider {
+    color: #cbd5e1;
+    font-weight: 300;
+    margin: 0 4px;
+}
+
+.filter-input-sm,
+.filter-select-sm,
+.filter-btn-sm {
+    height: 25px;
+    font-size: 10.5px;
+    padding: 2px 6px;
+}
+
+.filter-history-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-top: 6px;
+    border-top: 1px dashed #e2e8f0;
+    font-size: 10.5px;
+}
+
+.filter-history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.filter-history-title {
+    font-weight: 700;
+    color: #475569;
+}
+
+.filter-history-clear-btn {
     font-size: 10px;
+    color: #94a3b8;
+    text-decoration: none;
 }
 
-.filter-save-row,
-.filter-load-row {
-    display: flex;
-    gap: 3px;
-    align-items: center;
+.filter-history-clear-btn:hover {
+    color: #ef4444;
 }
 
-.filter-saved-actions {
+.filter-history-chips {
     display: flex;
-    gap: 2px;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.filter-history-chip {
+    display: inline-flex;
     align-items: center;
+    gap: 5px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 10.5px;
+}
+
+.history-chip-text {
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #334155;
+}
+
+.history-chip-apply {
+    color: #1f6cb0;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 10px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    background: #e0f0fe;
+}
+
+.history-chip-apply:hover {
+    background: #1f6cb0;
+    color: #ffffff;
 }
 
 /* ==========================================================================

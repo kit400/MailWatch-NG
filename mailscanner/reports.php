@@ -140,12 +140,15 @@ if (isset($_POST['action']) || isset($_GET['action'])) {
     $_SESSION['filter'] = $filter;
 
     // If return_to parameter is set and safe, redirect back immediately
-    if (isset($_GET['return_to']) && !empty($_GET['return_to'])) {
+    $returnTo = '';
+    if (!empty($_POST['return_to'])) {
+        $returnTo = deepSanitizeInput($_POST['return_to'], 'url');
+    } elseif (!empty($_GET['return_to'])) {
         $returnTo = deepSanitizeInput($_GET['return_to'], 'url');
-        if (preg_match('/^rep_[a-z0-9_]+\.php/i', $returnTo)) {
-            header('Location: ' . $returnTo);
-            exit;
-        }
+    }
+    if (!empty($returnTo) && preg_match('/^(rep_[a-z0-9_]+|reports|status|messages)\.php(\?[^#]*)?$/i', $returnTo)) {
+        header('Location: ' . $returnTo);
+        exit;
     }
 }
 

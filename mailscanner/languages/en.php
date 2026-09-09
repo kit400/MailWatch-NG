@@ -335,6 +335,7 @@ return [
     // 09-filter.inc.php
     'activefilters09' => 'Active Filters',
     'addfilter09' => 'Add Filter',
+    'collapse09' => 'Collapse',
     'column09' => 'Field',
     'operator09' => 'Condition',
     'value09' => 'Value',

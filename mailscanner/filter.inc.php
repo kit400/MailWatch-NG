@@ -185,44 +185,102 @@ class Filter
         $hasFilters = (is_array($this->item) && count($this->item) > 0);
         $currentPage = basename($_SERVER['PHP_SELF']);
         $queryString = isset($_SERVER['QUERY_STRING']) ? $_SERVER['QUERY_STRING'] : '';
-        $returnToParam = '';
-        if (0 === strpos($currentPage, 'rep_')) {
+        $returnToUrl = '';
+        if (0 === strpos($currentPage, 'rep_') || 'reports.php' === $currentPage) {
             $returnToUrl = $currentPage . (!empty($queryString) ? '?' . $queryString : '');
-            $returnToParam = '&amp;return_to=' . urlencode($returnToUrl);
         }
+        $returnToParam = !empty($returnToUrl) ? '&amp;return_to=' . urlencode($returnToUrl) : '';
+        $tokenStr = isset($_SESSION['token']) ? $_SESSION['token'] : '';
 
-        $html = '<div class="active-filter-bar' . ($hasFilters ? ' has-active-filters' : '') . '">' . "\n";
-        $html .= '  <div class="filter-bar-left">' . "\n";
-        $html .= '    <span class="filter-bar-icon">🔍</span>' . "\n";
-        $html .= '    <span class="filter-bar-label">' . __('activefilters09') . ':</span>' . "\n";
+        $html = '<div class="filter-bar-wrapper" id="filterBarWrapper">' . "\n";
+        $html .= '  <div class="active-filter-bar' . ($hasFilters ? ' has-active-filters' : '') . '">' . "\n";
+        $html .= '    <div class="filter-bar-left">' . "\n";
+        $html .= '      <span class="filter-bar-icon">🔍</span>' . "\n";
+        $html .= '      <span class="filter-bar-label">' . __('activefilters09') . ':</span>' . "\n";
 
         if ($hasFilters) {
-            $html .= '    <div class="filter-chips-list">' . "\n";
+            $html .= '      <div class="filter-chips-list">' . "\n";
             foreach ($this->item as $key => $val) {
                 $colName = $this->TranslateColumn($val[0]);
                 $opName = $this->TranslateOperator($val[1]);
                 $valStr = htmlspecialchars(stripslashes($val[2]));
-                $tokenStr = isset($_SESSION['token']) ? $_SESSION['token'] : '';
                 $removeUrl = 'reports.php?token=' . $tokenStr . '&amp;action=remove&amp;column=' . $key . $returnToParam;
 
-                $html .= '      <span class="filter-chip">';
+                $html .= '        <span class="filter-chip">';
                 $html .= '<span class="chip-col">' . $colName . '</span> ';
                 $html .= '<span class="chip-op">' . $opName . '</span> ';
                 $html .= '<span class="chip-val">"' . $valStr . '"</span>';
                 $html .= '<a href="' . $removeUrl . '" class="chip-remove" title="' . __('remove09') . '">✕</a>';
                 $html .= '</span>' . "\n";
             }
-            $html .= '    </div>' . "\n";
-            $clearUrl = 'reports.php?token=' . (isset($_SESSION['token']) ? $_SESSION['token'] : '') . '&amp;action=clear' . $returnToParam;
-            $html .= '    <a href="' . $clearUrl . '" class="filter-bar-clear-btn" title="Reset all filters">🗑️ ' . __('reset07') . '</a>' . "\n";
+            $html .= '      </div>' . "\n";
+            $clearUrl = 'reports.php?token=' . $tokenStr . '&amp;action=clear' . $returnToParam;
+            $html .= '      <a href="' . $clearUrl . '" class="filter-bar-clear-btn" title="Reset all filters">🗑️ ' . __('reset07') . '</a>' . "\n";
         } else {
-            $html .= '    <span class="filter-bar-empty">' . __('none09') . ' (' . __('allmessages03', false) . ')</span>' . "\n";
+            $html .= '      <span class="filter-bar-empty">' . __('none09') . ' (' . __('allmessages03', false) . ')</span>' . "\n";
         }
+        $html .= '    </div>' . "\n";
+
+        $html .= '    <div class="filter-bar-right">' . "\n";
+        $html .= '      <button type="button" class="filter-bar-toggle-btn" id="filterCollapseToggleBtn" onclick="toggleFilterBuilderForm()" title="' . __('addfilter09') . '">' . "\n";
+        $html .= '        <span class="btn-icon">➕</span> <span class="btn-text">' . __('addfilter09') . '</span> <span class="toggle-arrow" id="filterCollapseArrow">▾</span>' . "\n";
+        $html .= '      </button>' . "\n";
+        if ('reports.php' !== $currentPage) {
+            $html .= '      <a href="reports.php" class="filter-bar-action-btn" title="' . (__('reports14', false) ?: 'Reports Overview') . '">📋 ' . __('reports09') . '</a>' . "\n";
+        }
+        $html .= '    </div>' . "\n";
         $html .= '  </div>' . "\n";
 
-        $html .= '  <div class="filter-bar-right">' . "\n";
-        $html .= '    <a href="reports.php" class="filter-bar-action-btn">⚙️ ' . __('addfilter09') . ' / 📋 ' . __('reports09') . '</a>' . "\n";
+        // Collapsible Add Filter container directly under Active Filters bar
+        $html .= '  <div id="filterBuilderCollapse" class="filter-builder-collapse" style="display: none;">' . "\n";
+        $html .= '    <div class="filter-builder-card">' . "\n";
+        $html .= '      <div class="filter-card-header">' . "\n";
+        $html .= '        <div class="filter-card-title">' . "\n";
+        $html .= '          <span class="filter-card-icon">➕</span>' . "\n";
+        $html .= '          <span class="filter-card-heading">' . __('addfilter09') . '</span>' . "\n";
+        $html .= '        </div>' . "\n";
+        $html .= '        <button type="button" class="filter-card-collapse-btn" onclick="toggleFilterBuilderForm(false)" title="' . (__('collapse09', false) ?: 'Collapse') . '">' . "\n";
+        $html .= '          <span>▲</span> <span>' . (__('collapse09', false) ?: 'Collapse') . '</span>' . "\n";
+        $html .= '        </button>' . "\n";
+        $html .= '      </div>' . "\n";
+        $html .= '      <div class="filter-card-body">' . "\n";
+        $html .= $this->DisplayForm($returnToUrl);
+        $html .= '      </div>' . "\n";
+        $html .= '    </div>' . "\n";
         $html .= '  </div>' . "\n";
+
+        // Inline toggle script with localStorage persistence
+        $html .= '  <script>' . "\n";
+        $html .= '  function toggleFilterBuilderForm(forceState) {' . "\n";
+        $html .= '    var col = document.getElementById("filterBuilderCollapse");' . "\n";
+        $html .= '    var btn = document.getElementById("filterCollapseToggleBtn");' . "\n";
+        $html .= '    var arr = document.getElementById("filterCollapseArrow");' . "\n";
+        $html .= '    if (!col) return;' . "\n";
+        $html .= '    var isOpen = (col.style.display !== "none");' . "\n";
+        $html .= '    var next = (forceState !== undefined) ? forceState : !isOpen;' . "\n";
+        $html .= '    if (next) {' . "\n";
+        $html .= '      col.style.display = "block";' . "\n";
+        $html .= '      if (btn) btn.classList.add("is-active");' . "\n";
+        $html .= '      if (arr) arr.textContent = "▲";' . "\n";
+        $html .= '      try { localStorage.setItem("mw_filter_open", "1"); } catch(e) {}' . "\n";
+        $html .= '    } else {' . "\n";
+        $html .= '      col.style.display = "none";' . "\n";
+        $html .= '      if (btn) btn.classList.remove("is-active");' . "\n";
+        $html .= '      if (arr) arr.textContent = "▼";' . "\n";
+        $html .= '      try { localStorage.setItem("mw_filter_open", "0"); } catch(e) {}' . "\n";
+        $html .= '    }' . "\n";
+        $html .= '  }' . "\n";
+        $html .= '  try {' . "\n";
+        $html .= '    if (localStorage.getItem("mw_filter_open") === "1") {' . "\n";
+        $html .= '      var col = document.getElementById("filterBuilderCollapse");' . "\n";
+        $html .= '      var btn = document.getElementById("filterCollapseToggleBtn");' . "\n";
+        $html .= '      var arr = document.getElementById("filterCollapseArrow");' . "\n";
+        $html .= '      if (col) col.style.display = "block";' . "\n";
+        $html .= '      if (btn) btn.classList.add("is-active");' . "\n";
+        $html .= '      if (arr) arr.textContent = "▲";' . "\n";
+        $html .= '    }' . "\n";
+        $html .= '  } catch(e) {}' . "\n";
+        $html .= '  </script>' . "\n";
         $html .= '</div>' . "\n";
 
         return $html;
@@ -379,8 +437,6 @@ class Filter
         $html .= '        <span class="mini-icon' . ('recipients' === $activeCatKey ? ' is-active' : '') . '" title="' . $categories['recipients']['title'] . '">' . $categories['recipients']['icon'] . '</span>' . "\n";
         $html .= '        <span class="mini-icon' . ('security' === $activeCatKey ? ' is-active' : '') . '" title="' . $categories['security']['title'] . '">' . $categories['security']['icon'] . '</span>' . "\n";
         $html .= '        <span class="mini-icon' . ('logs' === $activeCatKey ? ' is-active' : '') . '" title="' . $categories['logs']['title'] . '">' . $categories['logs']['icon'] . '</span>' . "\n";
-        $hasActiveFilter = (count($this->item) > 0);
-        $html .= '        <span class="mini-icon' . ($hasActiveFilter ? ' is-active' : '') . '" title="' . __('addfilter09') . '">🔍</span>' . "\n";
         if (isset($_SESSION['filter_history']) && count($_SESSION['filter_history']) > 0) {
             $html .= '        <span class="mini-icon" title="' . (__('filterhistory09', false) ?: 'Filter History') . '">🕒</span>' . "\n";
         }
@@ -437,23 +493,6 @@ class Filter
             $html .= '            </div>' . "\n";
             $html .= '          </li>' . "\n";
         }
-
-        // Section B: Filter Builder dropdown
-        $hasActiveFilter = (count($this->item) > 0);
-        $html .= '          <li class="sidebar-dropdown sidebar-filter-builder' . ($hasActiveFilter ? ' active' : '') . '">' . "\n";
-        $html .= '            <a href="javascript:void(0);" class="sidebar-dropdown-toggle">' . "\n";
-        $html .= '              <i class="nav-icon">🔍</i>' . "\n";
-        $html .= '              <span class="menu-text">' . __('addfilter09') . '</span>' . "\n";
-        if ($hasActiveFilter) {
-            $html .= '              <span class="badge badge-pill badge-warning">' . count($this->item) . '</span>' . "\n";
-        }
-        $html .= '            </a>' . "\n";
-        $html .= '            <div class="sidebar-submenu"' . ($hasActiveFilter ? ' style="display:block;"' : '') . '>' . "\n";
-        $html .= '              <div class="sidebar-filter-wrapper">' . "\n";
-        $html .= '                ' . $this->DisplayForm() . "\n";
-        $html .= '              </div>' . "\n";
-        $html .= '            </div>' . "\n";
-        $html .= '          </li>' . "\n";
 
         // Section C: Filter History dropdown (if present)
         if (isset($_SESSION['filter_history']) && count($_SESSION['filter_history']) > 0) {
@@ -699,65 +738,108 @@ WHERE
         return isset($this->operators[$operator]) ? $this->operators[$operator] : $operator;
     }
 
-    public function DisplayForm()
+    public function DisplayForm($returnTo = '')
     {
-        // Form
-        $return = '<form method="post" action="' . sanitizeInput($_SERVER['PHP_SELF']) . '" class="filter-builder-form">' . "\n";
+        $currentPage = basename($_SERVER['PHP_SELF']);
+        $queryString = isset($_SERVER['QUERY_STRING']) ? $_SERVER['QUERY_STRING'] : '';
+        if (empty($returnTo)) {
+            if (0 === strpos($currentPage, 'rep_') || 'reports.php' === $currentPage) {
+                $returnTo = $currentPage . (!empty($queryString) ? '?' . $queryString : '');
+            }
+        }
 
-        $return .= '<div class="filter-field-group">' . "\n";
-        $return .= '  <label class="filter-label">' . __('column09', false) . ':</label>' . "\n";
-        $return .= '  <select name="column" class="filter-select">' . "\n";
+        $return = '<form method="post" action="reports.php" class="filter-builder-form">' . "\n";
+
+        // Main Criteria Row
+        $return .= '<div class="filter-form-main-row">' . "\n";
+
+        // Field / Column
+        $return .= '  <div class="filter-field-col filter-col-field">' . "\n";
+        $return .= '    <label class="filter-label">' . __('column09', false) . ':</label>' . "\n";
+        $return .= '    <select name="column" class="filter-select">' . "\n";
         foreach ($this->columns as $key => $val) {
-            $return .= ' <option value="' . $key . '"';
+            $return .= '      <option value="' . $key . '"';
             if ($this->display_last && $key === $this->last_column) {
                 $return .= ' SELECTED';
             }
             $return .= '>' . $val . '</option>' . "\n";
         }
-        $return .= '  </select>' . "\n";
-        $return .= '</div>' . "\n";
+        $return .= '    </select>' . "\n";
+        $return .= '  </div>' . "\n";
 
-        $return .= '<div class="filter-field-group">' . "\n";
-        $return .= '  <label class="filter-label">' . __('operator09', false) . ':</label>' . "\n";
-        $return .= '  <select name="operator" class="filter-select">' . "\n";
+        // Condition / Operator
+        $return .= '  <div class="filter-field-col filter-col-op">' . "\n";
+        $return .= '    <label class="filter-label">' . __('operator09', false) . ':</label>' . "\n";
+        $return .= '    <select name="operator" class="filter-select">' . "\n";
         foreach ($this->operators as $key => $val) {
-            $return .= ' <option value="' . $key . '"';
+            $return .= '      <option value="' . $key . '"';
             if ($this->display_last && $key === $this->last_operator) {
                 $return .= ' SELECTED';
             }
             $return .= '>' . $val . '</option>' . "\n";
         }
-        $return .= '  </select>' . "\n";
-        $return .= '</div>' . "\n";
+        $return .= '    </select>' . "\n";
+        $return .= '  </div>' . "\n";
 
-        $return .= '<div class="filter-field-group">' . "\n";
-        $return .= '  <label class="filter-label">' . __('value09', false) . ':</label>' . "\n";
-        $return .= '  <div class="filter-input-row">' . "\n";
+        // Value
+        $return .= '  <div class="filter-field-col filter-col-val">' . "\n";
+        $return .= '    <label class="filter-label">' . __('value09', false) . ':</label>' . "\n";
         $return .= '    <input type="text" name="value" class="filter-input" placeholder="' . __('value09', false) . '..."';
         if ($this->display_last) {
             $return .= ' value="' . htmlentities(stripslashes($this->last_value)) . '"';
         }
         $return .= '>' . "\n";
+        $return .= '  </div>' . "\n";
+
+        // Add button
+        $return .= '  <div class="filter-field-col filter-col-btn">' . "\n";
         $return .= '    <button type="submit" name="action" value="add" class="filter-btn filter-btn-add">➕ ' . __('add09') . '</button>' . "\n";
         $return .= '  </div>' . "\n";
-        $return .= '  <span class="filter-help-text">' . __('tosetdate09') . '</span>' . "\n";
+
         $return .= '</div>' . "\n";
 
-        $return .= '<div class="filter-saved-section">' . "\n";
-        $return .= '  <div class="filter-saved-title">💾 ' . __('loadsavef09') . '</div>' . "\n";
-        $return .= '  <div class="filter-save-row">' . "\n";
-        $return .= '    <input type="text" name="save_as" placeholder="Save filter name..." class="filter-input">' . "\n";
-        $return .= '    <button type="submit" name="action" value="save" class="filter-btn">💾 ' . __('save09') . '</button>' . "\n";
+        $return .= '<div class="filter-help-text">💡 ' . __('tosetdate09') . '</div>' . "\n";
+
+        // Saved filters row
+        $return .= '<div class="filter-saved-bar">' . "\n";
+        $return .= '  <span class="filter-saved-section-title">💾 ' . __('loadsavef09') . ':</span>' . "\n";
+        $return .= '  <div class="filter-saved-save-box">' . "\n";
+        $return .= '    <input type="text" name="save_as" placeholder="Save filter name..." class="filter-input filter-input-sm">' . "\n";
+        $return .= '    <button type="submit" name="action" value="save" class="filter-btn filter-btn-sm">💾 ' . __('save09') . '</button>' . "\n";
         $return .= '  </div>' . "\n";
-        $return .= '  <div class="filter-load-row">' . "\n";
+        $return .= '  <span class="filter-saved-divider">|</span>' . "\n";
+        $return .= '  <div class="filter-saved-load-box">' . "\n";
         $return .= '    ' . $this->ListSaved() . "\n";
-        $return .= '    <div class="filter-saved-actions">' . "\n";
-        $return .= '      <button type="submit" name="action" value="load" class="filter-btn filter-btn-load">📂 ' . __('load09') . '</button>' . "\n";
-        $return .= '      <button type="submit" name="action" value="delete" class="filter-btn filter-btn-del" onclick="return confirm(\'Delete saved filter?\');">🗑️</button>' . "\n";
-        $return .= '    </div>' . "\n";
+        $return .= '    <button type="submit" name="action" value="load" class="filter-btn filter-btn-load filter-btn-sm">📂 ' . __('load09') . '</button>' . "\n";
+        $return .= '    <button type="submit" name="action" value="delete" class="filter-btn filter-btn-del filter-btn-sm" onclick="return confirm(\'Delete saved filter?\');" title="Delete">🗑️</button>' . "\n";
         $return .= '  </div>' . "\n";
         $return .= '</div>' . "\n";
 
+        // Quick history chips if history exists
+        if (isset($_SESSION['filter_history']) && is_array($_SESSION['filter_history']) && count($_SESSION['filter_history']) > 0) {
+            $tokenStr = isset($_SESSION['token']) ? $_SESSION['token'] : '';
+            $clearHistoryUrl = 'reports.php?token=' . $tokenStr . '&amp;action=clear_history' . (!empty($returnTo) ? '&amp;return_to=' . urlencode($returnTo) : '');
+            $return .= '<div class="filter-history-bar">' . "\n";
+            $return .= '  <div class="filter-history-header">' . "\n";
+            $return .= '    <span class="filter-history-title">🕒 ' . (__('filterhistory09', false) ?: 'Recent Filters') . ':</span>' . "\n";
+            $return .= '    <a href="' . $clearHistoryUrl . '" class="filter-history-clear-btn" title="' . __('reset07') . '">🗑️ ' . __('reset07') . '</a>' . "\n";
+            $return .= '  </div>' . "\n";
+            $return .= '  <div class="filter-history-chips">' . "\n";
+            foreach (array_slice($_SESSION['filter_history'], 0, 5) as $idx => $hist) {
+                $summary = htmlspecialchars($hist['summary']);
+                $applyUrl = 'reports.php?token=' . $tokenStr . '&amp;action=apply_history&amp;history_index=' . $idx . (!empty($returnTo) ? '&amp;return_to=' . urlencode($returnTo) : '');
+                $return .= '    <span class="filter-history-chip">' . "\n";
+                $return .= '      <span class="history-chip-text" title="' . $summary . '">' . $summary . '</span>' . "\n";
+                $return .= '      <a href="' . $applyUrl . '" class="history-chip-apply" title="' . (__('apply09', false) ?: 'Apply') . '">⚡ ' . (__('apply09', false) ?: 'Apply') . '</a>' . "\n";
+                $return .= '    </span>' . "\n";
+            }
+            $return .= '  </div>' . "\n";
+            $return .= '</div>' . "\n";
+        }
+
+        if (!empty($returnTo)) {
+            $return .= '<input type="hidden" name="return_to" value="' . htmlspecialchars($returnTo) . '">' . "\n";
+        }
         $return .= '<input type="hidden" name="token" value="' . $_SESSION['token'] . '">' . "\n";
         $return .= '<input type="hidden" name="formtoken" value="' . generateFormToken('/filter.inc.php form token') . '">' . "\n";
         $return .= '</form>' . "\n";
@@ -847,7 +929,7 @@ WHERE
     {
         $sql = "SELECT DISTINCT `name` FROM `saved_filters` WHERE `username`='" . safe_value(stripslashes($_SESSION['myusername'])) . "'";
         $sth = dbquery($sql);
-        $return = '<select name="filter">' . "\n";
+        $return = '<select name="filter" class="filter-select filter-select-sm">' . "\n";
         $return .= ' <option value="_none_">' . __('none09') . '</option>' . "\n";
         while ($row = $sth->fetch_array()) {
             $return .= ' <option value="' . $row[0] . '">' . $row[0] . '</option>' . "\n";
