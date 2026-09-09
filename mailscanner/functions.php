@@ -4213,12 +4213,13 @@ function return_geoip_data($ip)
         return false;
     }
 
-    require_once __DIR__ . '/lib/maxmind-db/reader/autoload.php';
+    static $reader = null;
 
     try {
-        $reader = new \MaxMind\Db\Reader($dbFile);
+        if ($reader === null) {
+            $reader = new \MaxMind\Db\Reader($dbFile);
+        }
         $record = $reader->get($ip);
-        $reader->close();
 
         if (empty($record) || !is_array($record)) {
             $geoipCache[$ip] = false;

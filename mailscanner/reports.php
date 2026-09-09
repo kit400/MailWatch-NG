@@ -161,6 +161,7 @@ $filter->AddReport('rep_message_ops.php', __('messop14'), true);
 $filter->AddReport('rep_total_mail_by_date.php', __('messdate14'));
 $filter->AddReport('rep_previous_day.php', __('messhours14'));
 $filter->AddReport('rep_top_mail_relays.php', __('topmailrelay14'));
+$filter->AddReport('rep_top_countries.php', __('topcountries14'));
 
 $filter->AddReport('rep_top_viruses.php', __('topvirus14'));
 $filter->AddReport('rep_viruses.php', __('virusrepor14'));
@@ -174,6 +175,7 @@ $filter->AddReport('rep_top_sender_domains_by_quantity.php', __('topsendersdomqt
 $filter->AddReport('rep_top_sender_domains_by_volume.php', __('topsendersdomvol14'));
 $filter->AddReport('rep_top_recipient_domains_by_quantity.php', __('toprecipdomqt14'));
 $filter->AddReport('rep_top_recipient_domains_by_volume.php', __('toprecipdomvol14'));
+$filter->AddReport('rep_top_tlds.php', __('toptlds14'));
 
 if (true === get_conf_truefalse('UseSpamAssassin')) {
     $filter->AddReport('rep_sa_score_dist.php', __('assassinscoredist14'));

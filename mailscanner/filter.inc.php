@@ -244,6 +244,7 @@ class Filter
         $this->AddReport('rep_total_mail_by_date.php', __('messdate14', false) ?: 'Total Mail by Date');
         $this->AddReport('rep_previous_day.php', __('messhours14', false) ?: 'Total Mail by Hour');
         $this->AddReport('rep_top_mail_relays.php', __('topmailrelay14', false) ?: 'Top Mail Relays');
+        $this->AddReport('rep_top_countries.php', __('topcountries14', false) ?: 'Top Countries');
         $this->AddReport('rep_top_viruses.php', __('topvirus14', false) ?: 'Top Viruses');
         $this->AddReport('rep_viruses.php', __('virusrepor14', false) ?: 'Virus Report');
         $this->AddReport('rep_top_senders_by_quantity.php', __('topsendersqt14', false) ?: 'Top Senders by Quantity');
@@ -254,6 +255,7 @@ class Filter
         $this->AddReport('rep_top_sender_domains_by_volume.php', __('topsendersdomvol14', false) ?: 'Top Sender Domains by Volume');
         $this->AddReport('rep_top_recipient_domains_by_quantity.php', __('toprecipdomqt14', false) ?: 'Top Recipient Domains by Quantity');
         $this->AddReport('rep_top_recipient_domains_by_volume.php', __('toprecipdomvol14', false) ?: 'Top Recipient Domains by Volume');
+        $this->AddReport('rep_top_tlds.php', __('toptlds14', false) ?: 'Top TLDs (1st Level Domains)');
 
         if (true === get_conf_truefalse('UseSpamAssassin')) {
             $this->AddReport('rep_sa_score_dist.php', __('assassinscoredist14', false) ?: 'SpamAssassin Score Distribution');
@@ -293,10 +295,12 @@ class Filter
                 'icon' => '🌐',
                 'items' => [
                     ['url' => 'rep_top_mail_relays.php', 'title' => __('topmailrelay14', false) ?: 'Top Mail Relays', 'icon' => '📡'],
+                    ['url' => 'rep_top_countries.php', 'title' => __('topcountries14', false) ?: 'Top Countries', 'icon' => '🌍'],
                     ['url' => 'rep_top_senders_by_quantity.php', 'title' => __('topsendersqt14', false) ?: 'Top Senders by Quantity', 'icon' => '👤'],
                     ['url' => 'rep_top_senders_by_volume.php', 'title' => __('topsendersvol14', false) ?: 'Top Senders by Volume', 'icon' => '📦'],
                     ['url' => 'rep_top_sender_domains_by_quantity.php', 'title' => __('topsendersdomqt14', false) ?: 'Top Sender Domains by Qty', 'icon' => '🏢'],
                     ['url' => 'rep_top_sender_domains_by_volume.php', 'title' => __('topsendersdomvol14', false) ?: 'Top Sender Domains by Vol', 'icon' => '📊'],
+                    ['url' => 'rep_top_tlds.php', 'title' => __('toptlds14', false) ?: 'Top TLDs (1st Level Domains)', 'icon' => '🏷️'],
                 ],
             ],
             'recipients' => [
@@ -549,6 +553,12 @@ WHERE
             } elseif (strpos($url, 'total_mail') !== false || strpos($url, 'previous_day') !== false) {
                 $icon = '📈';
                 $badge = 'Traffic';
+            } elseif (strpos($url, 'country') !== false) {
+                $icon = '🌍';
+                $badge = 'GeoIP';
+            } elseif (strpos($url, 'tld') !== false) {
+                $icon = '🏷️';
+                $badge = 'Domains';
             } elseif (strpos($url, 'virus') !== false) {
                 $icon = '🦠';
                 $badge = 'Threats';
