@@ -98,6 +98,7 @@ return [
     'highmcp03' => 'High MCP',
     'search03' => 'Search',
     'allmessages03' => 'All Messages',
+    'order03' => 'Order by',
     'reports03' => 'Search and Reports',
     'toolslinks03' => 'Tools and Links',
     'softwareversions03' => 'Software Versions',
@@ -544,6 +545,7 @@ return [
     'saruldesupdate13' => 'SpamAssassin Rule Description Update',
     'rule13' => 'Rule',
     'description13' => 'Description',
+    'unknown13' => 'Unknown',
     'auditlog13' => 'Ran SpamAssassin Rules Description Update',
 
     // 14-reports.php
@@ -729,6 +731,7 @@ return [
     'die35' => 'Error: Needs 2 or more rows of data to be retrieved from database',
     'scorerounded35' => 'Score (rounded)',
     'nbmessages35' => 'No. of messages',
+    'nbmessage35' => 'No. of messages',
     'score35' => 'Score',
     'count35' => 'Count',
 
@@ -772,6 +775,8 @@ return [
     'viruses39' => 'Viruses',
     'spam39' => 'Spam',
     'volume39' => 'Volume',
+    'share' => 'Share',
+    'totals' => 'Totals',
 
     // 40-rep_top_recipient_domains_by_quantity.php
     'toprecipdomqt40' => 'Top Recipients Domains by Quantity',

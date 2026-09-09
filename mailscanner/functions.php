@@ -1870,7 +1870,11 @@ function __($string, $useSystemLang = false)
         return $pre_string . $en_lang[$string] . $debug_message . $post_string;
     }
 
-    return $pre_string . $language['i18_missing'] . $debug_message . $post_string;
+    if (defined('DEBUG') && DEBUG === true) {
+        return $pre_string . ($language['i18_missing'] ?? 'No translation in English') . $debug_message . $post_string;
+    }
+
+    return '';
 }
 
 /**
