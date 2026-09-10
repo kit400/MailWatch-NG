@@ -458,16 +458,6 @@ if (is_array($quarantined) && (count($quarantined) > 0)) {
         $status = [];
         // Release
         if (isset($_POST['release'])) {
-            // Send to the original recipient(s) or to an alternate address
-            if (isset($_POST['alt_recpt_yn']) && 'y' === deepSanitizeInput($_POST['alt_recpt_yn'], 'url')) {
-                $to = deepSanitizeInput($_POST['alt_recpt'], 'string');
-                if (!validateInput($to, 'user')) {
-                    exit(__('error04') . ' ' . $to);
-                }
-            } else {
-                $to = $quarantined[0]['to'];
-            }
-
             $arrid = $_POST['release'];
             if (!is_array($arrid)) {
                 exit;
@@ -480,43 +470,80 @@ if (is_array($quarantined) && (count($quarantined) > 0)) {
                 }
                 $arrid2[] = $id2;
             }
-            $status[] = quarantine_release($quarantined, $arrid2, $to, RPC_ONLY, $_SESSION['global_filter']);
+
+            if (!MessagePolicy::canRelease($quarantined, null, $arrid2)) {
+                audit_log(sprintf('Security violation: User %s attempted unauthorized release of dangerous quarantine items for %s', $_SESSION['user_type'], $url_id));
+                $status[] = __('releaseerror03') . ' - Unauthorized: Cannot release dangerous contents';
+                $error = true;
+            } else {
+                // Send to the original recipient(s) or to an alternate address
+                if (isset($_POST['alt_recpt_yn']) && 'y' === deepSanitizeInput($_POST['alt_recpt_yn'], 'url')) {
+                    if (!MessagePolicy::canChangeRecipient($quarantined)) {
+                        audit_log(sprintf('Security violation: User %s attempted unauthorized alternate recipient for %s', $_SESSION['user_type'], $url_id));
+                        $status[] = __('releaseerror03') . ' - Unauthorized: Cannot specify alternate recipient';
+                        $error = true;
+                    } else {
+                        $to = deepSanitizeInput($_POST['alt_recpt'], 'string');
+                        if (!validateInput($to, 'user')) {
+                            exit(__('error04') . ' ' . $to);
+                        }
+                    }
+                } else {
+                    $to = $quarantined[0]['to'];
+                }
+
+                if (!isset($error) || !$error) {
+                    $status[] = quarantine_release($quarantined, $arrid2, $to, RPC_ONLY, $_SESSION['global_filter']);
+                }
+            }
         }
         // sa-learn
         if (isset($_POST['learn'])) {
-            $arrid = $_POST['learn'];
-            if (!is_array($arrid)) {
-                exit;
-            }
-            $arrid2 = [];
-            foreach ($arrid as $id) {
-                $id2 = deepSanitizeInput($id, 'num');
-                if (!validateInput($id2, 'num')) {
+            if (!MessagePolicy::canLearn($quarantined)) {
+                audit_log(sprintf('Security violation: User %s attempted unauthorized sa-learn for %s', $_SESSION['user_type'], $url_id));
+                $status[] = __('salearnerror03') . ' - Unauthorized';
+                $error = true;
+            } else {
+                $arrid = $_POST['learn'];
+                if (!is_array($arrid)) {
+                    exit;
+                }
+                $arrid2 = [];
+                foreach ($arrid as $id) {
+                    $id2 = deepSanitizeInput($id, 'num');
+                    if (!validateInput($id2, 'num')) {
+                        exit(__('dievalidate99'));
+                    }
+                    $arrid2[] = $id2;
+                }
+                $type = deepSanitizeInput($_POST['learn_type'], 'url');
+                if (!validateInput($type, 'salearnops')) {
                     exit(__('dievalidate99'));
                 }
-                $arrid2[] = $id2;
+                $status[] = quarantine_learn($quarantined, $arrid2, $type, RPC_ONLY, $_SESSION['global_filter']);
             }
-            $type = deepSanitizeInput($_POST['learn_type'], 'url');
-            if (!validateInput($type, 'salearnops')) {
-                exit(__('dievalidate99'));
-            }
-            $status[] = quarantine_learn($quarantined, $arrid2, $type, RPC_ONLY, $_SESSION['global_filter']);
         }
         // Delete
         if (isset($_POST['delete'])) {
-            $arrid = $_POST['delete'];
-            if (!is_array($arrid)) {
-                exit;
-            }
-            $arrid2 = [];
-            foreach ($arrid as $id) {
-                $id2 = deepSanitizeInput($id, 'num');
-                if (!validateInput($id2, 'num')) {
-                    exit(__('dievalidate99'));
+            if (!MessagePolicy::canDelete($quarantined)) {
+                audit_log(sprintf('Security violation: User %s attempted unauthorized delete for %s', $_SESSION['user_type'], $url_id));
+                $status[] = 'Unauthorized';
+                $error = true;
+            } else {
+                $arrid = $_POST['delete'];
+                if (!is_array($arrid)) {
+                    exit;
                 }
-                $arrid2[] = $id2;
+                $arrid2 = [];
+                foreach ($arrid as $id) {
+                    $id2 = deepSanitizeInput($id, 'num');
+                    if (!validateInput($id2, 'num')) {
+                        exit(__('dievalidate99'));
+                    }
+                    $arrid2[] = $id2;
+                }
+                $status[] = quarantine_delete($quarantined, $arrid2, RPC_ONLY, $_SESSION['global_filter']);
             }
-            $status[] = quarantine_delete($quarantined, $arrid2, RPC_ONLY, $_SESSION['global_filter']);
         }
         echo '<table border="0" cellpadding="1" cellspacing="1" width="100%" class="maildetail">' . "\n";
         echo ' <tr>' . "\n";
@@ -574,23 +601,22 @@ if (is_array($quarantined) && (count($quarantined) > 0)) {
             }
             echo " <tr>\n";
             // Don't allow message to be released if it is marked as 'dangerous'
-            // Currently this only applies to messages that contain viruses.
-            // visible only to Administrators and Domain Admin only if DOMAINADMIN_CAN_RELEASE_DANGEROUS_CONTENTS is enabled
-            if (
-                'A' === $_SESSION['user_type']
-                || (defined('DOMAINADMIN_CAN_RELEASE_DANGEROUS_CONTENTS') && true === DOMAINADMIN_CAN_RELEASE_DANGEROUS_CONTENTS && 'D' === $_SESSION['user_type'])
-                || 'Y' !== $item['dangerous']
-            ) {
+            // unless MessagePolicy allows releasing this item
+            if (MessagePolicy::canReleaseItem($item)) {
                 echo '  <td align="center" class="' . $tdclass . '"><input class="noprint" type="checkbox" name="release[]" value="' . $item['id'] . '"></td>' . "\n";
             } else {
                 echo '<td class="' . $tdclass . '">&nbsp;&nbsp;</td>' . "\n";
             }
-            echo '  <td class="noprint" align="center"><input type="checkbox" name="delete[]" value="' . $item['id'] . '"></td>' . "\n";
+            if (MessagePolicy::canDelete($item)) {
+                echo '  <td class="noprint" align="center"><input type="checkbox" name="delete[]" value="' . $item['id'] . '"></td>' . "\n";
+            } else {
+                echo '  <td class="noprint" align="center">&nbsp;&nbsp;</td>' . "\n";
+            }
             // If the file is an rfc822 message then allow the file to be learnt
             // by SpamAssassin Bayesian learner as either spam or ham (sa-learn).
             if (
-                (preg_match('/message\/rfc822/', $item['type']) || 'message' === $item['file'])
-                && ('NO' !== strtoupper(get_conf_var('UseSpamAssassin')))
+                MessagePolicy::canLearn($item)
+                && (preg_match('/message\/rfc822/', $item['type']) || 'message' === $item['file'])
             ) {
                 echo '   <td align="center" class="salearn-' . $row['salearn'] . '"><input class="noprint" type="checkbox" name="learn[]" value="' . $item['id'] . '"><select class="noprint" name="learn_type"><option value="ham">' . __('asham04') . '</option><option value="spam">' . __('aspam04') . '</option><option value="forget">' . __('forget04') . '</option><option value="report">' . __('spamreport04') . '</option><option value="revoke">' . __('spamrevoke04') . '</option></select></td>' . "\n";
             } else {
@@ -598,15 +624,8 @@ if (is_array($quarantined) && (count($quarantined) > 0)) {
             }
             echo '  <td>' . $item['file'] . '</td>' . "\n";
             echo '  <td>' . $item['type'] . '</td>' . "\n";
-            // If the file is in message/rfc822 format and isn't dangerous - create a link to allow it to be viewed
-            // Domain admins can view the file only if enabled
-            if (
-                (
-                    'N' === $item['dangerous']
-                    || 'A' === $_SESSION['user_type']
-                    || (defined('DOMAINADMIN_CAN_SEE_DANGEROUS_CONTENTS') && true === DOMAINADMIN_CAN_SEE_DANGEROUS_CONTENTS && 'D' === $_SESSION['user_type'] && 'Y' === $item['dangerous'])
-                ) && preg_match('!message/rfc822!', $item['type'])
-            ) {
+            // If the file is in message/rfc822 format and user has permission to view - create a link to allow it to be viewed
+            if (MessagePolicy::canView($item) && preg_match('!message/rfc822!', $item['type'])) {
                 echo '  <td><a href="viewmail.php?token=' . $_SESSION['token'] . '&amp;id=' . $item['msgid'] . '">' .
                     substr($item['path'], strlen($quarantinedir) + 1) .
                     '</a></td>' . "\n";
@@ -623,15 +642,7 @@ if (is_array($quarantined) && (count($quarantined) > 0)) {
             echo ' </tr>' . "\n";
         }
         echo ' <tr class="noprint">' . "\n";
-        if ('A' === $_SESSION['user_type']
-            || (
-                'D' === $_SESSION['user_type']
-                && (
-                    0 === $is_dangerous
-                || ($is_dangerous > 0 && defined('DOMAINADMIN_CAN_RELEASE_DANGEROUS_CONTENTS') && true === DOMAINADMIN_CAN_RELEASE_DANGEROUS_CONTENTS)
-                )
-            )
-        ) {
+        if (MessagePolicy::canChangeRecipient($quarantined)) {
             echo '  <td colspan="6"><input type="checkbox" name="alt_recpt_yn" value="y">&nbsp;' . __('altrecip04') . '&nbsp;<input type="TEXT" name="alt_recpt" size="100"></td>' . "\n";
         } else {
             echo '  <td colspan="6">&nbsp;</td>' . "\n";

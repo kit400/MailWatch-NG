@@ -50,6 +50,7 @@ require_once __DIR__ . '/conf.php';
 require_once __DIR__ . '/database.php';
 require_once __DIR__ . '/filter.inc.php';
 require_once __DIR__ . '/notifications.inc.php';
+require_once __DIR__ . '/MessagePolicy.php';
 
 // more secure session cookies
 ini_set('session.use_cookies', '1');
@@ -3406,7 +3407,11 @@ function db_colorised_table($sql, $table_heading = false, $pager = false, $order
             if (false !== $operations) {
                 $row[0] = str_replace('REPLACEME', $id, $row[0]);
                 $jsRadioCheck .= "  document.operations.elements[\"OPT-$id\"][val].checked = true;\n";
-                $jsReleaseCheck .= "  document.operations.elements[\"OPTRELEASE-$id\"].checked = true;\n";
+                if (($virusinfected || $nameinfected || $otherinfected) && !MessagePolicy::canReleaseDangerousContents()) {
+                    $row[0] = preg_replace('/<label class="ops-cell ops-cell-r">.*?<\/label>/', '<span class="ops-cell ops-cell-r">&nbsp;</span>', $row[0]);
+                } else {
+                    $jsReleaseCheck .= "  document.operations.elements[\"OPTRELEASE-$id\"].checked = true;\n";
+                }
             }
             // Colorise the row
             switch (true) {
@@ -4735,6 +4740,30 @@ function quarantine_release($list, $num, $to, $rpc_only = false, $global_filter 
         }
     }
 
+    // Enforce server-side security policy if running in an authenticated user session
+    if (isset($_SESSION['user_type'])) {
+        $userType = $_SESSION['user_type'];
+
+        // 1. Verify permission to release dangerous content if any selected item is dangerous
+        if (!MessagePolicy::canRelease($list, $userType, $num)) {
+            audit_log(sprintf('Security violation: User %s denied release of dangerous quarantine message %s', $userType, $list[0]['msgid']));
+            global $error;
+            $error = true;
+            return __('releaseerror03') . ' - Unauthorized: Cannot release dangerous contents';
+        }
+
+        // 2. Verify permission to change recipient if $to differs from original recipient
+        $originalTo = isset($list[0]['to']) ? $list[0]['to'] : '';
+        if (trim((string) $to) !== '' && trim((string) $originalTo) !== '' && strtolower(trim((string) $to)) !== strtolower(trim((string) $originalTo))) {
+            if (!MessagePolicy::canChangeRecipient($list, $userType)) {
+                audit_log(sprintf('Security violation: User %s denied alternate recipient %s for message %s', $userType, $to, $list[0]['msgid']));
+                global $error;
+                $error = true;
+                return __('releaseerror03') . ' - Unauthorized: Cannot specify alternate recipient';
+            }
+        }
+    }
+
     if (!$rpc_only && is_local($list[0]['host'])) {
         if (!QUARANTINE_USE_SENDMAIL) {
             // Load in the required PEAR modules
@@ -4869,6 +4898,14 @@ function quarantine_learn($list, $num, $type, $rpc_only = false, $global_filter 
                 break;
             }
         }
+    }
+
+    // Enforce server-side security policy if running in an authenticated user session
+    if (isset($_SESSION['user_type']) && !MessagePolicy::canLearn($list, $_SESSION['user_type'])) {
+        audit_log(sprintf('Security violation: User %s denied sa-learn for message %s', $_SESSION['user_type'], $list[0]['msgid']));
+        global $error;
+        $error = true;
+        return __('salearnerror03') . ' - Unauthorized';
     }
 
     $status = [];
@@ -5038,6 +5075,14 @@ function quarantine_delete($list, $num, $rpc_only = false, $global_filter = null
 
     $new = quarantine_list_items($list[0]['msgid'], false, $global_filter);
     $list = &$new;
+
+    // Enforce server-side security policy if running in an authenticated user session
+    if (isset($_SESSION['user_type']) && !MessagePolicy::canDelete($list, $_SESSION['user_type'])) {
+        audit_log(sprintf('Security violation: User %s denied delete for message %s', $_SESSION['user_type'], $list[0]['msgid']));
+        global $error;
+        $error = true;
+        return 'Unauthorized';
+    }
 
     if (!$rpc_only && is_local($list[0]['host'])) {
         $status = [];

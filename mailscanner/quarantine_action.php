@@ -95,6 +95,18 @@ switch ($_GET['action']) {
             header('Location: login.php?error=pagetimeout');
             exit;
         }
+        if (!MessagePolicy::canRelease($list)) {
+            audit_log(sprintf('Security violation: User %s denied release of dangerous quarantine message %s via quarantine_action', $_SESSION['user_type'], $id));
+            $result = __('releaseerror03') . ' - Unauthorized: Cannot release dangerous contents';
+            if (isset($_GET['html'])) {
+                simple_html_start();
+                simple_html_result($result);
+                simple_html_end();
+                break;
+            }
+            header('HTTP/1.1 403 Forbidden');
+            exit($result);
+        }
         $result = '';
         if (1 === count($list)) {
             $to = $list[0]['to'];
@@ -119,6 +131,11 @@ switch ($_GET['action']) {
         if (false === checkToken($_GET['token'])) {
             header('Location: login.php?error=pagetimeout');
             exit;
+        }
+        if (!MessagePolicy::canDelete($list)) {
+            audit_log(sprintf('Security violation: User %s denied delete of quarantine message %s via quarantine_action', $_SESSION['user_type'], $id));
+            header('HTTP/1.1 403 Forbidden');
+            exit(__('error04') . ' - Unauthorized');
         }
         $status = [];
         if (isset($_GET['html'])) {

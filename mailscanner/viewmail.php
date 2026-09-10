@@ -62,6 +62,12 @@ if (empty($message)) {
     exit(__('mess06') . " '" . $message_id . "' " . __('notfound06') . "\n");
 }
 
+if (!MessagePolicy::canView($message)) {
+    audit_log(sprintf('Security violation: User %s attempted unauthorized view of dangerous message %s', $_SESSION['user_type'], $message_id));
+    header('HTTP/1.1 403 Forbidden');
+    exit(__('error04') . ' - Unauthorized: Cannot view dangerous contents' . "\n");
+}
+
 audit_log(sprintf(__('auditlog06', true), $message_id));
 
 if ($message->token !== deepSanitizeInput($_GET['token'], 'url') && false === checkToken($_GET['token'])) {
@@ -181,16 +187,15 @@ foreach ($header_fields as $field) {
     }
 }
 
-if (
-    ('0' === $message->virusinfected && '0' === $message->nameinfected && '0' === $message->otherinfected)
-    || 'A' === $_SESSION['user_type']
-    || (defined('DOMAINADMIN_CAN_SEE_DANGEROUS_CONTENTS') && true === DOMAINADMIN_CAN_SEE_DANGEROUS_CONTENTS && 'D' === $_SESSION['user_type'])
-) {
-    lazy(
-        __('actions06'),
-        "<a href=\"javascript:void(0)\" onclick=\"do_action('" . $message->id . "','" . $_SESSION['token'] . "','release')\">" . __('releasemsg06') . "</a> | <a href=\"javascript:void(0)\" onclick=\"do_action('" . $message->id . "','" . $_SESSION['token'] . "','delete')\">" . __('deletemsg06') . '</a>',
-        false
-    );
+$actions = [];
+if (MessagePolicy::canRelease($message)) {
+    $actions[] = "<a href=\"javascript:void(0)\" onclick=\"do_action('" . $message->id . "','" . $_SESSION['token'] . "','release')\">" . __('releasemsg06') . "</a>";
+}
+if (MessagePolicy::canDelete($message)) {
+    $actions[] = "<a href=\"javascript:void(0)\" onclick=\"do_action('" . $message->id . "','" . $_SESSION['token'] . "','delete')\">" . __('deletemsg06') . '</a>';
+}
+if (!empty($actions)) {
+    lazy(__('actions06'), implode(' | ', $actions), false);
 }
 
 foreach ($mime_struct as $key => $part) {
@@ -242,11 +247,7 @@ foreach ($mime_struct as $key => $part) {
                 echo htmlspecialchars($filename, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
             }
 
-            if (
-                ('0' === $message->virusinfected && '0' === $message->nameinfected && '0' === $message->otherinfected)
-                || 'A' === $_SESSION['user_type']
-                || (defined('DOMAINADMIN_CAN_SEE_DANGEROUS_CONTENTS') && true === DOMAINADMIN_CAN_SEE_DANGEROUS_CONTENTS && 'D' === $_SESSION['user_type'])
-            ) {
+            if (MessagePolicy::canView($message)) {
                 echo ' <a href="viewpart.php?token=' . $_SESSION['token'] . '&amp;id=' . $message_id . '&amp;part=' . $part->mime_id . '">Download</a>';
             }
 

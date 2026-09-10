@@ -105,25 +105,35 @@ if (isset($_POST) && !empty($_POST)) {
                 if ('release' === $type) {
                     $quarantined = quarantine_list_items($id, RPC_ONLY, $_SESSION['global_filter']);
                     if (is_array($quarantined)) {
-                        $to = $quarantined[0]['to'];
-                        echo quarantine_release(
-                            $quarantined,
-                            $itemnum,
-                            $to,
-                            RPC_ONLY,
-                            $_SESSION['global_filter']
-                        );
+                        if (!MessagePolicy::canRelease($quarantined)) {
+                            audit_log(sprintf('Security violation: User %s denied bulk release of dangerous quarantine message %s', $_SESSION['user_type'], $id));
+                            echo '<span class="error">' . __('releaseerror03') . ' - Unauthorized: Cannot release dangerous contents</span>';
+                        } else {
+                            $to = $quarantined[0]['to'];
+                            echo quarantine_release(
+                                $quarantined,
+                                $itemnum,
+                                $to,
+                                RPC_ONLY,
+                                $_SESSION['global_filter']
+                            );
+                        }
                     } else {
                         echo $quarantined;
                     }
                 } else {
-                    echo quarantine_learn(
-                        $items,
-                        $itemnum,
-                        $type,
-                        RPC_ONLY,
-                        $_SESSION['global_filter']
-                    );
+                    if (!MessagePolicy::canLearn($items)) {
+                        audit_log(sprintf('Security violation: User %s denied bulk sa-learn on message %s', $_SESSION['user_type'], $id));
+                        echo '<span class="error">' . __('salearnerror03') . ' - Unauthorized</span>';
+                    } else {
+                        echo quarantine_learn(
+                            $items,
+                            $itemnum,
+                            $type,
+                            RPC_ONLY,
+                            $_SESSION['global_filter']
+                        );
+                    }
                 }
                 echo '</td>' . "\n";
             }

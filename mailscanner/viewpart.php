@@ -51,7 +51,7 @@ if (!validateInput($message_id, 'msgid')) {
 // See if message is local
 dbconn(); // required db link for mysql_real_escape_string
 $result = dbquery(
-    "SELECT hostname, DATE_FORMAT(date,'%Y%m%d') AS date FROM maillog WHERE id='" .
+    "SELECT hostname, DATE_FORMAT(date,'%Y%m%d') AS date, virusinfected, nameinfected, otherinfected FROM maillog WHERE id='" .
     $message_id . "' AND "
     . $_SESSION['global_filter']
 );
@@ -59,6 +59,12 @@ $message_data = $result->fetch_object();
 
 if (!$message_data) {
     exit(__('mess58') . " '" . $message_id . "' " . __('notfound58') . "\n");
+}
+
+if (!MessagePolicy::canView($message_data)) {
+    audit_log(sprintf('Security violation: User %s attempted unauthorized view of dangerous message part %s', $_SESSION['user_type'], $message_id));
+    header('HTTP/1.1 403 Forbidden');
+    exit(__('error58') . ' - Unauthorized: Cannot view dangerous contents' . "\n");
 }
 
 if (RPC_ONLY || !is_local($message_data->hostname)) {
