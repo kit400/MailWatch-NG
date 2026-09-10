@@ -51,6 +51,7 @@ require_once __DIR__ . '/database.php';
 require_once __DIR__ . '/filter.inc.php';
 require_once __DIR__ . '/notifications.inc.php';
 require_once __DIR__ . '/MessagePolicy.php';
+require_once __DIR__ . '/SessionGuard.php';
 
 // more secure session cookies
 ini_set('session.use_cookies', '1');
@@ -386,20 +387,9 @@ function html_start($title, $refresh = 0, $cacheable = true, $report = false)
         }
     }
 
-    // Check for a privilege change
-    if (true === checkPrivilegeChange($_SESSION['myusername'])) {
-        header('Location: logout.php?error=timeout');
-        exit;
-    }
-
-    if (true === checkLoginExpiry($_SESSION['myusername'])) {
-        header('Location: logout.php?error=timeout');
-        exit;
-    } else {
-        if (0 === $refresh) {
-            // User is moving about on non-refreshing pages, keep session alive
-            updateLoginExpiry($_SESSION['myusername']);
-        }
+    // Enforce session expiration, revocation, and role consistency (keep alive on non-refreshing pages)
+    if (PHP_SAPI !== 'cli' || isset($_SESSION['myusername'])) {
+        SessionGuard::enforce(0 === $refresh);
     }
 
     if (DEBUG) {
@@ -5997,7 +5987,7 @@ function validateInput($input, $type)
             }
             break;
         case 'loginerror':
-            if (preg_match('/^(baduser|emptypassword|timeout|pagetimeout|banned|badcaptcha)$/', $input)) {
+            if (preg_match('/^(baduser|emptypassword|timeout|pagetimeout|banned|badcaptcha|privilege_changed)$/', $input)) {
                 return true;
             }
             break;
@@ -6107,37 +6097,13 @@ function checkLangCode($langCode)
  */
 function updateLoginExpiry($myusername)
 {
-    $sql = "SELECT login_timeout from users where username='" . safe_value(stripslashes($myusername)) . "'";
-    $result = dbquery($sql);
-
-    if (0 === $result->num_rows) {
-        // Something went wrong, or user no longer exists
+    SessionGuard::resetCache();
+    $user = SessionGuard::getUserRecord($myusername);
+    if (!$user) {
         return false;
     }
-
-    $login_timeout = database::mysqli_result($result, 0, 'login_timeout');
-
-    // Use global if individual value is disabled (-1)
-    if ('-1' === $login_timeout) {
-        if (defined('SESSION_TIMEOUT')) {
-            if (SESSION_TIMEOUT > 0) {
-                $expiry_val = (time() + SESSION_TIMEOUT);
-            } else {
-                $expiry_val = 0;
-            }
-        } else {
-            $expiry_val = (time() + 600);
-        }
-        // If set, use the individual timeout
-    } elseif ('0' === $login_timeout) {
-        $expiry_val = 0;
-    } else {
-        $expiry_val = (time() + (int)$login_timeout);
-    }
-    $sql = "UPDATE users SET login_expiry='" . $expiry_val . "', last_login='" . time() . "' WHERE username='" . safe_value(stripslashes($myusername)) . "'";
-    $result = dbquery($sql);
-
-    return $result;
+    SessionGuard::updateExpiry($myusername, $user);
+    return true;
 }
 
 /**
@@ -6150,22 +6116,20 @@ function updateLoginExpiry($myusername)
  */
 function checkLoginExpiry($myusername)
 {
-    $sql = "SELECT login_expiry FROM users WHERE username='" . safe_value(stripslashes($myusername)) . "'";
-    $result = dbquery($sql);
-
-    if (0 === $result->num_rows) {
-        // Something went wrong, or user no longer exists
+    $user = SessionGuard::getUserRecord($myusername);
+    if (!$user) {
+        // User no longer exists
         return true;
     }
 
-    $login_expiry = database::mysqli_result($result, 0, 'login_expiry');
+    $login_expiry = $user['login_expiry'] ?? null;
 
-    if ('-1' === $login_expiry) {
+    if ('-1' === (string)$login_expiry) {
         // User administratively logged out
         return true;
     }
 
-    if ('0' === $login_expiry) {
+    if ('0' === (string)$login_expiry) {
         // Login never expires, so just return false
         return false;
     }
@@ -6188,17 +6152,15 @@ function checkLoginExpiry($myusername)
  */
 function checkPrivilegeChange($myusername)
 {
-    $sql = "SELECT type FROM users WHERE username='" . safe_value(stripslashes($myusername)) . "'";
-    $result = dbquery($sql);
-
-    if (0 === $result->num_rows) {
+    $user = SessionGuard::getUserRecord($myusername);
+    if (!$user) {
         // Something went wrong, or user does not exist
         return true;
     }
 
-    $user_type = database::mysqli_result($result, 0, 'type');
+    $user_type = $user['type'] ?? '';
 
-    if ($_SESSION['user_type'] !== $user_type) {
+    if (isset($_SESSION['user_type']) && $_SESSION['user_type'] !== $user_type) {
         // Privilege change detected
         return true;
     }

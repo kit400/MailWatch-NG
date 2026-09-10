@@ -25,6 +25,9 @@
  * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/SessionGuard.php';
+
 if (isset($_SERVER['PHP_AUTH_USER']) && !isset($_SESSION['myusername'])) {
     include __DIR__ . '/checklogin.php';
 } elseif (!isset($_SERVER['PHP_AUTH_USER']) && !isset($_SESSION['myusername']) && isset($_GET['httpbasic'])) {
@@ -36,6 +39,15 @@ if (isset($_SERVER['PHP_AUTH_USER']) && !isset($_SESSION['myusername'])) {
     if (isset($_SERVER['REQUEST_URI'])) {
         $_SESSION['REQUEST_URI'] = $_SERVER['REQUEST_URI'];
     }
+    if (SessionGuard::isApiOrAjaxRequest()) {
+        header('HTTP/1.1 401 Unauthorized');
+        header('Content-Type: application/json; charset=UTF-8');
+        echo json_encode(['success' => false, 'error' => 'unauthenticated', 'message' => 'Authentication required']);
+        exit;
+    }
     header('Location: login.php');
     exit;
 }
+
+// Enforce session expiration, revocation, and role consistency before any output or processing
+SessionGuard::enforce();

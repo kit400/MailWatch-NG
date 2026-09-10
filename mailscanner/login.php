@@ -134,6 +134,9 @@ if (file_exists(__DIR__ . '/conf.php')) {
             case 'badcaptcha':
                 $error = __('badcaptcha01');
                 break;
+            case 'privilege_changed':
+                $error = __('privilege_changed01', false) ?: 'Your permissions have changed. Please log in again.';
+                break;
         }
         echo '
                 <p class="loginerror">' . $error . '</p>';

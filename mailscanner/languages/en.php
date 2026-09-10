@@ -45,6 +45,7 @@ return [
     'login01' => 'Login',
     'forgottenpwd01' => 'Forgotten Password?',
     'sessiontimeout01' => 'Your session timed out.',
+    'privilege_changed01' => 'Your permissions have changed. Please log in again.',
     'pagetimeout01' => 'Login page timed out <br>Please try again',
     'pagetimeoutreload01' => 'Page timed out<br>Please reload the page',
 

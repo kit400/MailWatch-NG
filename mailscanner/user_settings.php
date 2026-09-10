@@ -10,11 +10,7 @@
 require_once __DIR__ . '/functions.php';
 require_once __DIR__ . '/lib/password.php';
 
-// Authentication check
-if (!isset($_SESSION['myusername'])) {
-    header('Location: login.php');
-    exit;
-}
+require __DIR__ . '/login.function.php';
 
 $username = $_SESSION['myusername'];
 $userType = $_SESSION['user_type'] ?? 'U';
