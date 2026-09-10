@@ -199,14 +199,14 @@ foreach ($mime_struct as $key => $part) {
     $type .= isset($part->ctype_secondary) ? $part->ctype_secondary : 'undefined';
 
     echo ' <tr>' . "\n";
-    echo '  <td colspan=2 class="heading">' . __('mymetype06') . ' ' . $type . '</td>' . "\n";
+    echo '  <td colspan=2 class="heading">' . __('mymetype06') . ' ' . htmlspecialchars($type, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</td>' . "\n";
 
     switch ($type) {
         case 'text/plain':
         case 'text/html':
             echo ' <tr>' . "\n";
             echo '  <td colspan="2">' . "\n";
-            echo '   <iframe frameborder=0 width="100%" height=300 src="viewpart.php?token=' . $_SESSION['token'] . '&amp;id=' . $message_id . '&amp;part=' . $part->mime_id . '"></iframe>' . "\n";
+            echo '   <iframe sandbox="allow-same-origin allow-popups" frameborder=0 width="100%" height=300 src="viewpart.php?token=' . $_SESSION['token'] . '&amp;id=' . $message_id . '&amp;part=' . $part->mime_id . '"></iframe>' . "\n";
             echo '  </td>' . "\n";
             echo ' </tr>' . "\n";
             break;
@@ -220,7 +220,7 @@ foreach ($mime_struct as $key => $part) {
 
             if (property_exists($part, 'd_parameters')) {
                 if (isset($part->d_parameters['filename'])) {
-                    echo $part->d_parameters['filename'];
+                    echo htmlspecialchars($part->d_parameters['filename'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
                 } else {
                     echo __('nonameattachment06');
                 }
@@ -239,7 +239,7 @@ foreach ($mime_struct as $key => $part) {
                     }
                     $filename .= '.bin';
                 }
-                echo $filename;
+                echo htmlspecialchars($filename, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
             }
 
             if (

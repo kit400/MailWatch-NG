@@ -318,10 +318,13 @@ define('LISTS', true);
 // Force SSL connections only?
 define('SSL_ONLY', false);
 
-// Strip HTML from messages in the quarantine when viewed?
-// This is probably a good idea.
+// Strip/purify HTML from messages in the quarantine when viewed?
+// Uses HTMLPurifier allowlist to neutralize JavaScript, event handlers, and active content.
+// When true, restricts HTML elements to ALLOWED_TAGS (or plain text if empty).
+// When false, allows standard safe HTML elements while still filtering scripts and XSS vectors.
 define('STRIP_HTML', true);
-// List of allowed tags - set as blank to strip everything.
+// List of allowed tags when STRIP_HTML is true - set as blank to strip everything to plain text.
+// Dangerous tags (script, object, embed, iframe, form, svg, etc.) are always stripped.
 define('ALLOWED_TAGS', '<a><br><b><body><div><font><h1><h2><h3><h4><head><html><i><li><ol><p><small><span><strong><table><title><tr><td><th><u><ul>');
 
 // Enable MailScanner Rule Editor

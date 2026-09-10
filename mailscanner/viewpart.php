@@ -32,6 +32,9 @@ require __DIR__ . '/login.function.php';
 
 ini_set('memory_limit', (string) MEMORY_LIMIT);
 
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: SAMEORIGIN');
+
 if (!isset($_GET['id'])) {
     exit(__('nomessid58'));
 }
@@ -128,6 +131,8 @@ function decode_structure($structure)
     $type = $structure->ctype_primary . '/' . $structure->ctype_secondary;
     switch ($type) {
         case 'text/plain':
+            header('Content-Type: text/html; charset=UTF-8');
+            header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline';");
             /*
             if (isset ($structure->ctype_parameters['charset']) &&
                 strtolower($structure->ctype_parameters['charset']) == 'utf-8'
@@ -152,11 +157,13 @@ function decode_structure($structure)
  <title>' . __('title58') . '</title>
  </head>
  <body>
- <pre>' . htmlspecialchars(wordwrap($structure->body)) . '</pre>
+ <pre>' . htmlspecialchars(wordwrap($structure->body), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</pre>
  </body>
  </html>' . "\n";
             break;
         case 'text/html':
+            header('Content-Type: text/html; charset=UTF-8');
+            header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src http: https: data: cid:; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none';");
             echo '<!DOCTYPE html>' . "\n";
             if (isset($structure->ctype_parameters['charset'])) {
                 $charset = strtoupper($structure->ctype_parameters['charset']);
@@ -168,18 +175,16 @@ function decode_structure($structure)
                     $structure->body = getUTF8String($structure->body);
                 }
             }
-            if (STRIP_HTML) {
-                $structure->body = str_replace('<!DOCTYPE', '<DOCTYPE', $structure->body);
-                echo strip_tags($structure->body, ALLOWED_TAGS);
-            } else {
-                echo $structure->body;
-            }
+            $stripHtml = defined('STRIP_HTML') ? (bool) STRIP_HTML : true;
+            $allowedTags = defined('ALLOWED_TAGS') ? ALLOWED_TAGS : null;
+            echo sanitizeEmailHtml($structure->body, $stripHtml, $allowedTags);
             break;
         case 'multipart/alternative':
             break;
         case 'message/partial':
             // @link https://tools.ietf.org/html/rfc2046#section-5.2.2
             header('Content-Type: application/octet-stream');
+            header("Content-Security-Policy: default-src 'none'; sandbox;");
             // get message id
             preg_match('/.*id="?([^";]*)"?.*/', $structure->headers['content-type'], $identifier);
             // get part number
@@ -196,18 +201,42 @@ function decode_structure($structure)
                 $filename .= ' of ' . $totalParts[1];
             }
             $filename .= '.bin';
+            $filename = sanitizeAttachmentFilename($filename);
 
-            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            header('Content-Disposition: attachment; filename="' . $filename . '"; filename*=UTF-8\'\'' . rawurlencode($filename));
             echo $structure->body;
             break;
         default:
-            header('Content-Type: ' . $structure->headers['content-type']);
-            // in case of missing Content-Disposition use a standard one
-            if (isset($structure->headers['content-disposition'])) {
-                header('Content-Disposition: ' . $structure->headers['content-disposition']);
-            } else {
-                header('Content-Disposition: attachment; filename="attachment.bin"');
+            $filename = 'attachment.bin';
+            if (isset($structure->d_parameters['filename'])) {
+                $filename = $structure->d_parameters['filename'];
+            } elseif (isset($structure->ctype_parameters['name'])) {
+                $filename = $structure->ctype_parameters['name'];
+            } elseif (isset($structure->headers['content-disposition'])) {
+                if (preg_match('/filename\*?=(?:UTF-8\'\')?["\']?([^";\r\n]+)["\']?/i', $structure->headers['content-disposition'], $fnMatch)) {
+                    $filename = $fnMatch[1];
+                }
             }
+            $safeFilename = sanitizeAttachmentFilename($filename);
+
+            // Determine content type safely
+            $contentType = 'application/octet-stream';
+            if (isset($structure->headers['content-type'])) {
+                $ctParts = explode(';', $structure->headers['content-type'], 2);
+                $contentType = trim($ctParts[0]);
+            }
+
+            // Dangerous or active MIME types that should never be rendered inline in browser
+            $dangerousMimeTypes = [
+                'text/html', 'text/javascript', 'application/javascript', 'application/x-javascript',
+                'image/svg+xml', 'text/xml', 'application/xml', 'application/xhtml+xml',
+                'application/pdf', 'text/x-php', 'application/x-httpd-php'
+            ];
+
+            // Always force Content-Disposition: attachment for downloaded parts to prevent browser execution
+            header('Content-Type: ' . (in_array(strtolower($contentType), $dangerousMimeTypes, true) ? 'application/octet-stream' : $contentType));
+            header('Content-Disposition: attachment; filename="' . $safeFilename . '"; filename*=UTF-8\'\'' . rawurlencode($safeFilename));
+            header("Content-Security-Policy: default-src 'none'; sandbox;");
             echo $structure->body;
             break;
     }

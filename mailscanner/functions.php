@@ -1807,14 +1807,132 @@ function dbquerydebug($link, $sql)
  */
 function sanitizeInput($string)
 {
+    if ($string === '' || $string === null) {
+        return '';
+    }
+
     $config = HTMLPurifier_Config::createDefault();
-    $cachePath = rtrim(sys_get_temp_dir(), '/') . '/MailWatch';
-    if (is_dir($cachePath) || mkdir($cachePath)) {
+    $cachePath = rtrim(sys_get_temp_dir(), '/') . '/MailWatch_HTMLPurifier';
+    if (is_dir($cachePath) || @mkdir($cachePath, 0770, true)) {
         $config->set('Cache.SerializerPath', $cachePath);
+    } else {
+        $config->set('Cache.DefinitionImpl', null);
     }
     $purifier = new HTMLPurifier($config);
 
     return $purifier->purify($string);
+}
+
+/**
+ * Sanitize email HTML content using HTMLPurifier allowlist.
+ * Removes all scripts, event handlers, javascript: URIs, active SVG, and other XSS vectors
+ * while preserving safe formatting and layout.
+ *
+ * @param string $html Raw HTML content from email body
+ * @param bool $stripHtml When true, restricts elements to $allowedTags allowlist; when false, permits standard safe HTML
+ * @param string|null $allowedTags Tag string (e.g. <a><b><div>...) or null to use ALLOWED_TAGS constant
+ * @return string Sanitized HTML
+ */
+function sanitizeEmailHtml($html, $stripHtml = true, $allowedTags = null)
+{
+    if ($html === '' || $html === null) {
+        return '';
+    }
+
+    if ($allowedTags === null) {
+        $allowedTags = defined('ALLOWED_TAGS') ? ALLOWED_TAGS : '';
+    }
+
+    // If STRIP_HTML is enabled and ALLOWED_TAGS is completely empty, strip all HTML tags to plain text
+    if ($stripHtml && trim($allowedTags) === '') {
+        return nl2br(htmlspecialchars(strip_tags($html), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
+    }
+
+    $config = HTMLPurifier_Config::createDefault();
+    $cachePath = rtrim(sys_get_temp_dir(), '/') . '/MailWatch_HTMLPurifier';
+    if (is_dir($cachePath) || @mkdir($cachePath, 0770, true)) {
+        $config->set('Cache.SerializerPath', $cachePath);
+    } else {
+        $config->set('Cache.DefinitionImpl', null);
+    }
+
+    $config->set('Core.Encoding', 'UTF-8');
+    $config->set('HTML.Doctype', 'XHTML 1.0 Transitional');
+    $config->set('HTML.TargetBlank', true);
+    $config->set('HTML.Nofollow', true);
+    $config->set('Attr.AllowedFrameTargets', ['_blank']);
+    $config->set('HTML.Trusted', false);
+
+    // Block external resources if configured
+    if (defined('BLOCK_EXTERNAL_RESOURCES') && BLOCK_EXTERNAL_RESOURCES === true) {
+        $config->set('URI.DisableExternalResources', true);
+    }
+
+    $allowedSchemes = ['http' => true, 'https' => true, 'mailto' => true, 'ftp' => true, 'data' => true];
+    if (class_exists('HTMLPurifier_URISchemeRegistry')) {
+        if (!class_exists('HTMLPurifier_URIScheme_cid', false)) {
+            class HTMLPurifier_URIScheme_cid extends HTMLPurifier_URIScheme
+            {
+                public $browsable = true;
+                public $may_omit_host = true;
+
+                public function doValidate(&$uri, $config, $context)
+                {
+                    $uri->userinfo = null;
+                    $uri->host = null;
+                    $uri->port = null;
+                    return true;
+                }
+            }
+        }
+        HTMLPurifier_URISchemeRegistry::instance()->register('cid', new HTMLPurifier_URIScheme_cid());
+        $allowedSchemes['cid'] = true;
+    }
+    $config->set('URI.AllowedSchemes', $allowedSchemes);
+
+    // Dangerous tags that must never be permitted regardless of custom allowlist
+    $dangerousTags = [
+        'script', 'iframe', 'frame', 'frameset', 'object', 'embed', 'applet',
+        'form', 'input', 'button', 'select', 'textarea', 'svg', 'meta', 'link',
+        'base', 'canvas', 'math', 'style'
+    ];
+
+    if ($stripHtml) {
+        preg_match_all('/<([a-z0-9]+)[\s>]/i', $allowedTags, $matches);
+        $userTags = array_unique(array_map('strtolower', $matches[1] ?? []));
+        $safeTags = array_values(array_diff($userTags, array_merge(['html', 'head', 'body', 'title'], $dangerousTags)));
+
+        if (empty($safeTags)) {
+            return nl2br(htmlspecialchars(strip_tags($html), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
+        }
+
+        $config->set('HTML.AllowedElements', $safeTags);
+    }
+
+    $purifier = new HTMLPurifier($config);
+    return $purifier->purify($html);
+}
+
+/**
+ * Sanitize attachment filename for Content-Disposition header.
+ * Strips path traversal, CRLF, control characters, quotes, and dangerous characters.
+ *
+ * @param string $filename
+ * @return string Safe filename
+ */
+function sanitizeAttachmentFilename($filename)
+{
+    // Remove CRLF and null bytes to prevent HTTP response splitting
+    $filename = str_replace(["\0", "\r", "\n"], '', (string) $filename);
+    // Normalize slashes and get basename to prevent path traversal
+    $filename = basename(str_replace('\\', '/', $filename));
+    // Replace characters that could break HTTP header parsing (control chars, quotes, semicolons, backslashes)
+    $filename = preg_replace('/[\x00-\x1F\x7F";\\\\]/', '_', $filename);
+    $filename = trim($filename, " .");
+    if ($filename === '') {
+        $filename = 'attachment.bin';
+    }
+    return $filename;
 }
 
 /**
