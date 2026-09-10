@@ -1945,16 +1945,69 @@ function quote_smart($value)
 }
 
 /**
+ * @param mixed $value
  * @return string
  */
 function safe_value($value)
 {
-    $link = dbconn();
+    if (!is_string($value)) {
+        $value = (string)$value;
+    }
     if (function_exists('get_magic_quotes_gpc') && get_magic_quotes_gpc()) {
         $value = stripslashes($value);
     }
 
-    return $link->real_escape_string($value);
+    if (class_exists('database', false) && database::$link instanceof mysqli) {
+        return database::$link->real_escape_string($value);
+    }
+
+    if (PHP_SAPI !== 'cli') {
+        try {
+            $link = dbconn();
+            if ($link instanceof mysqli) {
+                return $link->real_escape_string($value);
+            }
+        } catch (\Throwable $e) {
+            // Fallback
+        }
+    }
+
+    return addslashes($value);
+}
+
+/**
+ * Escapes characters with special meaning in a SQL LIKE pattern (% and _)
+ * using a designated escape character (default '=').
+ * The escape character itself is doubled so it is treated literally.
+ *
+ * @param string $value The string to escape
+ * @param string $escapeChar The escape character (default '=')
+ * @return string The LIKE-escaped string
+ */
+function escape_like_pattern($value, $escapeChar = '=')
+{
+    if (!is_string($value) || $value === '') {
+        return (string)$value;
+    }
+
+    return str_replace(
+        [$escapeChar, '%', '_'],
+        [$escapeChar . $escapeChar, $escapeChar . '%', $escapeChar . '_'],
+        $value
+    );
+}
+
+/**
+ * Escapes a value for use in a SQL LIKE pattern string literal with an ESCAPE clause.
+ * Applies LIKE pattern escaping first, then database string literal escaping (safe_value).
+ *
+ * @param string $value
+ * @param string $escapeChar
+ * @return string
+ */
+function safe_like_value($value, $escapeChar = '=')
+{
+    return safe_value(escape_like_pattern($value, $escapeChar));
 }
 
 /**
@@ -3778,8 +3831,13 @@ function get_mail_relays($message_headers)
 }
 
 /**
- * @param array  $addresses
- * @param string $type
+ * Constructs SQL WHERE filter fragment for email access based on user role and address list.
+ *
+ * Properly escapes SQL special characters and LIKE wildcards (_ and %) using ESCAPE '='
+ * to prevent unauthorized wildcard expansion into other users' emails (MW-03 fix).
+ *
+ * @param array|string $addresses
+ * @param string       $type
  *
  * @return string
  */
@@ -3787,44 +3845,88 @@ function address_filter_sql($addresses, $type)
 {
     $sqladdr = '';
     $sqladdr_arr = [];
+
+    if (!is_array($addresses)) {
+        $addresses = [$addresses];
+    }
+
     switch ($type) {
         case 'A': // Administrator - show everything
             $sqladdr = '1=1';
             break;
+
         case 'U': // User - show only specific addresses
             foreach ($addresses as $address) {
-                if (defined('FILTER_TO_ONLY') && FILTER_TO_ONLY) {
-                    $sqladdr_arr[] = "to_address = '$address' OR to_address like '$address,%' OR to_address like '%,$address' OR to_address like '%,$address,%'";
-                } else {
-                    $sqladdr_arr[] = "to_address = '$address' OR to_address like '$address,%' OR to_address like '%,$address' OR to_address like '%,$address,%' OR from_address = '$address'";
+                $address = trim((string)$address);
+                if ($address === '') {
+                    continue;
                 }
+                $safe_addr = safe_value($address);
+                $like_addr = safe_like_value($address, '=');
+                $conds = [
+                    "to_address = '$safe_addr'",
+                    "to_address LIKE '$like_addr,%' ESCAPE '='",
+                    "to_address LIKE '%,$like_addr' ESCAPE '='",
+                    "to_address LIKE '%,$like_addr,%' ESCAPE '='",
+                    "to_address LIKE '%, $like_addr' ESCAPE '='",
+                    "to_address LIKE '%, $like_addr,%' ESCAPE '='"
+                ];
+                if (!defined('FILTER_TO_ONLY') || !FILTER_TO_ONLY) {
+                    $conds[] = "from_address = '$safe_addr'";
+                }
+                $sqladdr_arr[] = '(' . implode(' OR ', $conds) . ')';
             }
-            $sqladdr = implode(' OR ', $sqladdr_arr);
+            $sqladdr = !empty($sqladdr_arr) ? implode(' OR ', $sqladdr_arr) : '1=0';
             break;
+
         case 'D': // Domain administrator
             foreach ($addresses as $address) {
-                if (strpos($address, '@')) {
-                    if (defined('FILTER_TO_ONLY') && FILTER_TO_ONLY) {
-                        $sqladdr_arr[] = "to_address = '$address' OR to_address like '$address,%' OR to_address like '%,$address' OR to_address like '%,$address,%'";
-                    } else {
-                        $sqladdr_arr[] = "to_address = '$address' OR to_address like '$address,%' OR to_address like '%,$address' OR to_address like '%,$address,%' OR from_address = '$address'";
+                $address = trim((string)$address);
+                if ($address === '') {
+                    continue;
+                }
+                if (strpos($address, '@') !== false) {
+                    $safe_addr = safe_value($address);
+                    $like_addr = safe_like_value($address, '=');
+                    $conds = [
+                        "to_address = '$safe_addr'",
+                        "to_address LIKE '$like_addr,%' ESCAPE '='",
+                        "to_address LIKE '%,$like_addr' ESCAPE '='",
+                        "to_address LIKE '%,$like_addr,%' ESCAPE '='",
+                        "to_address LIKE '%, $like_addr' ESCAPE '='",
+                        "to_address LIKE '%, $like_addr,%' ESCAPE '='"
+                    ];
+                    if (!defined('FILTER_TO_ONLY') || !FILTER_TO_ONLY) {
+                        $conds[] = "from_address = '$safe_addr'";
                     }
+                    $sqladdr_arr[] = '(' . implode(' OR ', $conds) . ')';
                 } else {
+                    $safe_domain = safe_value($address);
                     if (defined('FILTER_TO_ONLY') && FILTER_TO_ONLY) {
-                        $sqladdr_arr[] = "to_domain='$address'";
+                        $sqladdr_arr[] = "(to_domain='$safe_domain')";
                     } else {
-                        $sqladdr_arr[] = "to_domain='$address' OR from_domain='$address'";
+                        $sqladdr_arr[] = "(to_domain='$safe_domain' OR from_domain='$safe_domain')";
                     }
                 }
             }
             // Join together to form a suitable SQL WHERE clause
-            $sqladdr = implode(' OR ', $sqladdr_arr);
+            $sqladdr = !empty($sqladdr_arr) ? implode(' OR ', $sqladdr_arr) : '1=0';
             break;
+
         case 'H': // Host
             foreach ($addresses as $hostname) {
-                $sqladdr_arr[] = "hostname='$hostname'";
+                $hostname = trim((string)$hostname);
+                if ($hostname === '') {
+                    continue;
+                }
+                $safe_host = safe_value($hostname);
+                $sqladdr_arr[] = "(hostname='$safe_host')";
             }
-            $sqladdr = implode(' OR ', $sqladdr_arr);
+            $sqladdr = !empty($sqladdr_arr) ? implode(' OR ', $sqladdr_arr) : '1=0';
+            break;
+
+        default:
+            $sqladdr = '1=0';
             break;
     }
 

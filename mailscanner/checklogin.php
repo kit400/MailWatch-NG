@@ -190,29 +190,29 @@ switch ($usertype) {
     case 'D':
         if (strpos($myusername, '@')) {
             $ar = explode('@', $myusername);
-            $domainname = $ar[1];
+            $domainname = safe_value($ar[1]);
             if (defined('FILTER_TO_ONLY') && FILTER_TO_ONLY) {
                 $global_filter .= " OR to_domain='$domainname'";
             } else {
-                $global_filter .= " OR to_domain='$domainname' OR from_domain='$domainname'";
+                $global_filter .= " OR (to_domain='$domainname' OR from_domain='$domainname')";
             }
             $global_list = "to_domain='$domainname'";
             foreach ($filter as $to_domain) {
                 if ($to_domain !== $myusername) {
-                    $global_list .= " OR to_domain='$to_domain'";
+                    $global_list .= " OR to_domain='" . safe_value($to_domain) . "'";
                 }
             }
         } else {
-            $global_list = "to_address='$myusername'";
+            $global_list = "to_address='" . safe_value($myusername) . "'";
             foreach ($filter as $to_address) {
-                $global_list .= " OR to_address='$to_address'";
+                $global_list .= " OR to_address='" . safe_value($to_address) . "'";
             }
         }
         break;
     case 'U':
-        $global_list = "to_address='$myusername'";
+        $global_list = "to_address='" . safe_value($myusername) . "'";
         foreach ($filter as $to_address) {
-            $global_list .= " OR to_address='$to_address'";
+            $global_list .= " OR to_address='" . safe_value($to_address) . "'";
         }
         break;
 }

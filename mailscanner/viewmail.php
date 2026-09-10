@@ -54,7 +54,8 @@ if (isset($_GET['amp;id'])) {
 if (!validateInput($message_id, 'msgid')) {
     exit;
 }
-$sql = "SELECT * FROM maillog WHERE id='" . $message_id . "' AND " . $_SESSION['global_filter'];
+$globalFilter = !empty($_SESSION['global_filter']) ? $_SESSION['global_filter'] : '(1=0)';
+$sql = "SELECT * FROM maillog WHERE id='" . $message_id . "' AND " . $globalFilter;
 $result = dbquery($sql);
 $message = $result->fetch_object();
 // See if message is local

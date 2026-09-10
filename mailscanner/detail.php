@@ -67,6 +67,7 @@ $no = '<span class="no">&nbsp;' . __('no04') . '&nbsp;</span>';
 $mta = get_conf_var('mta');
 
 // The sql command to pull the data
+$globalFilter = !empty($_SESSION['global_filter']) ? $_SESSION['global_filter'] : '(1=0)';
 $sql = "
  SELECT
   DATE_FORMAT(timestamp, '" . DATE_FORMAT . ' ' . TIME_FORMAT . "') AS '" . __('receivedon04') . "',
@@ -115,7 +116,7 @@ $sql = "
  FROM
   maillog
  WHERE
-  " . $_SESSION['global_filter'] . "
+  " . $globalFilter . "
  AND
   id = '" . $url_id . "'
 ";

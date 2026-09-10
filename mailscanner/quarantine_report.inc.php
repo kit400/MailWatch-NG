@@ -483,7 +483,7 @@ ORDER BY a.date DESC, a.time DESC';
         if ('' != $to_address || '' != $to_domain) {
             // Qualify to email addresses only search among multiple recipients
             if (preg_match('/\S+@\S+/', $to_address)) {
-                $result = dbquery(sprintf(self::get_report_sql(), quote_smart('(^|,)' . $to_address . '(,|$)'), quote_smart($to_domain)));
+                $result = dbquery(sprintf(self::get_report_sql(), quote_smart('(^|,)' . preg_quote($to_address, '/') . '(,|$)'), quote_smart($to_domain)));
             } else {
                 $result = dbquery(sprintf(self::get_report_sql(), quote_smart($to_address), quote_smart($to_domain)));
             }

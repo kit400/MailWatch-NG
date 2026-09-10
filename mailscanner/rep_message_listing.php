@@ -112,12 +112,14 @@ if (isset($_GET['relay'])) {
 
 if (isset($_GET['from']) && !empty(trim($_GET['from']))) {
     $clean_from = safe_value(trim($_GET['from']));
-    $custom_filters[] = "(from_address = '$clean_from' OR from_address LIKE '%$clean_from%')";
+    $like_from = safe_like_value(trim($_GET['from']), '=');
+    $custom_filters[] = "(from_address = '$clean_from' OR from_address LIKE '%$like_from%' ESCAPE '=')";
 }
 
 if (isset($_GET['to']) && !empty(trim($_GET['to']))) {
     $clean_to = safe_value(trim($_GET['to']));
-    $custom_filters[] = "(to_address = '$clean_to' OR to_address LIKE '%$clean_to%')";
+    $like_to = safe_like_value(trim($_GET['to']), '=');
+    $custom_filters[] = "(to_address = '$clean_to' OR to_address LIKE '%$like_to%' ESCAPE '=')";
 }
 
 if (isset($_GET['from_domain']) && !empty(trim($_GET['from_domain']))) {

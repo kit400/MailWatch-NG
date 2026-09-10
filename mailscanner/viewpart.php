@@ -50,10 +50,11 @@ if (!validateInput($message_id, 'msgid')) {
 }
 // See if message is local
 dbconn(); // required db link for mysql_real_escape_string
+$globalFilter = !empty($_SESSION['global_filter']) ? $_SESSION['global_filter'] : '(1=0)';
 $result = dbquery(
     "SELECT hostname, DATE_FORMAT(date,'%Y%m%d') AS date, virusinfected, nameinfected, otherinfected FROM maillog WHERE id='" .
     $message_id . "' AND "
-    . $_SESSION['global_filter']
+    . $globalFilter
 );
 $message_data = $result->fetch_object();
 
