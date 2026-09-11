@@ -1744,10 +1744,13 @@ function dbclose()
 }
 
 /**
+ * Execute a query for reading data (SELECT, SHOW, DESCRIBE, EXPLAIN)
+ * and return the result set.
+ *
  * @param string $sql
  * @param bool   $printError
  *
- * @return mysqli_result
+ * @return mysqli_result|bool
  */
 function dbquery($sql, $printError = true)
 {
@@ -1755,17 +1758,93 @@ function dbquery($sql, $printError = true)
     if (DEBUG && headers_sent() && preg_match('/\bselect\b/i', $sql)) {
         dbquerydebug($link, $sql);
     }
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    $result = $link->query($sql);
+    if ($link instanceof mysqli) {
+        mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+    }
+    try {
+        $result = $link->query($sql);
+    } catch (\Throwable $e) {
+        if (true === $printError) {
+            if (PHP_SAPI !== 'cli') {
+                $message = '<strong>Invalid query</strong>: ' . $e->getCode() . ': ' . $e->getMessage() . "<br>\n";
+                $message .= '<strong>Whole query</strong>: <pre>' . htmlspecialchars($sql) . '</pre>';
+                exit($message);
+            } else {
+                error_log('Database query error [' . $e->getCode() . ']: ' . $e->getMessage() . ' in query: ' . $sql);
+                throw $e;
+            }
+        }
+        return false;
+    }
 
     if (true === $printError && false === $result) {
-        // stop on query error
-        $message = '<strong>Invalid query</strong>: ' . database::$link->errno . ': ' . database::$link->error . "<br>\n";
-        $message .= '<strong>Whole query</strong>: <pre>' . $sql . '</pre>';
-        exit($message);
+        $errno = isset($link->errno) ? $link->errno : (isset(database::$link->errno) ? database::$link->errno : 0);
+        $error = isset($link->error) ? $link->error : (isset(database::$link->error) ? database::$link->error : 'Unknown error');
+        if (PHP_SAPI !== 'cli') {
+            $message = '<strong>Invalid query</strong>: ' . $errno . ': ' . $error . "<br>\n";
+            $message .= '<strong>Whole query</strong>: <pre>' . htmlspecialchars($sql) . '</pre>';
+            exit($message);
+        } else {
+            error_log('Database query error [' . $errno . ']: ' . $error . ' in query: ' . $sql);
+            exit(1);
+        }
     }
 
     return $result;
+}
+
+/**
+ * Execute a modifying SQL statement (INSERT, UPDATE, DELETE, etc.)
+ * and return the number of affected rows.
+ *
+ * @param string $sql
+ * @param bool   $printError
+ *
+ * @return int Number of affected rows, or -1 on error
+ */
+function dbexecute($sql, $printError = true)
+{
+    $link = dbconn();
+    if (DEBUG && headers_sent() && preg_match('/\bselect\b/i', $sql)) {
+        dbquerydebug($link, $sql);
+    }
+    if ($link instanceof mysqli) {
+        mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+    }
+
+    try {
+        $result = $link->query($sql);
+    } catch (\Throwable $e) {
+        if (true === $printError) {
+            if (PHP_SAPI !== 'cli') {
+                $message = '<strong>Invalid execute statement</strong>: ' . $e->getCode() . ': ' . $e->getMessage() . "<br>\n";
+                $message .= '<strong>Whole query</strong>: <pre>' . htmlspecialchars($sql) . '</pre>';
+                exit($message);
+            } else {
+                error_log('Database execute error [' . $e->getCode() . ']: ' . $e->getMessage() . ' in query: ' . $sql);
+                throw $e;
+            }
+        }
+        return -1;
+    }
+
+    if (false === $result) {
+        if (true === $printError) {
+            $errno = isset($link->errno) ? $link->errno : (isset(database::$link->errno) ? database::$link->errno : 0);
+            $error = isset($link->error) ? $link->error : (isset(database::$link->error) ? database::$link->error : 'Unknown error');
+            if (PHP_SAPI !== 'cli') {
+                $message = '<strong>Invalid execute statement</strong>: ' . $errno . ': ' . $error . "<br>\n";
+                $message .= '<strong>Whole query</strong>: <pre>' . htmlspecialchars($sql) . '</pre>';
+                exit($message);
+            } else {
+                error_log('Database execute error [' . $errno . ']: ' . $error . ' in query: ' . $sql);
+                exit(1);
+            }
+        }
+        return -1;
+    }
+
+    return isset($link->affected_rows) ? (int) $link->affected_rows : 0;
 }
 
 /**

@@ -197,6 +197,12 @@ define('DB_CLEAN_BATCH_SIZE', 10000);
 // Run OPTIMIZE TABLE after cleanup (can be slow on large InnoDB tables)
 // Set to false if you run OPTIMIZE separately or don't need it
 define('DB_CLEAN_OPTIMIZE', true);
+// Maximum execution time in seconds per table cleanup (0 = unlimited)
+define('DB_CLEAN_MAX_EXECUTION_TIME', 0);
+// Maximum batches per table (0 = unlimited)
+define('DB_CLEAN_MAX_BATCHES', 0);
+// Pause in milliseconds between batches to reduce server load (0 = no pause)
+define('DB_CLEAN_SLEEP_MS', 0);
 
 // Show Software Version tab (only Admins can see it).
 define('SHOW_SFVERSION', true);

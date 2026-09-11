@@ -44,7 +44,7 @@ class database
      */
     public static function connect($host = '', $username = '', $password = '', $database = '', $port = 3306)
     {
-        if (!self::$link instanceof mysqli) {
+        if (!is_object(self::$link)) {
             try {
                 $driver = new mysqli_driver();
                 $driver->report_mode = MYSQLI_REPORT_ALL;
@@ -104,8 +104,10 @@ class database
     public static function close()
     {
         $result = true;
-        if (self::$link instanceof mysqli) {
-            $result = self::$link->close();
+        if (is_object(self::$link)) {
+            if (method_exists(self::$link, 'close')) {
+                $result = self::$link->close();
+            }
             self::$link = null;
         }
 
@@ -137,7 +139,7 @@ class database
      */
     public static function getDatabaseVersion()
     {
-        if (self::$link instanceof mysqli) {
+        if (is_object(self::$link) && isset(self::$link->server_info)) {
             return self::$link->server_info;
         }
 
@@ -157,9 +159,35 @@ class database
         if (preg_match('/^8\.\d+/', $version)) {
             // MySQL 8.0+ uses ICU for regex
             return true;
-        } else {
-            // MySQL < 8.0 and MariaDB use POSIX regex syntax
-            return false;
+        }
+
+        // MySQL < 8.0 and MariaDB use POSIX regex syntax
+        return false;
+    }
+
+    /**
+     * Execute an SQL statement that modifies data (INSERT, UPDATE, DELETE, etc.)
+     * and return the number of affected rows.
+     *
+     * @param string $sql
+     *
+     * @return int Number of affected rows, or -1 on error
+     */
+    public static function execute($sql)
+    {
+        if (!is_object(self::$link)) {
+            return -1;
+        }
+
+        try {
+            $result = self::$link->query($sql);
+            if (false === $result) {
+                return -1;
+            }
+            return isset(self::$link->affected_rows) ? (int) self::$link->affected_rows : 0;
+        } catch (\Throwable $e) {
+            return -1;
         }
     }
 }
+
