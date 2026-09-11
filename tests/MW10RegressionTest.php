@@ -174,6 +174,45 @@ run_test("Replay utility parses dead-letter JSON files and supports --dry-run", 
     @rmdir($testDir);
 });
 
+run_test("Replay utility parses dead-letter JSON files with 'message' envelope format", function () {
+    $testDir = sys_get_temp_dir() . '/mw_test_dlq_' . uniqid();
+    mkdir($testDir, 0777, true);
+
+    // Create a mock failed event JSON in SaveFailedEvent format
+    $mockEvent = [
+        'timestamp' => 1726084000,
+        'error_code' => 1366,
+        'error_msg' => 'Incorrect string value',
+        'message' => [
+            'id' => 'TEST_REPLAY_MSG_02',
+            'timestamp' => '2026-09-11 15:35:00',
+            'from' => 'sender2@example.com',
+            'to' => 'recipient2@example.com',
+            'subject' => 'Test Subject 2',
+            'size' => 2048,
+            'isspam' => 0,
+            'sascore' => 0.0,
+            'token' => str_repeat('b', 64),
+        ]
+    ];
+
+    $jsonFile = $testDir . '/TEST_REPLAY_MSG_02.json';
+    file_put_contents($jsonFile, json_encode($mockEvent, JSON_PRETTY_PRINT));
+
+    // Run in dry-run mode
+    $cmd = 'php ' . escapeshellarg(__DIR__ . '/../tools/mailwatch_replay_failed_events.php') . ' --dry-run --verbose --dir=' . escapeshellarg($testDir);
+    exec($cmd, $out, $ret);
+
+    assert_true(file_exists($jsonFile), "Dry run must NOT delete the DLQ file");
+    $output = implode("\n", $out);
+    assert_true(strpos($output, 'DRY RUN') !== false, "Dry run output missing [DRY RUN] indicator");
+    assert_true(strpos($output, 'TEST_REPLAY_MSG_02') !== false, "Message ID missing in dry-run output");
+
+    // Clean up
+    @unlink($jsonFile);
+    @rmdir($testDir);
+});
+
 // -------------------------------------------------------------
 // Test Suite 4: MailWatch.pm & MailWatchConf.pm Config Verification
 // -------------------------------------------------------------

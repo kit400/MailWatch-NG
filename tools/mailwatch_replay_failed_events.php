@@ -143,7 +143,7 @@ foreach ($files as $file) {
         continue;
     }
 
-    $msg = $data['fields'] ?? $data;
+    $msg = $data['message'] ?? $data['fields'] ?? $data;
     $msgId = $msg['id'] ?? null;
     $timestamp = $msg['timestamp'] ?? date('Y-m-d H:i:s');
 
@@ -192,7 +192,7 @@ foreach ($files as $file) {
         'virusinfected'   => (int)($msg['virusinfected'] ?? 0),
         'nameinfected'    => (int)($msg['nameinfected'] ?? 0),
         'otherinfected'   => (int)($msg['otherinfected'] ?? 0),
-        'report'          => safe_value($msg['reports'] ?? ''),
+        'report'          => safe_value($msg['reports'] ?? $msg['report'] ?? ''),
         'ismcp'           => (int)($msg['ismcp'] ?? 0),
         'ishighmcp'       => (int)($msg['ishighmcp'] ?? 0),
         'issamcp'         => (int)($msg['issamcp'] ?? 0),
