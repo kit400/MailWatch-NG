@@ -61,12 +61,12 @@ switch ($order) {
 $t0 = microtime(true);
 
 $query = "
- SELECT
-  LOWER(SUBSTRING_INDEX($domainField, '.', -1)) AS `tld`,
-  COUNT(*) AS `count`,
-  SUM(virusinfected) AS `total_viruses`,
-  SUM(isspam) AS `total_spam`,
-  SUM(size) AS `size`
+  SELECT
+   LOWER(SUBSTRING_INDEX($domainField, '.', -1)) AS `tld`,
+   COUNT(*) AS `count`,
+   " . MailWatchMetrics::sqlCountIf(MailWatchMetrics::sqlVirus()) . " AS `total_viruses`,
+   " . MailWatchMetrics::sqlCountIf(MailWatchMetrics::sqlSpam()) . " AS `total_spam`,
+   SUM(size) AS `size`
  FROM
   maillog
  WHERE

@@ -41,8 +41,8 @@ $graphgenerator->sqlQuery = '
  SELECT
   timestamp AS xaxis,
   1 as total_mail,
-  virusinfected AS total_virus,
-  isspam AS total_spam,
+  CASE WHEN ' . MailWatchMetrics::sqlVirus() . ' THEN 1 ELSE 0 END AS total_virus,
+  CASE WHEN ' . MailWatchMetrics::sqlSpam() . ' THEN 1 ELSE 0 END AS total_spam,
   size AS total_size
  FROM
   maillog

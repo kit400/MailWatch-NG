@@ -994,182 +994,195 @@ function printFreeDiskSpace()
     }
 }
 
+/**
+ * Centralized MailWatch metrics and classification rules (MW-11)
+ *
+ * Provides canonical SQL definitions and pure PHP logic for:
+ * 1. Boolean message counts (number of unique messages matching a condition, without double-counting)
+ * 2. Mutually exclusive message classification for distributions (Donut, Pie, Today stats)
+ *    Priority: Virus > Bad Content > High Spam > Normal Spam > Policy / MCP > Clean
+ */
+class MailWatchMetrics
+{
+    public static function sqlSpam(): string
+    {
+        return '(isspam > 0 OR ishighspam > 0)';
+    }
+
+    public static function sqlHighSpam(): string
+    {
+        return '(ishighspam > 0)';
+    }
+
+    public static function sqlLowSpam(): string
+    {
+        return '(isspam > 0 AND (ishighspam = 0 OR ishighspam IS NULL))';
+    }
+
+    public static function sqlVirus(): string
+    {
+        return '(virusinfected > 0)';
+    }
+
+    public static function sqlBadContent(bool $excludeVirus = false): string
+    {
+        if ($excludeVirus) {
+            return '((nameinfected > 0 OR otherinfected > 0) AND (virusinfected = 0 OR virusinfected IS NULL))';
+        }
+        return '(nameinfected > 0 OR otherinfected > 0)';
+    }
+
+    public static function sqlMcp(): string
+    {
+        return '(ismcp > 0 OR ishighmcp > 0)';
+    }
+
+    public static function sqlSecurityThreats(): string
+    {
+        return '(virusinfected > 0 OR nameinfected > 0 OR otherinfected > 0 OR ismcp > 0 OR ishighmcp > 0)';
+    }
+
+    public static function sqlAnyThreat(): string
+    {
+        return '(isspam > 0 OR ishighspam > 0 OR virusinfected > 0 OR nameinfected > 0 OR otherinfected > 0 OR ismcp > 0 OR ishighmcp > 0)';
+    }
+
+    public static function sqlClean(): string
+    {
+        return '((virusinfected = 0 OR virusinfected IS NULL) AND '
+             . '(nameinfected = 0 OR nameinfected IS NULL) AND '
+             . '(otherinfected = 0 OR otherinfected IS NULL) AND '
+             . '(isspam = 0 OR isspam IS NULL) AND '
+             . '(ishighspam = 0 OR ishighspam IS NULL) AND '
+             . '(ismcp = 0 OR ismcp IS NULL) AND '
+             . '(ishighmcp = 0 OR ishighmcp IS NULL))';
+    }
+
+    public static function sqlClassificationCase(bool $detailed = false): string
+    {
+        if ($detailed) {
+            return "CASE "
+                . "WHEN virusinfected > 0 THEN 'virus' "
+                . "WHEN nameinfected > 0 THEN 'blockedfiles' "
+                . "WHEN otherinfected > 0 THEN 'otherinfected' "
+                . "WHEN ishighspam > 0 THEN 'highspam' "
+                . "WHEN isspam > 0 THEN 'spam' "
+                . "WHEN ishighmcp > 0 THEN 'highmcp' "
+                . "WHEN ismcp > 0 THEN 'mcp' "
+                . "ELSE 'clean' END";
+        }
+
+        return "CASE "
+            . "WHEN virusinfected > 0 THEN 'virus' "
+            . "WHEN nameinfected > 0 OR otherinfected > 0 THEN 'badcontent' "
+            . "WHEN ishighspam > 0 THEN 'highspam' "
+            . "WHEN isspam > 0 THEN 'spam' "
+            . "WHEN ismcp > 0 OR ishighmcp > 0 THEN 'mcp' "
+            . "ELSE 'clean' END";
+    }
+
+    public static function sqlCountIf(string $condition): string
+    {
+        return "SUM(CASE WHEN $condition THEN 1 ELSE 0 END)";
+    }
+
+    public static function sqlCountClassification(string $category, bool $detailed = false): string
+    {
+        return "SUM(CASE WHEN " . self::sqlClassificationCase($detailed) . " = '$category' THEN 1 ELSE 0 END)";
+    }
+
+    public static function classifyMessage($row, bool $detailed = false): string
+    {
+        $r = (array)$row;
+        $virus = (int)($r['virusinfected'] ?? 0);
+        $name = (int)($r['nameinfected'] ?? 0);
+        $other = (int)($r['otherinfected'] ?? 0);
+        $highspam = (int)($r['ishighspam'] ?? 0);
+        $spam = (int)($r['isspam'] ?? 0);
+        $highmcp = (int)($r['ishighmcp'] ?? 0);
+        $mcp = (int)($r['ismcp'] ?? 0);
+
+        if ($virus > 0) {
+            return 'virus';
+        }
+        if ($detailed) {
+            if ($name > 0) {
+                return 'blockedfiles';
+            }
+            if ($other > 0) {
+                return 'otherinfected';
+            }
+        } else {
+            if ($name > 0 || $other > 0) {
+                return 'badcontent';
+            }
+        }
+        if ($highspam > 0) {
+            return 'highspam';
+        }
+        if ($spam > 0) {
+            return 'spam';
+        }
+        if ($detailed) {
+            if ($highmcp > 0) {
+                return 'highmcp';
+            }
+            if ($mcp > 0) {
+                return 'mcp';
+            }
+        } else {
+            if ($mcp > 0 || $highmcp > 0) {
+                return 'mcp';
+            }
+        }
+        return 'clean';
+    }
+}
+
 function printTodayStatistics()
 {
-    $sql = '
+    $globalFilter = !empty($_SESSION['global_filter']) ? $_SESSION['global_filter'] : '(1=1)';
+
+    $virusesExpr = MailWatchMetrics::sqlCountClassification('virus', true);
+    $blockedfilesExpr = MailWatchMetrics::sqlCountClassification('blockedfiles', true);
+    $otherinfectedExpr = MailWatchMetrics::sqlCountClassification('otherinfected', true);
+    $highspamExpr = MailWatchMetrics::sqlCountClassification('highspam', true);
+    $spamExpr = MailWatchMetrics::sqlCountClassification('spam', true);
+    $highmcpExpr = MailWatchMetrics::sqlCountClassification('highmcp', true);
+    $mcpExpr = MailWatchMetrics::sqlCountClassification('mcp', true);
+    $cleanExpr = MailWatchMetrics::sqlCountClassification('clean', true);
+
+    $sql = "
  SELECT
   COUNT(*) AS processed,
-  SUM(
-   CASE WHEN (
-    (virusinfected=0 OR virusinfected IS NULL)
-    AND (nameinfected=0 OR nameinfected IS NULL)
-    AND (otherinfected=0 OR otherinfected IS NULL)
-    AND (isspam=0 OR isspam IS NULL)
-    AND (ishighspam=0 OR ishighspam IS NULL)
-    AND (ismcp=0 OR ismcp IS NULL)
-    AND (ishighmcp=0 OR ishighmcp IS NULL)
-   ) THEN 1 ELSE 0 END
-  ) AS clean,
-  ROUND((
-   SUM(
-    CASE WHEN (
-     (virusinfected=0 OR virusinfected IS NULL)
-     AND (nameinfected=0 OR nameinfected IS NULL)
-     AND (otherinfected=0 OR otherinfected IS NULL)
-     AND (isspam=0 OR isspam IS NULL)
-     AND (ishighspam=0 OR ishighspam IS NULL)
-     AND (ismcp=0 OR ismcp IS NULL)
-     AND (ishighmcp=0 OR ishighmcp IS NULL)
-    ) THEN 1 ELSE 0 END
-   )/COUNT(*))*100,1
-  ) AS cleanpercent,
-  SUM(
-   CASE WHEN
-    virusinfected>0
-   THEN 1 ELSE 0 END
-  ) AS viruses,
-  ROUND((
-   SUM(
-    CASE WHEN
-     virusinfected>0
-    THEN 1 ELSE 0 END
-   )/COUNT(*))*100,1
-  ) AS viruspercent,
-  SUM(
-   CASE WHEN
-    nameinfected>0
-    AND (virusinfected=0 OR virusinfected IS NULL)
-    AND (otherinfected=0 OR otherinfected IS NULL)
-    -- AND (isspam=0 OR isspam IS NULL)
-    -- AND (ishighspam=0 OR ishighspam IS NULL)
-   THEN 1 ELSE 0 END
-  ) AS blockedfiles,
-  ROUND((
-   SUM(
-    CASE WHEN
-     nameinfected>0
-     AND (virusinfected=0 OR virusinfected IS NULL)
-     AND (otherinfected=0 OR otherinfected IS NULL)
-     -- AND (isspam=0 OR isspam IS NULL)
-     -- AND (ishighspam=0 OR ishighspam IS NULL)
-    THEN 1 ELSE 0 END
-   )/COUNT(*))*100,1
-  ) AS blockedfilespercent,
-  SUM(
-   CASE WHEN
-    otherinfected>0
-    AND (nameinfected=0 OR nameinfected IS NULL)
-    AND (virusinfected=0 OR virusinfected IS NULL)
-    AND (isspam=0 OR isspam IS NULL)
-    AND (ishighspam=0 OR ishighspam IS NULL)
-   THEN 1 ELSE 0 END
-  ) AS otherinfected,
-  ROUND((
-   SUM(
-    CASE WHEN
-     otherinfected>0
-     AND (nameinfected=0 OR nameinfected IS NULL)
-     AND (virusinfected=0 OR virusinfected IS NULL)
-     AND (isspam=0 OR isspam IS NULL)
-     AND (ishighspam=0 OR ishighspam IS NULL)
-    THEN 1 ELSE 0 END
-   )/COUNT(*))*100,1
-  ) AS otherinfectedpercent,
-  SUM(
-   CASE WHEN
-    isspam>0
-    AND (virusinfected=0 OR virusinfected IS NULL)
-    AND (nameinfected=0 OR nameinfected IS NULL)
-    AND (otherinfected=0 OR otherinfected IS NULL)
-    AND (ishighspam=0 OR ishighspam IS NULL)
-   THEN 1 ELSE 0 END
-  ) AS spam,
-  ROUND((
-   SUM(
-    CASE WHEN
-     isspam>0
-     AND (virusinfected=0 OR virusinfected IS NULL)
-     AND (nameinfected=0 OR nameinfected IS NULL)
-     AND (otherinfected=0 OR otherinfected IS NULL)
-     AND (ishighspam=0 OR ishighspam IS NULL)
-    THEN 1 ELSE 0 END
-   )/COUNT(*))*100,1
-  ) AS spampercent,
-  SUM(
-   CASE WHEN
-    ishighspam>0
-    AND (virusinfected=0 OR virusinfected IS NULL)
-    AND (nameinfected=0 OR nameinfected IS NULL)
-    AND (otherinfected=0 OR otherinfected IS NULL)
-   THEN 1 ELSE 0 END
-  ) AS highspam,
-  ROUND((
-   SUM(
-    CASE WHEN
-     ishighspam>0
-     AND (virusinfected=0 OR virusinfected IS NULL)
-     AND (nameinfected=0 OR nameinfected IS NULL)
-     AND (otherinfected=0 OR otherinfected IS NULL)
-    THEN 1 ELSE 0 END
-   )/COUNT(*))*100,1
-  ) AS highspampercent,
-  SUM(
-   CASE WHEN
-    ismcp>0
-    AND (virusinfected=0 OR virusinfected IS NULL)
-    AND (nameinfected=0 OR nameinfected IS NULL)
-    AND (otherinfected=0 OR otherinfected IS NULL)
-    AND (isspam=0 OR isspam IS NULL)
-    AND (ishighspam=0 OR ishighspam IS NULL)
-    AND (ishighmcp=0 OR ishighmcp IS NULL)
-   THEN 1 ELSE 0 END
-  ) AS mcp,
-  ROUND((
-   SUM(
-    CASE WHEN
-     ismcp>0
-     AND (virusinfected=0 OR virusinfected IS NULL)
-     AND (nameinfected=0 OR nameinfected IS NULL)
-     AND (otherinfected=0 OR otherinfected IS NULL)
-     AND (isspam=0 OR isspam IS NULL)
-     AND (ishighspam=0 OR ishighspam IS NULL)
-     AND (ishighmcp=0 OR ishighmcp IS NULL)
-    THEN 1 ELSE 0 END
-   )/COUNT(*))*100,1
-  ) AS mcppercent,
-  SUM(
-   CASE WHEN
-    ishighmcp>0
-    AND (virusinfected=0 OR virusinfected IS NULL)
-    AND (nameinfected=0 OR nameinfected IS NULL)
-    AND (otherinfected=0 OR otherinfected IS NULL)
-    AND (isspam=0 OR isspam IS NULL)
-    AND (ishighspam=0 OR ishighspam IS NULL)
-   THEN 1 ELSE 0 END
-  ) AS highmcp,
-  ROUND((
-   SUM(
-    CASE WHEN
-     ishighmcp>0
-     AND (virusinfected=0 OR virusinfected IS NULL)
-     AND (nameinfected=0 OR nameinfected IS NULL)
-     AND (otherinfected=0 OR otherinfected IS NULL)
-     AND (isspam=0 OR isspam IS NULL)
-     AND (ishighspam=0 OR ishighspam IS NULL)
-    THEN 1 ELSE 0 END
-   )/COUNT(*))*100,1
-  ) AS highmcppercent,
+  $cleanExpr AS clean,
+  $virusesExpr AS viruses,
+  $blockedfilesExpr AS blockedfiles,
+  $otherinfectedExpr AS otherinfected,
+  $highspamExpr AS highspam,
+  $spamExpr AS spam,
+  $highmcpExpr AS highmcp,
+  $mcpExpr AS mcp,
   SUM(size) AS size
  FROM
   maillog
  WHERE
   date = CURRENT_DATE()
  AND
-  ' . (!empty($_SESSION['global_filter']) ? $_SESSION['global_filter'] : '(1=1)') . '
-';
+  $globalFilter
+";
 
     $sth = dbquery($sql);
     while ($row = $sth->fetch_object()) {
+        $processed = (int)$row->processed;
+        $row->cleanpercent = $processed > 0 ? round(((int)$row->clean / $processed) * 100, 1) : 100.0;
+        $row->viruspercent = $processed > 0 ? round(((int)$row->viruses / $processed) * 100, 1) : 0.0;
+        $row->blockedfilespercent = $processed > 0 ? round(((int)$row->blockedfiles / $processed) * 100, 1) : 0.0;
+        $row->otherinfectedpercent = $processed > 0 ? round(((int)$row->otherinfected / $processed) * 100, 1) : 0.0;
+        $row->highspampercent = $processed > 0 ? round(((int)$row->highspam / $processed) * 100, 1) : 0.0;
+        $row->spampercent = $processed > 0 ? round(((int)$row->spam / $processed) * 100, 1) : 0.0;
+        $row->highmcppercent = $processed > 0 ? round(((int)$row->highmcp / $processed) * 100, 1) : 0.0;
+        $row->mcppercent = $processed > 0 ? round(((int)$row->mcp / $processed) * 100, 1) : 0.0;
         echo '<div class="header-card">' . "\n";
         echo '  <div class="widget-header"><span class="widget-icon">📈</span> ' . __('todaystotals03') . '</div>' . "\n";
         echo '  <div class="card-content">' . "\n";
@@ -6264,17 +6277,13 @@ function printTrafficGraph()
 
     $graphgenerator = new GraphGenerator();
     $graphgenerator->sqlQuery = '
-     SELECT
-      timestamp AS xaxis,
-      1 as total_mail,
-      CASE
-      WHEN virusinfected > 0 THEN 1
-      WHEN nameinfected > 0 THEN 1
-      WHEN otherinfected > 0 THEN 1
-      ELSE 0 END AS total_virus,
-      isspam AS total_spam
-     FROM
-      maillog
+      SELECT
+       timestamp AS xaxis,
+       1 as total_mail,
+       CASE WHEN ' . MailWatchMetrics::sqlBadContent() . ' OR ' . MailWatchMetrics::sqlVirus() . ' THEN 1 ELSE 0 END AS total_virus,
+       CASE WHEN ' . MailWatchMetrics::sqlSpam() . ' THEN 1 ELSE 0 END AS total_spam
+      FROM
+       maillog
      WHERE
       1=1
      AND

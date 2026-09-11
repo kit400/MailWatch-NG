@@ -521,14 +521,23 @@ function render_widget_kpi_summary($timeRange)
     $timeFilter = get_dashboard_time_filter($timeRange);
     $globalFilter = $_SESSION['global_filter'] ?? '1=1';
 
+    $cleanExpr = MailWatchMetrics::sqlCountClassification('clean');
+    $spamTotalExpr = MailWatchMetrics::sqlCountIf(MailWatchMetrics::sqlSpam());
+    $highSpamExpr = MailWatchMetrics::sqlCountIf(MailWatchMetrics::sqlHighSpam());
+    $lowSpamExpr = MailWatchMetrics::sqlCountIf(MailWatchMetrics::sqlLowSpam());
+    $virusExpr = MailWatchMetrics::sqlCountIf(MailWatchMetrics::sqlVirus());
+    $badcontentExpr = MailWatchMetrics::sqlCountIf(MailWatchMetrics::sqlBadContent(true));
+    $mcpExpr = MailWatchMetrics::sqlCountIf(MailWatchMetrics::sqlMcp());
+
     $sql = "SELECT 
         COUNT(*) AS total,
-        SUM(CASE WHEN isspam=0 AND ishighspam=0 AND virusinfected=0 AND nameinfected=0 AND otherinfected=0 AND ismcp=0 AND ishighmcp=0 THEN 1 ELSE 0 END) AS clean,
-        SUM(isspam) AS spam,
-        SUM(ishighspam) AS highspam,
-        SUM(virusinfected) AS virus,
-        SUM(CASE WHEN (nameinfected=1 OR otherinfected=1) AND virusinfected=0 THEN 1 ELSE 0 END) AS badcontent,
-        SUM(CASE WHEN ismcp=1 OR ishighmcp=1 THEN 1 ELSE 0 END) AS mcp,
+        $cleanExpr AS clean,
+        $spamTotalExpr AS spam,
+        $lowSpamExpr AS lowspam,
+        $highSpamExpr AS highspam,
+        $virusExpr AS virus,
+        $badcontentExpr AS badcontent,
+        $mcpExpr AS mcp,
         SUM(size) AS total_size
     FROM maillog 
     WHERE $timeFilter AND ($globalFilter)";
@@ -539,6 +548,7 @@ function render_widget_kpi_summary($timeRange)
     $total = (int)($d['total'] ?? 0);
     $clean = (int)($d['clean'] ?? 0);
     $spam = (int)($d['spam'] ?? 0);
+    $lowspam = (int)($d['lowspam'] ?? 0);
     $highspam = (int)($d['highspam'] ?? 0);
     $virus = (int)($d['virus'] ?? 0);
     $badcontent = (int)($d['badcontent'] ?? 0);
@@ -546,7 +556,7 @@ function render_widget_kpi_summary($timeRange)
     $totalSize = formatSize((float)($d['total_size'] ?? 0));
 
     $cleanPct = $total > 0 ? round(($clean / $total) * 100, 1) : 100;
-    $spamPct = $total > 0 ? round((($spam + $highspam) / $total) * 100, 1) : 0;
+    $spamPct = $total > 0 ? round(($spam / $total) * 100, 1) : 0;
     $threats = $virus + $badcontent + $mcp;
     $threatPct = $total > 0 ? round(($threats / $total) * 100, 1) : 0;
 
@@ -568,9 +578,9 @@ function render_widget_kpi_summary($timeRange)
         }
         if (preg_match('/SwapTotal:\s+(\d+)/', $meminfo, $st) && preg_match('/SwapFree:\s+(\d+)/', $meminfo, $sf)) {
             $stot = (float)$st[1];
-            $sfree = (float)$sf[1];
+            $sf = (float)$sf[1];
             if ($stot > 0) {
-                $swapPct = round((($stot - $sfree) / $stot) * 100);
+                $swapPct = round((($stot - $sf) / $stot) * 100);
             }
         }
     }
@@ -618,9 +628,9 @@ function render_widget_kpi_summary($timeRange)
             <span class="dash-kpi-title">SPAM</span>
             <span class="dash-kpi-icon">⚡</span>
         </div>
-        <div class="dash-kpi-val">' . number_format($spam + $highspam) . '</div>
+        <div class="dash-kpi-val">' . number_format($spam) . '</div>
         <div class="dash-kpi-sub">
-            <span class="dash-kpi-pill pill-yellow">' . number_format($spam) . ' Low</span>
+            <span class="dash-kpi-pill pill-yellow">' . number_format($lowspam) . ' Low</span>
             <span class="dash-kpi-pill pill-purple">' . number_format($highspam) . ' High</span>
         </div>
     </div>';
@@ -682,13 +692,17 @@ function render_widget_traffic_chart($timeRange, $widgetId)
     $slotFormat = ($timeRange === '7d' || $timeRange === '30d') ? "%Y-%m-%d" : "%Y-%m-%d %H:00";
     $labelFormat = ($timeRange === '7d' || $timeRange === '30d') ? "%b %d" : "%H:00";
 
+    $cleanExpr = MailWatchMetrics::sqlCountClassification('clean');
+    $spamExpr = MailWatchMetrics::sqlCountIf(MailWatchMetrics::sqlSpam());
+    $threatsExpr = MailWatchMetrics::sqlCountIf(MailWatchMetrics::sqlSecurityThreats());
+
     $sql = "SELECT 
         DATE_FORMAT(timestamp, '$slotFormat') AS slot,
         DATE_FORMAT(timestamp, '$labelFormat') AS label,
         COUNT(*) AS total,
-        SUM(CASE WHEN isspam=0 AND ishighspam=0 AND virusinfected=0 AND nameinfected=0 AND otherinfected=0 AND ismcp=0 AND ishighmcp=0 THEN 1 ELSE 0 END) AS clean,
-        SUM(isspam + ishighspam) AS spam,
-        SUM(virusinfected + CASE WHEN (nameinfected=1 OR otherinfected=1) AND virusinfected=0 THEN 1 ELSE 0 END) AS threats
+        $cleanExpr AS clean,
+        $spamExpr AS spam,
+        $threatsExpr AS threats
     FROM maillog 
     WHERE $timeFilter AND ($globalFilter)
     GROUP BY slot, label
@@ -762,13 +776,20 @@ function render_widget_threat_donut($timeRange, $widgetId)
     $timeFilter = get_dashboard_time_filter($timeRange);
     $globalFilter = $_SESSION['global_filter'] ?? '1=1';
 
+    $cleanExpr = MailWatchMetrics::sqlCountClassification('clean');
+    $spamExpr = MailWatchMetrics::sqlCountClassification('spam');
+    $highSpamExpr = MailWatchMetrics::sqlCountClassification('highspam');
+    $virusExpr = MailWatchMetrics::sqlCountClassification('virus');
+    $badcontentExpr = MailWatchMetrics::sqlCountClassification('badcontent');
+    $mcpExpr = MailWatchMetrics::sqlCountClassification('mcp');
+
     $sql = "SELECT 
-        SUM(CASE WHEN isspam=0 AND ishighspam=0 AND virusinfected=0 AND nameinfected=0 AND otherinfected=0 AND ismcp=0 AND ishighmcp=0 THEN 1 ELSE 0 END) AS clean,
-        SUM(CASE WHEN isspam=1 AND ishighspam=0 THEN 1 ELSE 0 END) AS spam,
-        SUM(ishighspam) AS highspam,
-        SUM(virusinfected) AS virus,
-        SUM(CASE WHEN (nameinfected=1 OR otherinfected=1) AND virusinfected=0 THEN 1 ELSE 0 END) AS badcontent,
-        SUM(CASE WHEN ismcp=1 OR ishighmcp=1 THEN 1 ELSE 0 END) AS mcp
+        $cleanExpr AS clean,
+        $spamExpr AS spam,
+        $highSpamExpr AS highspam,
+        $virusExpr AS virus,
+        $badcontentExpr AS badcontent,
+        $mcpExpr AS mcp
     FROM maillog 
     WHERE $timeFilter AND ($globalFilter)";
 
@@ -839,11 +860,14 @@ function render_widget_top_relays_asn($timeRange)
     $timeFilter = get_dashboard_time_filter($timeRange);
     $globalFilter = $_SESSION['global_filter'] ?? '1=1';
 
+    $spamExpr = MailWatchMetrics::sqlCountIf(MailWatchMetrics::sqlSpam());
+    $threatsExpr = MailWatchMetrics::sqlCountIf(MailWatchMetrics::sqlSecurityThreats());
+
     $sql = "SELECT 
         clientip,
         COUNT(*) AS count,
-        SUM(isspam + ishighspam) AS spam,
-        SUM(virusinfected + CASE WHEN (nameinfected=1 OR otherinfected=1) AND virusinfected=0 THEN 1 ELSE 0 END) AS threats
+        $spamExpr AS spam,
+        $threatsExpr AS threats
     FROM maillog 
     WHERE $timeFilter AND clientip != '' AND clientip IS NOT NULL AND ($globalFilter)
     GROUP BY clientip 
@@ -919,18 +943,49 @@ function render_widget_top_senders_recipients($timeRange)
     $tokenParam = isset($_SESSION['token']) ? '&amp;token=' . urlencode($_SESSION['token']) : '';
 
     // Top Senders
-    $sqlSenders = "SELECT from_address, COUNT(*) AS count, SUM(isspam + ishighspam + virusinfected) AS threats 
+    $threatsExpr = MailWatchMetrics::sqlCountIf(MailWatchMetrics::sqlAnyThreat());
+    $sqlSenders = "SELECT from_address, COUNT(*) AS count, $threatsExpr AS threats 
                    FROM maillog 
                    WHERE $timeFilter AND from_address != '' AND ($globalFilter)
                    GROUP BY from_address ORDER BY count DESC LIMIT 6";
     $resSenders = dbquery($sqlSenders);
 
-    // Top Recipients
-    $sqlRecipients = "SELECT to_address, COUNT(*) AS count, SUM(isspam + ishighspam + virusinfected) AS threats 
+    // Top Recipients - normalize comma-separated recipient lists to individual addresses
+    $sqlRecipients = "SELECT to_address, COUNT(*) AS count, $threatsExpr AS threats 
                       FROM maillog 
                       WHERE $timeFilter AND to_address != '' AND ($globalFilter)
-                      GROUP BY to_address ORDER BY count DESC LIMIT 6";
+                      GROUP BY to_address ORDER BY count DESC LIMIT 50";
     $resRecipients = dbquery($sqlRecipients);
+
+    $normalizedRecipients = [];
+    if ($resRecipients && $resRecipients->num_rows > 0) {
+        while ($r = $resRecipients->fetch_assoc()) {
+            $rawList = explode(',', $r['to_address']);
+            $count = (int)$r['count'];
+            $threats = (int)$r['threats'];
+            foreach ($rawList as $rawAddr) {
+                $addr = trim($rawAddr);
+                if ($addr === '') {
+                    continue;
+                }
+                if (!isset($normalizedRecipients[$addr])) {
+                    $normalizedRecipients[$addr] = [
+                        'to_address' => $addr,
+                        'count' => 0,
+                        'threats' => 0,
+                    ];
+                }
+                $normalizedRecipients[$addr]['count'] += $count;
+                $normalizedRecipients[$addr]['threats'] += $threats;
+            }
+        }
+        uasort($normalizedRecipients, static function ($a, $b) {
+            return $b['count'] <=> $a['count'];
+        });
+        $topRecipients = array_slice(array_values($normalizedRecipients), 0, 6);
+    } else {
+        $topRecipients = [];
+    }
 
     $out = '
     <div class="dash-tab-container">
@@ -976,8 +1031,8 @@ function render_widget_top_senders_recipients($timeRange)
                 </thead>
                 <tbody>';
 
-    if ($resRecipients && $resRecipients->num_rows > 0) {
-        while ($r = $resRecipients->fetch_assoc()) {
+    if (!empty($topRecipients)) {
+        foreach ($topRecipients as $r) {
             $addr = htmlspecialchars($r['to_address']);
             $out .= '<tr>
                 <td style="padding:6px 10px;"><a href="rep_message_listing.php?to=' . urlencode($r['to_address']) . $tokenParam . '" style="color:#0284c7;text-decoration:none;font-weight:500;">' . mb_strimwidth($addr, 0, 38, '...') . '</a></td>
@@ -1002,6 +1057,7 @@ function render_widget_recent_threats($timeRange)
     $timeFilter = get_dashboard_time_filter($timeRange);
     $globalFilter = $_SESSION['global_filter'] ?? '1=1';
 
+    $threatWhere = MailWatchMetrics::sqlAnyThreat();
     $sql = "SELECT 
         id,
         timestamp,
@@ -1018,7 +1074,7 @@ function render_widget_recent_threats($timeRange)
         ishighmcp,
         report
     FROM maillog 
-    WHERE (isspam=1 OR virusinfected=1 OR nameinfected=1 OR otherinfected=1 OR ismcp=1 OR ishighmcp=1)
+    WHERE $threatWhere
       AND $timeFilter AND ($globalFilter)
     ORDER BY timestamp DESC 
     LIMIT 6";
@@ -1043,19 +1099,19 @@ function render_widget_recent_threats($timeRange)
 
     while ($r = $res->fetch_assoc()) {
         $typeBadge = '';
-        if ((int)$r['virusinfected'] === 1) {
+        if ((int)$r['virusinfected'] > 0) {
             $fullRep = !empty($r['report']) ? $r['report'] : 'Virus signature detected';
             $shortRep = format_short_virus_name($fullRep, 18);
             $typeBadge = '<span class="dash-kpi-pill pill-red mw-threat-tooltip" title="' . htmlspecialchars($fullRep, ENT_QUOTES, 'UTF-8') . '" data-tooltip="' . htmlspecialchars($fullRep, ENT_QUOTES, 'UTF-8') . '">🔴 Virus (' . htmlspecialchars($shortRep, ENT_QUOTES, 'UTF-8') . ')</span>';
-        } elseif ((int)$r['nameinfected'] === 1 || (int)$r['otherinfected'] === 1) {
+        } elseif ((int)$r['nameinfected'] > 0 || (int)$r['otherinfected'] > 0) {
             $fullRep = !empty($r['report']) ? $r['report'] : 'Dangerous content / disallowed file';
             $shortRep = format_short_virus_name($fullRep, 18);
             $typeBadge = '<span class="dash-kpi-pill pill-orange mw-threat-tooltip" title="' . htmlspecialchars($fullRep, ENT_QUOTES, 'UTF-8') . '" data-tooltip="' . htmlspecialchars($fullRep, ENT_QUOTES, 'UTF-8') . '">🟠 Bad Content (' . htmlspecialchars($shortRep, ENT_QUOTES, 'UTF-8') . ')</span>';
-        } elseif ((int)$r['ishighspam'] === 1) {
+        } elseif ((int)$r['ishighspam'] > 0) {
             $typeBadge = '<span class="dash-kpi-pill pill-purple">🟣 High Spam</span>';
-        } elseif ((int)$r['isspam'] === 1) {
+        } elseif ((int)$r['isspam'] > 0) {
             $typeBadge = '<span class="dash-kpi-pill pill-yellow">🟡 Spam</span>';
-        } elseif ((int)$r['ismcp'] === 1 || (int)$r['ishighmcp'] === 1) {
+        } elseif ((int)$r['ismcp'] > 0 || (int)$r['ishighmcp'] > 0) {
             $typeBadge = '<span class="dash-kpi-pill pill-purple">🛡️ Policy</span>';
         }
 
@@ -1287,7 +1343,8 @@ function render_widget_spam_rules_top($timeRange)
     $globalFilter = $_SESSION['global_filter'] ?? '1=1';
 
     // Query recent spam reports and parse rules
-    $sql = "SELECT report FROM maillog WHERE isspam=1 AND $timeFilter AND ($globalFilter) AND report != '' LIMIT 150";
+    $spamWhere = MailWatchMetrics::sqlSpam();
+    $sql = "SELECT report FROM maillog WHERE $spamWhere AND $timeFilter AND ($globalFilter) AND report != '' LIMIT 150";
     $res = dbquery($sql);
 
     $ruleHits = [];
@@ -1350,12 +1407,16 @@ function render_widget_quarantine_stats()
     $todayViruses = 0;
     $todaySpam = 0;
 
+    $virusExpr = MailWatchMetrics::sqlCountIf(MailWatchMetrics::sqlVirus());
+    $spamExpr = MailWatchMetrics::sqlCountIf(MailWatchMetrics::sqlSpam());
+    $quarantineWhere = '(quarantined=1 OR ' . MailWatchMetrics::sqlAnyThreat() . ')';
+
     $sql = "SELECT 
         COUNT(*) AS total,
-        SUM(virusinfected) AS virus,
-        SUM(isspam) AS spam
+        $virusExpr AS virus,
+        $spamExpr AS spam
     FROM maillog 
-    WHERE (quarantined=1 OR virusinfected=1 OR nameinfected=1 OR otherinfected=1 OR ishighspam=1)
+    WHERE $quarantineWhere
       AND timestamp >= CURDATE()";
 
     $res = dbquery($sql);

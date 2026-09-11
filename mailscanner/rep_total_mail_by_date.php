@@ -48,61 +48,13 @@ $sql = "
  SELECT
   DATE_FORMAT(date, $date_format) AS xaxis,
   COUNT(*) AS total_mail,
-  SUM(CASE WHEN virusinfected>0 THEN 1 ELSE 0 END) AS total_virus,
-
-  SUM(CASE WHEN (
-    isspam>0
-    AND (virusinfected=0 OR virusinfected IS NULL)
-    AND (nameinfected=0 OR nameinfected IS NULL)
-    AND (otherinfected=0 OR otherinfected IS NULL)
-    ) THEN 1 ELSE 0 END
-  ) AS total_spam,
-
-  SUM(CASE WHEN (
-    isspam>0
-    AND (virusinfected=0 OR virusinfected IS NULL)
-    AND (nameinfected=0 OR nameinfected IS NULL)
-    AND (otherinfected=0 OR otherinfected IS NULL)
-    AND (ishighspam=0 OR ishighspam IS NULL)
-    ) THEN 1 ELSE 0 END
-  ) AS total_lowspam,
-
-  SUM(CASE WHEN (
-    ishighspam>0
-    AND (virusinfected=0 OR virusinfected IS NULL)
-    AND (nameinfected=0 OR nameinfected IS NULL)
-    AND (otherinfected=0 OR otherinfected IS NULL)
-    ) THEN 1 ELSE 0 END
-  ) AS total_highspam,
-
-  SUM(CASE WHEN (
-    ismcp>0
-    AND (virusinfected=0 OR virusinfected IS NULL)
-    AND (nameinfected=0 OR nameinfected IS NULL)
-    AND (otherinfected=0 OR otherinfected IS NULL)
-    AND (isspam=0 OR isspam IS NULL)
-    AND (ishighspam=0 OR ishighspam IS NULL)
-    ) THEN 1 ELSE 0 END
-  ) AS total_mcp,
-
-  SUM(CASE WHEN (
-    nameinfected>0
-    AND (virusinfected=0 OR virusinfected IS NULL)
-    AND (otherinfected=0 OR otherinfected IS NULL)
-    ) THEN 1 ELSE 0 END
-  ) AS total_blocked,
-
-  SUM(CASE WHEN (
-    (virusinfected=0 OR virusinfected IS NULL)
-    AND (nameinfected=0 OR nameinfected IS NULL)
-    AND (otherinfected=0 OR otherinfected IS NULL)
-    AND (isspam=0 OR isspam IS NULL)
-    AND (ishighspam=0 OR ishighspam IS NULL)
-    AND (ismcp=0 OR ismcp IS NULL)
-    AND (ishighmcp=0 OR ishighmcp IS NULL)
-    ) THEN 1 ELSE 0 END
-  ) as total_clean,
-
+  " . MailWatchMetrics::sqlCountClassification('virus') . " AS total_virus,
+  SUM(CASE WHEN " . MailWatchMetrics::sqlClassificationCase() . " IN ('spam', 'highspam') THEN 1 ELSE 0 END) AS total_spam,
+  " . MailWatchMetrics::sqlCountClassification('spam') . " AS total_lowspam,
+  " . MailWatchMetrics::sqlCountClassification('highspam') . " AS total_highspam,
+  " . MailWatchMetrics::sqlCountClassification('mcp') . " AS total_mcp,
+  " . MailWatchMetrics::sqlCountClassification('badcontent') . " AS total_blocked,
+  " . MailWatchMetrics::sqlCountClassification('clean') . " AS total_clean,
   SUM(size) AS total_size
  FROM
   maillog

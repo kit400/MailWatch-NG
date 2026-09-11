@@ -41,8 +41,8 @@ $graphgenerator->sqlQuery = '
 SELECT
  clientip,
  count(*) AS count,
- sum(virusinfected) AS total_viruses,
- sum(isspam) AS total_spam,
+ ' . MailWatchMetrics::sqlCountIf(MailWatchMetrics::sqlVirus()) . ' AS total_viruses,
+ ' . MailWatchMetrics::sqlCountIf(MailWatchMetrics::sqlSpam()) . ' AS total_spam,
  sum(size) AS size
 FROM
  maillog

@@ -41,12 +41,12 @@ $t0 = microtime(true);
 
 // Query distinct client IPs with counts and stats
 $query = "
- SELECT
-  clientip,
-  COUNT(*) AS count,
-  SUM(virusinfected) AS total_viruses,
-  SUM(isspam) AS total_spam,
-  SUM(size) AS size
+  SELECT
+   clientip,
+   COUNT(*) AS count,
+   " . MailWatchMetrics::sqlCountIf(MailWatchMetrics::sqlVirus()) . " AS total_viruses,
+   " . MailWatchMetrics::sqlCountIf(MailWatchMetrics::sqlSpam()) . " AS total_spam,
+   SUM(size) AS size
  FROM
   maillog
  WHERE

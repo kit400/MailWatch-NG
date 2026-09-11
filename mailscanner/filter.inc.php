@@ -528,13 +528,13 @@ class Filter
 
         // Fetch quick summary numbers
         $query = "
-SELECT
- DATE_FORMAT(MIN(date),'" . DATE_FORMAT . "') AS oldest,
- DATE_FORMAT(MAX(date),'" . DATE_FORMAT . "') AS newest,
- COUNT(date) AS messages,
- SUM(CASE WHEN virusinfected>0 THEN 1 ELSE 0 END) AS infected,
- SUM(CASE WHEN isspam>0 THEN 1 ELSE 0 END) AS spam
-FROM
+ SELECT
+  DATE_FORMAT(MIN(date),'" . DATE_FORMAT . "') AS oldest,
+  DATE_FORMAT(MAX(date),'" . DATE_FORMAT . "') AS newest,
+  COUNT(date) AS messages,
+  " . MailWatchMetrics::sqlCountIf(MailWatchMetrics::sqlVirus()) . " AS infected,
+  " . MailWatchMetrics::sqlCountIf(MailWatchMetrics::sqlSpam()) . " AS spam
+ FROM
  maillog
 WHERE
  1=1
