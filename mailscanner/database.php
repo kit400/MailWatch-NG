@@ -47,12 +47,31 @@ class database
         if (!is_object(self::$link)) {
             try {
                 $driver = new mysqli_driver();
-                $driver->report_mode = MYSQLI_REPORT_ALL;
+                $driver->report_mode = MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT;
+
+                self::$link = mysqli_init();
+                if (!self::$link) {
+                    throw new Exception('Failed to initialize mysqli object');
+                }
+
+                // Command to remove ONLY_FULL_GROUP_BY from session sql_mode
+                $sqlModeCleanCmd = "SET sql_mode=(SELECT TRIM(BOTH ',' FROM REPLACE(REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY,',''),'ONLY_FULL_GROUP_BY','')))";
+
+                // Set MYSQLI_INIT_COMMAND BEFORE real_connect so any handshake or reconnect executes it
+                self::$link->options(MYSQLI_INIT_COMMAND, $sqlModeCleanCmd);
+
                 set_error_handler(static function ($errno, $errstr, $errfile, $errline, $errcontext = []) {
                 });
-                self::$link = new mysqli($host, $username, $password, $database, $port);
+                $connected = self::$link->real_connect($host, $username, $password, $database, (int)$port);
                 restore_error_handler();
-                self::$link->options(MYSQLI_INIT_COMMAND, "SET sql_mode=(SELECT TRIM(BOTH ',' FROM REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY','')))");
+
+                if (!$connected) {
+                    throw new Exception(self::$link->connect_error ?: 'Database connection failed', self::$link->connect_errno);
+                }
+
+                // Explicitly execute to guarantee sql_mode is applied to the active session immediately
+                self::$link->query($sqlModeCleanCmd);
+
                 $charset = 'utf8';
                 $collation = 'utf8_unicode_ci';
                 if (self::$link->server_version >= 50503) {
@@ -141,6 +160,27 @@ class database
     {
         if (is_object(self::$link) && isset(self::$link->server_info)) {
             return self::$link->server_info;
+        }
+
+        return '';
+    }
+
+    /**
+     * Get the current session sql_mode.
+     *
+     * @return string
+     */
+    public static function getSessionSqlMode()
+    {
+        if (is_object(self::$link)) {
+            try {
+                $res = self::$link->query('SELECT @@SESSION.sql_mode');
+                if ($res && ($row = $res->fetch_row())) {
+                    return (string)$row[0];
+                }
+            } catch (\Throwable $e) {
+                return '';
+            }
         }
 
         return '';
