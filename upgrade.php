@@ -852,6 +852,7 @@ if ($link) {
         'saved_filters',
         'sa_rules',
         'users',
+        'user_dashboards',
         'user_filters',
         'whitelist',
     );

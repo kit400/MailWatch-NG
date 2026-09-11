@@ -32,6 +32,12 @@ my ($ss_refresh_time) = 15;       # Time in minutes before lists are refreshed
 my ($bwl_refresh_time) = 15;      # Time in minutes before lists are refreshed
 
 
+# Directory where failed logging events are safely preserved for replay/inspection
+my ($failed_events_dir) = '/var/spool/mailwatch/failed_events';
+
+# Maximum retry attempts for transient database errors before dead-letter routing
+my ($max_retries) = 5;
+
 ###############################
 # don't touch below this line #
 ###############################
@@ -42,5 +48,7 @@ sub mailwatch_get_db_user { return $db_user };
 sub mailwatch_get_db_password { return $db_pass };
 sub mailwatch_get_BWL_refresh_time { return $bwl_refresh_time };
 sub mailwatch_get_SS_refresh_time { return $ss_refresh_time };
+sub mailwatch_get_failed_events_dir { return $failed_events_dir };
+sub mailwatch_get_max_retries { return $max_retries };
 
 1;

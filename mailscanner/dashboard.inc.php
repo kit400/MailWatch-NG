@@ -20,13 +20,13 @@ function init_user_dashboards_table()
     }
     $sql = "CREATE TABLE IF NOT EXISTS `user_dashboards` (
         `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-        `username` varchar(191) COLLATE utf8_unicode_ci NOT NULL,
-        `dashboard_name` varchar(100) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'default',
-        `layout_json` longtext COLLATE utf8_unicode_ci NOT NULL,
+        `username` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
+        `dashboard_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'default',
+        `layout_json` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
         `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         PRIMARY KEY (`id`),
         UNIQUE KEY `user_dash_uniq` (`username`, `dashboard_name`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;";
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
     dbquery($sql, false);
     $initialized = true;
 }

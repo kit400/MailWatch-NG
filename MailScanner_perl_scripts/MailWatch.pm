@@ -37,7 +37,20 @@ use Sys::Hostname;
 use Storable(qw[freeze thaw]);
 use POSIX;
 use Socket;
-use Encoding::FixLatin qw(fix_latin);
+BEGIN {
+    eval {
+        require Encoding::FixLatin;
+        Encoding::FixLatin->import('fix_latin');
+    };
+    if ($@) {
+        *fix_latin = sub {
+            my $str = shift;
+            return $str unless defined $str;
+            utf8::upgrade($str) unless utf8::is_utf8($str);
+            return $str;
+        };
+    }
+}
 use Digest::SHA;
 use Sys::Syslog;
 
@@ -69,6 +82,8 @@ my ($db_name) = mailwatch_get_db_name();
 my ($db_host) = mailwatch_get_db_host();
 my ($db_user) = mailwatch_get_db_user();
 my ($db_pass) = mailwatch_get_db_password();
+my $failed_events_dir = defined &mailwatch_get_failed_events_dir ? mailwatch_get_failed_events_dir() : '/var/spool/mailwatch/failed_events';
+my $configured_max_retries = defined &mailwatch_get_max_retries ? mailwatch_get_max_retries() : 5;
 
 my $RunInForeground;
 
@@ -118,20 +133,22 @@ sub InitMailWatchLogging {
 }
 
 sub CheckSQLVersion {
-    # Prevent Logger from dying if connection fails
+    # Check SQL server version safely without clobbering persistent state
     eval {
-        $dbh = DBI->connect("DBI:MariaDB:database=$db_name;host=$db_host",
+        my $tmp_dbh = DBI->connect("DBI:MariaDB:database=$db_name;host=$db_host",
             $db_user, $db_pass,
             { PrintError => 0, AutoCommit => 1, RaiseError => 1 }
         );
+        if ($tmp_dbh) {
+            $SQLversion = $tmp_dbh->{mariadb_serverversion} || $tmp_dbh->{mysql_serverversion};
+            $tmp_dbh->disconnect;
+        }
     };
-    if ($@ || !$dbh) {
-        LogMessage("warn", "Unable to initialise database connection: $DBI::errstr");
-        close(SERVER);
+    if ($@ || !$SQLversion) {
+        my $err = $@ || $DBI::errstr || "unknown error";
+        LogMessage("warn", "Unable to check database version: $err");
         return 1;
     }
-    $SQLversion = $dbh->{mariadb_serverversion};
-    $dbh->disconnect;
 
     return $SQLversion;
 }
@@ -171,27 +188,42 @@ sub ListenPort {
 }
 
 sub InitDB {
-    # Our reason for existence - the persistent connection to the database
-    my $version = CheckSQLVersion();
+    # Persistent connection to the database
+    eval {
+        $dbh->disconnect if $dbh;
+    };
+    undef $dbh;
+    undef $sth;
 
-    if ($version == 1) {
-       return 1;
-    }
-
-    eval { $dbh = DBI->connect("DBI:MariaDB:database=$db_name;host=$db_host",
+    eval {
+        $dbh = DBI->connect("DBI:MariaDB:database=$db_name;host=$db_host",
             $db_user, $db_pass,
             { PrintError => 0, AutoCommit => 1, RaiseError => 1 }
         );
     };
     if ($@ || !$dbh) {
-        LogMessage('warn', "Unable to initialise database connection: $DBI::errstr");
+        my $err = $@ || $DBI::errstr || "unknown error";
+        LogMessage('warn', "Unable to initialise database connection: $err");
         return 1;
     }
-    $dbh->do('SET NAMES utf8mb4');
 
-    $sth = $dbh->prepare("INSERT INTO maillog (timestamp, id, size, from_address, from_domain, to_address, to_domain, subject, clientip, archive, isspam, ishighspam, issaspam, isrblspam, spamwhitelisted, spamblacklisted, sascore, spamreport, virusinfected, nameinfected, otherinfected, report, ismcp, ishighmcp, issamcp, mcpwhitelisted, mcpblacklisted, mcpsascore, mcpreport, hostname, date, time, headers, quarantined, rblspamreport, token, messageid) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-    if (!$sth) {
-        LogMessage('warn', "Error: $DBI::errstr" );
+    eval {
+        $SQLversion = $dbh->{mariadb_serverversion} || $dbh->{mysql_serverversion};
+    };
+
+    eval {
+        $dbh->do('SET NAMES utf8mb4');
+    };
+    if ($@) {
+        LogMessage('warn', "Warning: SET NAMES utf8mb4 failed: $@");
+    }
+
+    eval {
+        $sth = $dbh->prepare("INSERT INTO maillog (timestamp, id, size, from_address, from_domain, to_address, to_domain, subject, clientip, archive, isspam, ishighspam, issaspam, isrblspam, spamwhitelisted, spamblacklisted, sascore, spamreport, virusinfected, nameinfected, otherinfected, report, ismcp, ishighmcp, issamcp, mcpwhitelisted, mcpblacklisted, mcpsascore, mcpreport, hostname, date, time, headers, quarantined, rblspamreport, token, messageid) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+    };
+    if ($@ || !$sth) {
+        my $err = $@ || $DBI::errstr || "unknown error";
+        LogMessage('warn', "Error preparing statement: $err");
         return 1;
     }
 
@@ -217,8 +249,193 @@ sub InitConnection {
 sub ExitLogging {
     # Server exit - commit changes, close socket, and exit gracefully.
     close(SERVER);
-    $dbh->disconnect;
+    eval { $dbh->disconnect if $dbh; };
     exit;
+}
+
+sub StripNulBytes {
+    my ($msg) = @_;
+    return unless defined $msg && ref($msg) eq 'HASH';
+    for my $f (qw(id from from_domain to to_domain subject clientip archiveplaces spamreport reports mcpreport hostname headers rblspamreport token messageid)) {
+        if (defined $msg->{$f}) {
+            $msg->{$f} =~ s/\0//g;
+        }
+    }
+}
+
+sub SanitizeMessageFields {
+    my ($msg, $strip_4byte) = @_;
+    return unless defined $msg && ref($msg) eq 'HASH';
+    for my $f (qw(id from from_domain to to_domain subject clientip archiveplaces spamreport reports mcpreport hostname headers rblspamreport token messageid)) {
+        if (defined $msg->{$f}) {
+            $msg->{$f} =~ s/\0//g;
+            if ($strip_4byte) {
+                if (utf8::is_utf8($msg->{$f})) {
+                    $msg->{$f} =~ s/[^\x{0000}-\x{FFFF}]/\x{FFFD}/g;
+                } else {
+                    $msg->{$f} =~ s/[\xF0-\xF4][\x80-\xBF]{3}/\x{EF}\x{BF}\x{BD}/g;
+                }
+            }
+        }
+    }
+    if (defined $msg->{token} && length($msg->{token}) > 64) {
+        $msg->{token} = substr($msg->{token}, 0, 64);
+    }
+    if (defined $msg->{sascore} && $msg->{sascore} !~ /^-?\d+(?:\.\d+)?$/) {
+        $msg->{sascore} = 0.00;
+    }
+    if (defined $msg->{mcpsascore} && $msg->{mcpsascore} !~ /^-?\d+(?:\.\d+)?$/) {
+        $msg->{mcpsascore} = 0.00;
+    }
+}
+
+sub IsTransientDBError {
+    my ($err_code, $err_str, $dbh_ref) = @_;
+    $err_code //= 0;
+    $err_str  //= '';
+
+    if (!$dbh_ref || eval { !$dbh_ref->ping }) {
+        return 1;
+    }
+
+    my %transient_codes = map { $_ => 1 } (
+        1040, # ER_CON_COUNT_ERROR (Too many connections)
+        1041, # ER_OUTOFMEMORY
+        1053, # ER_SERVER_SHUTDOWN
+        1158, # ER_NET_READ_ERROR_HEADER
+        1159, # ER_NET_READ_INTERRUPTED
+        1160, # ER_NET_ERROR_ON_WRITE
+        1161, # ER_NET_WRITE_INTERRUPTED
+        1205, # ER_LOCK_WAIT_TIMEOUT
+        1213, # ER_LOCK_DEADLOCK
+        2002, # CR_CONNECTION_ERROR
+        2003, # CR_CONN_HOST_ERROR
+        2006, # CR_SERVER_GONE_ERROR
+        2013, # CR_SERVER_LOST
+        2055, # CR_SERVER_LOST_EXTENDED
+    );
+
+    if ($transient_codes{int($err_code)}) {
+        return 1;
+    }
+
+    if ($err_str =~ /server has gone away/i ||
+        $err_str =~ /lost connection/i ||
+        $err_str =~ /can't connect/i ||
+        $err_str =~ /connection refused/i ||
+        $err_str =~ /broken pipe/i ||
+        $err_str =~ /lock wait timeout/i ||
+        $err_str =~ /deadlock/i ||
+        $err_str =~ /too many connections/i ||
+        $err_str =~ /shutdown in progress/i) {
+        return 1;
+    }
+
+    return 0;
+}
+
+sub GetFailedEventsDir {
+    my $dir = $failed_events_dir;
+    if (defined &mailwatch_get_failed_events_dir) {
+        eval { $dir = mailwatch_get_failed_events_dir(); };
+    }
+    my @candidates = (
+        $dir,
+        '/var/spool/mailwatch/failed_events',
+        '/var/spool/MailScanner/failed_events',
+        '/var/cache/mailwatch/failed_events',
+        '/tmp/mailwatch_failed_events'
+    );
+    for my $cand (@candidates) {
+        next unless defined $cand && length($cand);
+        if (-d $cand && -w $cand) {
+            return $cand;
+        }
+        if (!-e $cand) {
+            eval {
+                require File::Path;
+                File::Path::make_path($cand, { mode => 0770 });
+            };
+            if (-d $cand && -w $cand) {
+                return $cand;
+            }
+        }
+    }
+    return '/tmp';
+}
+
+sub _escape_json_str {
+    my ($s) = @_;
+    $s //= '';
+    $s =~ s/\\/\\\\/g;
+    $s =~ s/"/\\"/g;
+    $s =~ s/\n/\\n/g;
+    $s =~ s/\r/\\r/g;
+    $s =~ s/\t/\\t/g;
+    $s =~ s/([\x00-\x1f])/sprintf("\\u%04x", ord($1))/ge;
+    return $s;
+}
+
+sub _json_encode_value {
+    my ($val, $depth, $key) = @_;
+    $depth //= 0;
+    my $indent = '  ' x $depth;
+    my $sub_indent = '  ' x ($depth + 1);
+
+    if (!defined $val) {
+        return 'null';
+    } elsif (ref($val) eq 'HASH') {
+        my @items;
+        for my $k (sort keys %$val) {
+            push @items, sprintf('%s"%s": %s', $sub_indent, _escape_json_str($k), _json_encode_value($val->{$k}, $depth + 1, $k));
+        }
+        return "{\n" . join(",\n", @items) . "\n" . $indent . "}";
+    } elsif (ref($val) eq 'ARRAY') {
+        my @items;
+        for my $item (@$val) {
+            push @items, sprintf('%s%s', $sub_indent, _json_encode_value($item, $depth + 1, undef));
+        }
+        return "[\n" . join(",\n", @items) . "\n" . $indent . "]";
+    } elsif (defined $key && $key =~ /^(?:size|is[a-z]+|spamwhitelisted|spamblacklisted|mcpwhitelisted|mcpblacklisted|quarantined|released|salearn)$/ && $val =~ /^-?\d+$/) {
+        return "$val";
+    } elsif (defined $key && $key =~ /^(?:sascore|mcpsascore)$/ && $val =~ /^-?\d+(?:\.\d+)?$/) {
+        return "$val";
+    } else {
+        return '"' . _escape_json_str($val) . '"';
+    }
+}
+
+sub FormatJSON {
+    my ($data) = @_;
+    return _json_encode_value($data, 0, undef) . "\n";
+}
+
+sub SaveFailedEvent {
+    my ($msg, $err_code, $err_str) = @_;
+    return unless defined $msg && ref($msg) eq 'HASH';
+
+    my $dir = GetFailedEventsDir();
+    my $msg_id = $msg->{id} || 'unknown';
+    $msg_id =~ s/[^a-zA-Z0-9._-]/_/g;
+    my $filename = sprintf("%s/%s-%d-%d.json", $dir, $msg_id, time(), $$);
+
+    my %record = (
+        failed_at   => POSIX::strftime("%Y-%m-%d %H:%M:%S", localtime()),
+        error_code  => int($err_code || 0),
+        error_str   => "$err_str",
+        message_id  => $msg->{id} // '',
+        fields      => $msg,
+    );
+
+    if (open(my $fh, '>', $filename)) {
+        print $fh FormatJSON(\%record);
+        close($fh);
+        LogMessage('warn', "$msg_id: Saved failed event to dead-letter queue: $filename");
+        return $filename;
+    } else {
+        LogMessage('err', "$msg_id: Could not write failed event to $filename: $!");
+        return undef;
+    }
 }
 
 sub ListenForMessages {
@@ -229,11 +446,11 @@ sub ListenForMessages {
         my ($port, $packed_ip) = sockaddr_in($cli);
         my $dotted_quad = inet_ntoa($packed_ip);
 
-        # Reset emergency timeout - if we haven"t heard anything in $timeout
+        # Reset emergency timeout - if we haven't heard anything in $timeout
         # seconds, there is probably something wrong, so we should clean up
         # and let another process try.
         alarm $timeout;
-        # Make sure we"re only receiving local connections
+        # Make sure we're only receiving local connections
         if ($dotted_quad ne "127.0.0.1") {
             LogMessage('warn', "Error: unexpected connection from $dotted_quad");
             close CLIENT;
@@ -248,81 +465,124 @@ sub ListenForMessages {
             chop;
             push @in, $_;
         }
+        close CLIENT;
+
         my $data = join "", @in;
         my $tmp = unpack("u", $data);
-        $message = thaw $tmp;
+        $message = eval { thaw $tmp };
 
-        next unless defined $$message{id};
+        next unless (defined $message && ref($message) eq 'HASH' && defined $$message{id});
 
-        # Set up a loop to prevent loss of logging, up to $timeout
-        # Prevents loss of logging to database due to temporary failure
-        while(1) {
+        # Prevent loss of logging on transient errors, while preventing
+        # infinite loops and blockage on permanent data/schema errors.
+        my $max_retries = defined &mailwatch_get_max_retries ? mailwatch_get_max_retries() : $configured_max_retries;
+        my $retry_count = 0;
+        my $sanitized = 0;
 
-            # Log message
-            eval {$sth->execute(
-                $$message{timestamp},
-                $$message{id},
-                $$message{size},
-                $$message{from},
-                $$message{from_domain},
-                $$message{to},
-                $$message{to_domain},
-                $$message{subject},
-                $$message{clientip},
-                $$message{archiveplaces},
-                $$message{isspam},
-                $$message{ishigh},
-                $$message{issaspam},
-                $$message{isrblspam},
-                $$message{spamwhitelisted},
-                $$message{spamblacklisted},
-                $$message{sascore},
-                $$message{spamreport},
-                $$message{virusinfected},
-                $$message{nameinfected},
-                $$message{otherinfected},
-                $$message{reports},
-                $$message{ismcp},
-                $$message{ishighmcp},
-                $$message{issamcp},
-                $$message{mcpwhitelisted},
-                $$message{mcpblacklisted},
-                $$message{mcpsascore},
-                $$message{mcpreport},
-                $$message{hostname},
-                $$message{date},
-                $$message{"time"},
-                $$message{headers},
-                $$message{quarantined},
-                $$message{rblspamreport},
-                $$message{token},
-                $$message{messageid});
-            };
+        # Clean NUL bytes initially
+        StripNulBytes($message);
 
-            # Something went wrong
-            if ($@ || !$sth) {
-                LogMessage('warn', "$$message{id}: Cannot insert row: $sth->errstr");
-                close(SERVER);
-                # Bind the port so another instance can't spawn
-                if (BindPort() == 1) {
-                    # Can't bind, unexpected, bail out
-                    last;
+        while (1) {
+            # Ensure DB connection and statement handle exist
+            if (!$dbh || !$sth || eval { !$dbh->ping }) {
+                InitDB();
+            }
+
+            my $ok = 0;
+            if ($sth) {
+                $ok = eval {
+                    $sth->execute(
+                        $$message{timestamp},
+                        $$message{id},
+                        $$message{size},
+                        $$message{from},
+                        $$message{from_domain},
+                        $$message{to},
+                        $$message{to_domain},
+                        $$message{subject},
+                        $$message{clientip},
+                        $$message{archiveplaces},
+                        $$message{isspam},
+                        $$message{ishigh},
+                        $$message{issaspam},
+                        $$message{isrblspam},
+                        $$message{spamwhitelisted},
+                        $$message{spamblacklisted},
+                        $$message{sascore},
+                        $$message{spamreport},
+                        $$message{virusinfected},
+                        $$message{nameinfected},
+                        $$message{otherinfected},
+                        $$message{reports},
+                        $$message{ismcp},
+                        $$message{ishighmcp},
+                        $$message{issamcp},
+                        $$message{mcpwhitelisted},
+                        $$message{mcpblacklisted},
+                        $$message{mcpsascore},
+                        $$message{mcpreport},
+                        $$message{hostname},
+                        $$message{date},
+                        $$message{"time"},
+                        $$message{headers},
+                        $$message{quarantined},
+                        $$message{rblspamreport},
+                        $$message{token},
+                        $$message{messageid}
+                    );
+                };
+            }
+
+            if ($ok && !$@) {
+                if ($sanitized) {
+                    LogMessage('warn', "$$message{id}: Logged to MailWatch SQL after sanitizing incompatible characters");
+                } elsif ($retry_count > 0) {
+                    LogMessage('info', "$$message{id}: Logged to MailWatch SQL after $retry_count retry attempts");
+                } else {
+                    LogMessage('info', "$$message{id}: Logged to MailWatch SQL");
                 }
-                while(InitDB() == 1) { sleep(2); };
-                # Start listening once all is well
-                if (ListenPort() == 1) {
-                    # Can't listen, unexpected, bail out
-                    last;
-                }
-            } else {
-                LogMessage('info', "$$message{id}: Logged to MailWatch SQL");
                 last;
             }
+
+            # An error occurred
+            my $err_str  = ($sth && $sth->errstr) || ($dbh && $dbh->errstr) || $DBI::errstr || $@ || "Unknown error";
+            my $err_code = ($sth && $sth->err) || ($dbh && $dbh->err) || $DBI::err || 0;
+
+            # Classify error: Transient vs Permanent
+            if (!IsTransientDBError($err_code, $err_str, $dbh)) {
+                # Permanent error!
+                # Check if it is a character encoding issue (1366 / incorrect string value)
+                if (($err_code == 1366 || $err_str =~ /incorrect string value/i || $err_str =~ /charset/i) && !$sanitized) {
+                    $sanitized = 1;
+                    LogMessage('warn', "$$message{id}: Encoding error ($err_code: $err_str). Sanitizing 4-byte UTF-8 sequences and retrying...");
+                    SanitizeMessageFields($message, 1);
+                    next;
+                }
+
+                # Other permanent error (or already sanitized):
+                # Do NOT retry infinitely! Divert to dead-letter queue and proceed!
+                LogMessage('err', "$$message{id}: Permanent database error ($err_code: $err_str). Event diverted to dead-letter store.");
+                SaveFailedEvent($message, $err_code, $err_str);
+                last;
+            }
+
+            # Transient error: connection drop, deadlock, server restart, etc.
+            $retry_count++;
+            if ($retry_count > $max_retries) {
+                LogMessage('err', "$$message{id}: Database retries exhausted ($retry_count/$max_retries: $err_code: $err_str). Event diverted to dead-letter store.");
+                SaveFailedEvent($message, $err_code, "Database retries exhausted: $err_str");
+                last;
+            }
+
+            my $backoff = ($retry_count == 1) ? 1 : ($retry_count == 2) ? 2 : ($retry_count == 3) ? 4 : 5;
+            LogMessage('warn', "$$message{id}: Transient database error ($err_code: $err_str). Reconnecting in ${backoff}s (attempt $retry_count of $max_retries)...");
+            sleep($backoff);
+
+            InitDB();
         }
 
         # Unset
         $message = undef;
-
     }
 }
 
@@ -501,10 +761,10 @@ sub MailWatchLogging {
     $msg{timestamp} = $timestamp;
     $msg{id} = $message->{id};
     $msg{size} = $message->{size};
-    $msg{from} = $message->{from};
-    $msg{from_domain} = $message->{fromdomain};
-    $msg{to} = join(",", @{$message->{to}});
-    $msg{to_domain} = $todomain;
+    $msg{from} = fix_latin($message->{from});
+    $msg{from_domain} = fix_latin($message->{fromdomain});
+    $msg{to} = fix_latin(join(",", @{$message->{to}}));
+    $msg{to_domain} = fix_latin($todomain);
     $msg{subject} = $subject;
     $msg{clientip} = $clientip;
     $msg{archiveplaces} = join(",", @{$message->{archiveplaces}});
