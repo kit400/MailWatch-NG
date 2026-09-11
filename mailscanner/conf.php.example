@@ -49,6 +49,10 @@ define('USER_SELECTABLE_LANG', 'de,en,es-419,fr,it,ja,nl,pt_br,tr');
 // This can also be set individually per user in the MailWatch GUI for greater flexibility.
 define('SESSION_TIMEOUT', 259200);
 
+// Runtime Cache Directory - Sets the private directory for dashboard widget cache and runtime data outside web root
+// Defaults to /var/cache/mailwatch (or system temp directory fallback)
+define('MAILWATCH_CACHE_DIR', '/var/cache/mailwatch');
+
 // --- Login Security & Brute-Force Protection ---
 // Enable or disable login brute-force protection
 define('LOGIN_PROTECTION_ENABLED', true);

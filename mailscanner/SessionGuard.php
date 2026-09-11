@@ -180,6 +180,12 @@ class SessionGuard
             }
         }
 
+        // Purge user's cached dashboard widgets on session termination
+        if (isset($_SESSION['global_filter']) && function_exists('clear_dashboard_widget_cache')) {
+            $filterHash = md5($_SESSION['global_filter'] . '_');
+            clear_dashboard_widget_cache($filterHash);
+        }
+
         // Clear session data
         $_SESSION = [];
 

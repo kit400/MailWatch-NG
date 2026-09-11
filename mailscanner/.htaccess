@@ -1,1 +1,12 @@
-Options -Indexes
+Options -Indexes -FollowSymLinks
+
+# Deny direct access to sensitive file types and internal files (MW-05 fix)
+<FilesMatch "\.(inc\.php|cache|json|mmdb|log|conf|bak|dist|sh|sql)$">
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+</FilesMatch>

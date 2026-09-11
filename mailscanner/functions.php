@@ -4399,10 +4399,11 @@ function debug_print_r($input)
 function get_geoip_database_file()
 {
     $candidates = [
-        __DIR__ . '/temp/ip-geo.mmdb',
         '/usr/share/GeoIP/ip-geo.mmdb',
-        __DIR__ . '/temp/GeoLite2-Country.mmdb',
+        mailwatch_cache_dir() . '/ip-geo.mmdb',
+        __DIR__ . '/temp/ip-geo.mmdb',
         '/usr/share/GeoIP/GeoLite2-Country.mmdb',
+        __DIR__ . '/temp/GeoLite2-Country.mmdb',
     ];
     foreach ($candidates as $file) {
         if (file_exists($file) && filesize($file) > 1000) {
@@ -7220,6 +7221,61 @@ function get_user_avatar_badge_html($username, $size = 24)
 
     $fontSize = max(10, round($size * 0.65));
     return '<span class="user-avatar-badge" style="display:inline-flex;align-items:center;justify-content:center;width:' . $size . 'px;height:' . $size . 'px;line-height:1;font-size:' . $fontSize . 'px;border-radius:50%;background:#e2e8f0;flex-shrink:0;">👤</span>';
+}
+
+/**
+ * Get or initialize secure runtime cache directory outside document root (MW-05 fix).
+ *
+ * @param string $sub Subdirectory name (e.g. 'dash_cache')
+ * @return string Full directory path
+ */
+function mailwatch_cache_dir($sub = '')
+{
+    static $baseDir = null;
+    if ($baseDir === null) {
+        $candidates = [];
+
+        // 1. Explicit configuration setting
+        if (defined('MAILWATCH_CACHE_DIR') && !empty(MAILWATCH_CACHE_DIR)) {
+            $candidates[] = rtrim(MAILWATCH_CACHE_DIR, '/');
+        } elseif (defined('CACHE_DIR') && !empty(CACHE_DIR)) {
+            $candidates[] = rtrim(CACHE_DIR, '/');
+        }
+
+        // 2. Standard Enterprise Linux / FHS service cache directory
+        $candidates[] = '/var/cache/mailwatch';
+
+        // 3. Fallback to system temp directory (outside document root)
+        $candidates[] = rtrim(sys_get_temp_dir(), '/') . '/mailwatch_cache';
+
+        foreach ($candidates as $candidate) {
+            if (!is_dir($candidate)) {
+                @mkdir($candidate, 0770, true);
+            }
+            if (is_dir($candidate) && is_writable($candidate)) {
+                $baseDir = $candidate;
+                break;
+            }
+        }
+
+        // Failsafe fallback if none were writable
+        if ($baseDir === null) {
+            $baseDir = rtrim(sys_get_temp_dir(), '/') . '/mailwatch_cache';
+            if (!is_dir($baseDir)) {
+                @mkdir($baseDir, 0770, true);
+            }
+        }
+    }
+
+    if ($sub !== '') {
+        $subDir = $baseDir . '/' . trim($sub, '/');
+        if (!is_dir($subDir)) {
+            @mkdir($subDir, 0770, true);
+        }
+        return $subDir;
+    }
+
+    return $baseDir;
 }
 
 

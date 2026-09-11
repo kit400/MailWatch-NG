@@ -26,6 +26,13 @@
  */
 
 require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/dashboard.inc.php';
+
+// Purge user's cached dashboard widgets on logout
+if (isset($_SESSION['global_filter']) && function_exists('clear_dashboard_widget_cache')) {
+    $filterHash = md5($_SESSION['global_filter'] . '_');
+    clear_dashboard_widget_cache($filterHash);
+}
 
 // Clear the login expiry timestamp
 $sql = "UPDATE users SET login_expiry='-1' WHERE username='" . safe_value(stripslashes($_SESSION['myusername'])) . "'";

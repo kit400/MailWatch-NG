@@ -3,3 +3,5 @@
 # Except this file
 !.gitignore
 !/index.html
+!/index.php
+!.htaccess

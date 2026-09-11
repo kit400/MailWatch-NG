@@ -358,9 +358,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helve
     {
         self::ensureTables();
 
-        $cacheDir = defined('MAILWATCH_HOME') ? MAILWATCH_HOME . '/temp' : __DIR__ . '/temp';
+        $cacheDir = function_exists('mailwatch_cache_dir') ? mailwatch_cache_dir() : (defined('MAILWATCH_HOME') ? MAILWATCH_HOME . '/temp' : __DIR__ . '/temp');
         if (!is_dir($cacheDir)) {
-            @mkdir($cacheDir, 0775, true);
+            @mkdir($cacheDir, 0770, true);
         }
         $cacheFile = $cacheDir . '/version_check_cache.json';
         $currentVersion = function_exists('mailwatch_version') ? mailwatch_version() : '6.0.4';
@@ -496,6 +496,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helve
         ];
 
         @file_put_contents($cacheFile, json_encode($result, JSON_PRETTY_PRINT));
+        @chmod($cacheFile, 0660);
 
         return $result;
     }

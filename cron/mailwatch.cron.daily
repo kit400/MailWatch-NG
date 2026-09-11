@@ -6,3 +6,8 @@ MYSQLPW=`grep MAILWATCHSQLPWD /etc/eFa/MailWatch-Config | awk -F':' '{print $2}'
 mysql -u mailwatch -p$MYSQLPW --database=mailscanner -e "DELETE FROM mtalog_ids WHERE smtp_id not in (SELECT msg_id FROM mtalog);" >/dev/null 2>&1
 MYSQLPW=
 /usr/bin/php /var/www/html/mailscanner/tools/check_version.php >/dev/null 2>&1
+# Purge expired dashboard cache files older than 1 day (MW-05 retention policy)
+if [ -d /var/cache/mailwatch ]; then
+    find /var/cache/mailwatch -type f -name "*.cache" -mtime +1 -delete >/dev/null 2>&1
+    find /var/cache/mailwatch -type f -name "*.tmp" -mtime +1 -delete >/dev/null 2>&1
+fi

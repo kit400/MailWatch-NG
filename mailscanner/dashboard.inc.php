@@ -204,43 +204,107 @@ function get_dashboard_time_filter($timeRange = '24h')
 }
 
 /**
- * Get or set dashboard widget cache
+ * Purge expired dashboard cache files according to retention policy (MW-05 fix)
+ *
+ * @param string $cacheDir Directory to clean
+ * @param int $maxAge Maximum file age in seconds (default: 3600 = 1 hour)
+ */
+function purge_expired_dashboard_cache($cacheDir, $maxAge = 3600)
+{
+    if (!is_dir($cacheDir)) {
+        return;
+    }
+    $files = @glob($cacheDir . '/*.cache');
+    if (!$files) {
+        return;
+    }
+    $now = time();
+    foreach ($files as $f) {
+        $mtime = @filemtime($f);
+        if (!$mtime || ($now - $mtime) >= $maxAge) {
+            @unlink($f);
+        }
+    }
+}
+
+/**
+ * Get cached dashboard widget HTML content.
+ * Checks TTL and actively unlinks expired cache files (MW-05 fix).
+ *
+ * @param string $key Cache key
+ * @param int $ttl Time-to-live in seconds
+ * @return string|false
  */
 function get_dashboard_widget_cache($key, $ttl = 60)
 {
-    $cacheDir = __DIR__ . '/temp/dash_cache';
-    if (!is_dir($cacheDir)) {
-        @mkdir($cacheDir, 0775, true);
-    }
+    $cacheDir = function_exists('mailwatch_cache_dir') ? mailwatch_cache_dir('dash_cache') : (__DIR__ . '/temp/dash_cache');
     $file = $cacheDir . '/' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $key) . '.cache';
     if (file_exists($file)) {
         $mtime = @filemtime($file);
         if ($mtime && (time() - $mtime) < $ttl) {
             return @file_get_contents($file);
         }
+        // Purge expired cache file immediately
+        @unlink($file);
     }
     return false;
 }
 
+/**
+ * Store dashboard widget HTML content in private cache outside document root.
+ *
+ * @param string $key Cache key
+ * @param string $content HTML content
+ */
 function set_dashboard_widget_cache($key, $content)
 {
-    $cacheDir = __DIR__ . '/temp/dash_cache';
+    $cacheDir = function_exists('mailwatch_cache_dir') ? mailwatch_cache_dir('dash_cache') : (__DIR__ . '/temp/dash_cache');
     if (!is_dir($cacheDir)) {
-        @mkdir($cacheDir, 0775, true);
+        @mkdir($cacheDir, 0770, true);
     }
     $file = $cacheDir . '/' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $key) . '.cache';
     @file_put_contents($file, $content, LOCK_EX);
+    @chmod($file, 0660);
+
+    // Probabilistic cleanup: 5% chance on cache write to purge files older than 1 hour
+    if (mt_rand(1, 20) === 1) {
+        purge_expired_dashboard_cache($cacheDir, 3600);
+    }
 }
 
-function clear_dashboard_widget_cache($widgetType = null)
+/**
+ * Clear dashboard widget cache files.
+ *
+ * @param string|null $pattern If specified, only removes files matching pattern (e.g. user filter hash or widget type)
+ * @param bool $clearAll If true, purges all cache files
+ */
+function clear_dashboard_widget_cache($pattern = null, $clearAll = false)
 {
-    $cacheDir = __DIR__ . '/temp/dash_cache';
-    if (!is_dir($cacheDir)) return;
-    $files = glob($cacheDir . '/*.cache');
-    if (!$files) return;
-    foreach ($files as $f) {
-        if ($widgetType === null || strpos(basename($f), $widgetType) !== false) {
-            @unlink($f);
+    $dirs = [];
+    if (function_exists('mailwatch_cache_dir')) {
+        $dirs[] = mailwatch_cache_dir('dash_cache');
+    }
+    $dirs[] = __DIR__ . '/temp/dash_cache'; // Also clean legacy directory
+
+    $now = time();
+    foreach ($dirs as $cacheDir) {
+        if (!is_dir($cacheDir)) continue;
+        $files = @glob($cacheDir . '/*.cache');
+        if (!$files) continue;
+        foreach ($files as $f) {
+            if ($clearAll) {
+                @unlink($f);
+            } elseif ($pattern !== null && $pattern !== '') {
+                if (strpos(basename($f), (string)$pattern) !== false) {
+                    @unlink($f);
+                }
+            } else {
+                // Default: purge expired files older than 5 minutes
+                $mtime = @filemtime($f);
+                if (!$mtime || ($now - $mtime) > 300) {
+                    @unlink($f);
+                }
+            }
         }
     }
 }
@@ -333,7 +397,8 @@ function dash_get_cached_reverse_dns($ip)
         return $memoryCache[$ip];
     }
 
-    $cacheFile = __DIR__ . '/temp/dash_dns_cache.json';
+    $cacheDir = function_exists('mailwatch_cache_dir') ? mailwatch_cache_dir() : (__DIR__ . '/temp');
+    $cacheFile = $cacheDir . '/dash_dns_cache.json';
     static $fileCache = null;
     if ($fileCache === null) {
         if (file_exists($cacheFile)) {
@@ -361,6 +426,7 @@ function dash_get_cached_reverse_dns($ip)
         $fileCache = array_slice($fileCache, -150, null, true);
     }
     @file_put_contents($cacheFile, json_encode($fileCache), LOCK_EX);
+    @chmod($cacheFile, 0660);
 
     return $host;
 }
