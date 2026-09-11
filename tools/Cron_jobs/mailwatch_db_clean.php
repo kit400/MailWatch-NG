@@ -149,6 +149,143 @@ function deleteInBatches($table, $whereClause, $batchSize, $maxBatches = 0, $max
     return $totalDeleted;
 }
 
+/**
+ * Clean old mtalog and mtalog_ids records in batches.
+ * Selects and deletes by primary key (mtalog_id), strictly preserves timestamp boundary,
+ * safely handles NULL msg_id values without infinite looping, preserves active mappings in mtalog_ids,
+ * validates iteration progress, and enforces execution budgets.
+ *
+ * @param int    $batchSize        Batch size (0 = no batching)
+ * @param int    $daysToKeep       Number of days to keep records
+ * @param int    $maxBatches       Maximum batches (0 = unlimited / use config)
+ * @param int    $maxExecutionTime Maximum execution time in seconds (0 = unlimited / use config)
+ * @param int    $sleepMs          Pause between batches in ms (0 = use config)
+ * @param string $mtalogTable      Name of mtalog table (default: 'mtalog')
+ * @param string $mtalogIdsTable   Name of mtalog_ids table (default: 'mtalog_ids')
+ *
+ * @return int Total rows deleted from mtalog
+ */
+function cleanMtalogWithIds(
+    $batchSize,
+    $daysToKeep,
+    $maxBatches = 0,
+    $maxExecutionTime = 0,
+    $sleepMs = 0,
+    $mtalogTable = 'mtalog',
+    $mtalogIdsTable = 'mtalog_ids'
+) {
+    $totalDeleted = 0;
+    $batchCount = 0;
+    $startTime = microtime(true);
+    $daysToKeep = (int) $daysToKeep;
+
+    if ($maxBatches <= 0 && defined('DB_CLEAN_MAX_BATCHES')) {
+        $maxBatches = (int) DB_CLEAN_MAX_BATCHES;
+    }
+    if ($maxExecutionTime <= 0 && defined('DB_CLEAN_MAX_EXECUTION_TIME')) {
+        $maxExecutionTime = (int) DB_CLEAN_MAX_EXECUTION_TIME;
+    }
+    if ($sleepMs <= 0 && defined('DB_CLEAN_SLEEP_MS')) {
+        $sleepMs = (int) DB_CLEAN_SLEEP_MS;
+    }
+
+    if ($batchSize <= 0) {
+        // No batching: delete orphaned mtalog_ids first, then all expired mtalog rows
+        // Only delete from mtalog_ids if the smtp_id is NOT referenced by any fresh mtalog records
+        dbexecute(
+            "DELETE FROM {$mtalogIdsTable} WHERE smtp_id IN (
+                SELECT msg_id FROM {$mtalogTable} WHERE timestamp < (NOW() - INTERVAL {$daysToKeep} DAY) AND msg_id IS NOT NULL
+            ) AND smtp_id NOT IN (
+                SELECT msg_id FROM {$mtalogTable} WHERE timestamp >= (NOW() - INTERVAL {$daysToKeep} DAY) AND msg_id IS NOT NULL
+            )",
+            false
+        );
+        $deleted = dbexecute(
+            "DELETE LOW_PRIORITY FROM {$mtalogTable} WHERE timestamp < (NOW() - INTERVAL {$daysToKeep} DAY)",
+            false
+        );
+        return $deleted > 0 ? $deleted : 0;
+    }
+
+    // Batching: select by mtalog_id and delete by mtalog_id with timestamp restriction
+    do {
+        // Check execution budgets
+        if ($maxExecutionTime > 0 && (microtime(true) - $startTime) >= $maxExecutionTime) {
+            error_log("mailwatch_db_clean: time budget exceeded ({$maxExecutionTime}s) for {$mtalogTable} cleanup, stopping. Deleted {$totalDeleted} rows in {$batchCount} batches.");
+            break;
+        }
+        if ($maxBatches > 0 && $batchCount >= $maxBatches) {
+            error_log("mailwatch_db_clean: batch budget reached ({$maxBatches} batches) for {$mtalogTable} cleanup, stopping. Deleted {$totalDeleted} rows.");
+            break;
+        }
+
+        // 1. Select a batch of mtalog_id and msg_id for expired records
+        $result = dbquery(
+            "SELECT mtalog_id, msg_id FROM {$mtalogTable} WHERE timestamp < (NOW() - INTERVAL {$daysToKeep} DAY) LIMIT " . (int) $batchSize,
+            false
+        );
+
+        if (!$result || 0 === $result->num_rows) {
+            break;
+        }
+
+        $mtalogIds = [];
+        $msgIds = [];
+        while ($row = $result->fetch_assoc()) {
+            if (isset($row['mtalog_id'])) {
+                $mtalogIds[] = (int) $row['mtalog_id'];
+            }
+            if (isset($row['msg_id']) && $row['msg_id'] !== null && $row['msg_id'] !== '') {
+                $msgIds[$row['msg_id']] = "'" . addslashes($row['msg_id']) . "'";
+            }
+        }
+
+        if (empty($mtalogIds)) {
+            // Safety check: no primary keys found
+            break;
+        }
+
+        $mtalogIdList = implode(',', $mtalogIds);
+
+        // 2. Delete from mtalog by unique primary key mtalog_id with strict timestamp boundary
+        $mtaDeleted = dbexecute(
+            "DELETE LOW_PRIORITY FROM {$mtalogTable} WHERE mtalog_id IN ({$mtalogIdList}) AND timestamp < (NOW() - INTERVAL {$daysToKeep} DAY)",
+            false
+        );
+
+        if ($mtaDeleted < 0) {
+            error_log("mailwatch_db_clean: error deleting from {$mtalogTable} in batch " . ($batchCount + 1));
+            break;
+        }
+
+        // Progress check: if 0 rows were deleted, stop to avoid infinite loop
+        if ($mtaDeleted === 0) {
+            error_log("mailwatch_db_clean: no progress made deleting from {$mtalogTable} in batch " . ($batchCount + 1) . ", stopping.");
+            break;
+        }
+
+        // 3. Clean up mtalog_ids for deleted msg_ids, ONLY if those msg_ids are no longer referenced in mtalog
+        if (!empty($msgIds)) {
+            $msgIdList = implode(',', array_values($msgIds));
+            dbexecute(
+                "DELETE FROM {$mtalogIdsTable} WHERE smtp_id IN ({$msgIdList}) AND smtp_id NOT IN (
+                    SELECT msg_id FROM {$mtalogTable} WHERE msg_id IN ({$msgIdList}) AND msg_id IS NOT NULL
+                )",
+                false
+            );
+        }
+
+        $batchCount++;
+        $totalDeleted += $mtaDeleted;
+
+        if ($sleepMs > 0) {
+            usleep($sleepMs * 1000);
+        }
+    } while ($mtaDeleted > 0);
+
+    return $totalDeleted;
+}
+
 // Only execute cleanup when invoked directly as a script (not when included in tests)
 if (!defined('PHPUNIT_RUNNING') && !defined('MAILWATCH_TEST_RUNNER')) {
     // Cleaning the maillog table
@@ -164,64 +301,9 @@ if (!defined('PHPUNIT_RUNNING') && !defined('MAILWATCH_TEST_RUNNER')) {
     $optimize_mtalog_id = '';
     if (('postfix' === $mta || 'msmail' === $mta) && $tablecheck && $tablecheck->num_rows > 0) {
         // version for postfix with mtalog_ids enabled
-        // Delete mtalog_ids entries that reference old mtalog records, then delete from mtalog
-        if ($batchSize <= 0) {
-            // No batching - delete all in one query using subquery
-            dbexecute(
-                'DELETE FROM mtalog_ids WHERE smtp_id IN (
-                    SELECT msg_id FROM mtalog WHERE timestamp < (NOW() - INTERVAL ' . RECORD_DAYS_TO_KEEP . ' DAY)
-                )',
-                false
-            );
-            dbexecute('DELETE LOW_PRIORITY FROM mtalog WHERE timestamp < (NOW() - INTERVAL ' . RECORD_DAYS_TO_KEEP . ' DAY)', false);
-        } else {
-            // With batching: first collect msg_ids to delete in batches, then delete from mtalog_ids
-            $mtaStartTime = microtime(true);
-            $mtaBatchCount = 0;
-            do {
-                if ($maxExecutionTime > 0 && (microtime(true) - $mtaStartTime) >= $maxExecutionTime) {
-                    error_log("mailwatch_db_clean: time budget exceeded ({$maxExecutionTime}s) for mtalog cleanup, stopping.");
-                    break;
-                }
-                if ($maxBatches > 0 && $mtaBatchCount >= $maxBatches) {
-                    error_log("mailwatch_db_clean: batch budget reached ({$maxBatches} batches) for mtalog cleanup, stopping.");
-                    break;
-                }
-
-                // Get a batch of msg_ids to delete
-                $result = dbquery(
-                    'SELECT msg_id FROM mtalog WHERE timestamp < (NOW() - INTERVAL ' . RECORD_DAYS_TO_KEEP . ' DAY) LIMIT ' . $batchSize,
-                    false
-                );
-
-                if (!$result || 0 === $result->num_rows) {
-                    break;
-                }
-
-                $msgIds = array();
-                while ($row = $result->fetch_assoc()) {
-                    if (null !== $row['msg_id']) {
-                        $msgIds[] = "'" . addslashes($row['msg_id']) . "'";
-                    }
-                }
-
-                if (!empty($msgIds)) {
-                    $msgIdList = implode(',', $msgIds);
-                    // Delete from mtalog_ids first
-                    dbexecute('DELETE FROM mtalog_ids WHERE smtp_id IN (' . $msgIdList . ')', false);
-                    // Then delete from mtalog
-                    $mtaDeleted = dbexecute('DELETE LOW_PRIORITY FROM mtalog WHERE msg_id IN (' . $msgIdList . ')', false);
-                    if ($mtaDeleted < 0) {
-                        error_log("mailwatch_db_clean: error deleting from mtalog in batch " . ($mtaBatchCount + 1));
-                        break;
-                    }
-                }
-                $mtaBatchCount++;
-
-                if ($sleepMs > 0) {
-                    usleep($sleepMs * 1000);
-                }
-            } while ($result && $result->num_rows > 0);
+        $deletedMtalog = cleanMtalogWithIds($batchSize, RECORD_DAYS_TO_KEEP, $maxBatches, $maxExecutionTime, $sleepMs);
+        if ($deletedMtalog > 0) {
+            error_log("mailwatch_db_clean: cleaned {$deletedMtalog} rows from mtalog (with mtalog_ids)");
         }
         $optimize_mtalog_id = ', mtalog_ids';
     } else {
