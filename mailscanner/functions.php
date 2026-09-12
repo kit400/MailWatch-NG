@@ -4044,153 +4044,14 @@ function ldap_build_uri($host, $port) {
     return $host;
 }
 
-/**
- * @param string $username
- * @param string $password
- *
- * @return string|null
- */
-function ldap_authenticate($username, $password)
-{
-    $username = ldap_escape(strtolower($username), '', LDAP_ESCAPE_DN);
-    if ('' !== $username && '' !== $password) {
-        $ldap_uri = ldap_build_uri(LDAP_HOST, LDAP_PORT);
-        $ds = ldap_connect($ldap_uri) or exit(__('ldpaauth103') . ' ' . $ldap_uri);
-
-        $ldap_protocol_version = 3;
-        if (defined('LDAP_PROTOCOL_VERSION')) {
-            $ldap_protocol_version = LDAP_PROTOCOL_VERSION;
-        }
-        // Check if Microsoft Active Directory compatibility is enabled
-        if (defined('LDAP_MS_AD_COMPATIBILITY') && LDAP_MS_AD_COMPATIBILITY === true) {
-            ldap_set_option($ds, LDAP_OPT_REFERRALS, 0);
-            $ldap_protocol_version = 3;
-        }
-        ldap_set_option($ds, LDAP_OPT_PROTOCOL_VERSION, $ldap_protocol_version);
-
-        $bindResult = @ldap_bind($ds, LDAP_USER, LDAP_PASS);
-        if (false === $bindResult) {
-            exit(ldap_print_error($ds));
-        }
-
-        // search for $user in LDAP directory
-        $ldap_search_results = ldap_search($ds, LDAP_DN, sprintf(LDAP_FILTER, $username)) or exit(__('ldpaauth203'));
-
-        if (false === $ldap_search_results) {
-            @trigger_error(__('ldapnoresult03') . ' "' . $username . '"');
-
-            return null;
-        }
-        if (1 > ldap_count_entries($ds, $ldap_search_results)) {
-            @trigger_error(__('ldapresultnodata03') . ' "' . $username . '"');
-
-            return null;
-        }
-        if (ldap_count_entries($ds, $ldap_search_results) > 1) {
-            @trigger_error(__('ldapresultset03') . ' "' . $username . '" ' . __('ldapisunique03'));
-
-            return null;
-        }
-
-        if ($ldap_search_results) {
-            $result = ldap_get_entries($ds, $ldap_search_results) or exit(__('ldpaauth303'));
-            ldap_free_result($ldap_search_results);
-            if (isset($result[0])) {
-                if (in_array('group', array_values($result[0]['objectclass']), true)) {
-                    // do not login as group
-                    return null;
-                }
-
-                if (!isset($result[0][LDAP_USERNAME_FIELD])) {
-                    @trigger_error(__('ldapno03') . ' "' . LDAP_USERNAME_FIELD . '" ' . __('ldapresults03'));
-
-                    return null;
-                }
-                if (!is_array($result[0][LDAP_USERNAME_FIELD])) {
-                    $user = $result[0][LDAP_USERNAME_FIELD];
-                } elseif (isset($result[0][LDAP_USERNAME_FIELD][0])) {
-                    $user = $result[0][LDAP_USERNAME_FIELD][0];
-                } else {
-                    @trigger_error(__('ldapno03') . ' "' . LDAP_USERNAME_FIELD . '" ' . __('ldapresults03'));
-
-                    return null;
-                }
-
-                if (defined('LDAP_BIND_PREFIX')) {
-                    $user = LDAP_BIND_PREFIX . $user;
-                }
-                if (defined('LDAP_BIND_SUFFIX')) {
-                    $user .= LDAP_BIND_SUFFIX;
-                }
-                if (!defined('LDAP_BIND_PREFIX') && !defined('LDAP_BIND_SUFFIX')) {
-                    $user=$result[0]['dn'];
-                }
-
-                if (!isset($result[0][LDAP_EMAIL_FIELD])) {
-                    @trigger_error(__('ldapno03') . ' "' . LDAP_EMAIL_FIELD . '" ' . __('ldapresults03'));
-
-                    return null;
-                }
-
-                $bindResult = @ldap_bind($ds, $user, $password);
-                if (false !== $bindResult) {
-                    foreach ($result[0][LDAP_EMAIL_FIELD] as $email) {
-                        if (0 === strpos($email, 'SMTP')) {
-                            $email = strtolower(substr($email, 5));
-                            break;
-                        }
-                    }
-
-                    if (!isset($email)) {
-                        // user has no mail but it is required for mailwatch
-                        return null;
-                    }
-
-                    $sql = sprintf('SELECT username FROM users WHERE username = %s', quote_smart($email));
-                    $sth = dbquery($sql);
-                    if (0 === $sth->num_rows) {
-                        $sql = sprintf(
-                            "REPLACE INTO users (username, fullname, type, password) VALUES (%s, %s,'U',NULL)",
-                            quote_smart($email),
-                            quote_smart($result[0]['cn'][0])
-                        );
-                        dbquery($sql);
-                    }
-
-                    return $email;
-                }
-
-                if (49 === ldap_errno($ds)) {
-                    // LDAP_INVALID_CREDENTIALS
-                    return null;
-                }
-                exit(ldap_print_error($ds));
-            }
-        }
-    }
-
-    return null;
+if (!defined('LDAP_ESCAPE_FILTER')) {
+    define('LDAP_ESCAPE_FILTER', 0x01);
 }
-
-/**
- * @param resource $ds
- *
- * @return string
- */
-function ldap_print_error($ds)
-{
-    return sprintf(
-        __('ldapnobind03'),
-        LDAP_HOST,
-        ldap_errno($ds),
-        ldap_error($ds)
-    );
+if (!defined('LDAP_ESCAPE_DN')) {
+    define('LDAP_ESCAPE_DN', 0x02);
 }
 
 if (!function_exists('ldap_escape')) {
-    define('LDAP_ESCAPE_FILTER', 0x01);
-    define('LDAP_ESCAPE_DN', 0x02);
-
     /**
      * function ldap_escape.
      *
@@ -4252,10 +4113,10 @@ if (!function_exists('ldap_escape')) {
         }
 
         // Do the main replacement
-        $result = strtr($subject, $charMap);
+        $result = strtr((string)$subject, $charMap);
 
         // Encode leading/trailing spaces if LDAP_ESCAPE_DN is passed
-        if ($flags & LDAP_ESCAPE_DN) {
+        if ('' !== $result && ($flags & LDAP_ESCAPE_DN)) {
             if (' ' === $result[0]) {
                 $result = '\\20' . substr($result, 1);
             }
@@ -4266,6 +4127,256 @@ if (!function_exists('ldap_escape')) {
 
         return $result;
     }
+}
+
+/**
+ * Escape a string for use in an LDAP search filter (RFC 4515).
+ *
+ * @param string $value
+ * @param string $ignore Characters to leave untouched
+ *
+ * @return string
+ */
+function ldap_escape_filter($value, $ignore = '')
+{
+    return ldap_escape((string)$value, (string)$ignore, LDAP_ESCAPE_FILTER);
+}
+
+/**
+ * Escape a string for use in an LDAP Distinguished Name (RFC 4514).
+ *
+ * @param string $value
+ * @param string $ignore Characters to leave untouched
+ *
+ * @return string
+ */
+function ldap_escape_dn($value, $ignore = '')
+{
+    return ldap_escape((string)$value, (string)$ignore, LDAP_ESCAPE_DN);
+}
+
+/**
+ * Build a safe LDAP search filter string by escaping input value(s) with LDAP_ESCAPE_FILTER.
+ *
+ * @param string $template Filter template (e.g. 'mail=%s' or '(&(mail=%s)(sAMAccountName=%s))')
+ * @param string $value Value to escape and substitute
+ *
+ * @return string
+ */
+function ldap_build_filter($template, $value)
+{
+    $escaped = ldap_escape_filter($value);
+    $num_specs = substr_count($template, '%s');
+    if ($num_specs > 1) {
+        return sprintf($template, ...array_fill(0, $num_specs, $escaped));
+    }
+
+    return sprintf($template, $escaped);
+}
+
+/**
+ * Authenticate a user against an LDAP server.
+ *
+ * @param string $username
+ * @param string $password
+ * @param array|null $ldap_driver Optional driver hooks for testing/mocking LDAP operations
+ *
+ * @return string|null User's email on success, or null on failure
+ */
+function ldap_authenticate($username, $password, $ldap_driver = null)
+{
+    $raw_username = strtolower((string)$username);
+    $password = (string)$password;
+
+    if ('' !== $raw_username && '' !== $password) {
+        if (!function_exists('ldap_connect') && null === $ldap_driver) {
+            @trigger_error('LDAP extension is not installed or enabled in PHP');
+
+            return null;
+        }
+
+        $do_connect = ($ldap_driver && isset($ldap_driver['connect'])) ? $ldap_driver['connect'] : 'ldap_connect';
+        $do_set_option = ($ldap_driver && isset($ldap_driver['set_option'])) ? $ldap_driver['set_option'] : 'ldap_set_option';
+        $do_bind = ($ldap_driver && isset($ldap_driver['bind'])) ? $ldap_driver['bind'] : 'ldap_bind';
+        $do_search = ($ldap_driver && isset($ldap_driver['search'])) ? $ldap_driver['search'] : 'ldap_search';
+        $do_count = ($ldap_driver && isset($ldap_driver['count_entries'])) ? $ldap_driver['count_entries'] : 'ldap_count_entries';
+        $do_get_entries = ($ldap_driver && isset($ldap_driver['get_entries'])) ? $ldap_driver['get_entries'] : 'ldap_get_entries';
+        $do_free = ($ldap_driver && isset($ldap_driver['free_result'])) ? $ldap_driver['free_result'] : 'ldap_free_result';
+        $do_errno = ($ldap_driver && isset($ldap_driver['errno'])) ? $ldap_driver['errno'] : 'ldap_errno';
+
+        $ldap_uri = ldap_build_uri(LDAP_HOST, LDAP_PORT);
+        $ds = @$do_connect($ldap_uri);
+        if (!$ds) {
+            exit(__('ldpaauth103') . ' ' . $ldap_uri);
+        }
+
+        $ldap_protocol_version = 3;
+        if (defined('LDAP_PROTOCOL_VERSION')) {
+            $ldap_protocol_version = LDAP_PROTOCOL_VERSION;
+        }
+        // Check if Microsoft Active Directory compatibility is enabled
+        if (defined('LDAP_MS_AD_COMPATIBILITY') && LDAP_MS_AD_COMPATIBILITY === true) {
+            if (defined('LDAP_OPT_REFERRALS')) {
+                @$do_set_option($ds, LDAP_OPT_REFERRALS, 0);
+            }
+            $ldap_protocol_version = 3;
+        }
+        if (defined('LDAP_OPT_PROTOCOL_VERSION')) {
+            @$do_set_option($ds, LDAP_OPT_PROTOCOL_VERSION, $ldap_protocol_version);
+        }
+
+        $bindResult = @$do_bind($ds, LDAP_USER, LDAP_PASS);
+        if (false === $bindResult) {
+            exit(ldap_print_error($ds));
+        }
+
+        // Build LDAP search filter using RFC 4515 filter escaping (LDAP_ESCAPE_FILTER)
+        $filter = ldap_build_filter(LDAP_FILTER, $raw_username);
+
+        // Search for user in LDAP directory
+        $ldap_search_results = @$do_search($ds, LDAP_DN, $filter);
+
+        if (false === $ldap_search_results) {
+            @trigger_error(__('ldapnoresult03') . ' "' . $raw_username . '"');
+
+            return null;
+        }
+        $num_entries = @$do_count($ds, $ldap_search_results);
+        if (1 > $num_entries) {
+            @trigger_error(__('ldapresultnodata03') . ' "' . $raw_username . '"');
+
+            return null;
+        }
+        if ($num_entries > 1) {
+            @trigger_error(__('ldapresultset03') . ' "' . $raw_username . '" ' . __('ldapisunique03'));
+
+            return null;
+        }
+
+        if ($ldap_search_results) {
+            $result = @$do_get_entries($ds, $ldap_search_results);
+            if (false === $result) {
+                exit(__('ldpaauth303'));
+            }
+            @$do_free($ldap_search_results);
+            if (isset($result[0])) {
+                if (isset($result[0]['objectclass']) && in_array('group', array_values($result[0]['objectclass']), true)) {
+                    // do not login as group
+                    return null;
+                }
+
+                if (!isset($result[0][LDAP_USERNAME_FIELD])) {
+                    @trigger_error(__('ldapno03') . ' "' . LDAP_USERNAME_FIELD . '" ' . __('ldapresults03'));
+
+                    return null;
+                }
+                if (!is_array($result[0][LDAP_USERNAME_FIELD])) {
+                    $user = $result[0][LDAP_USERNAME_FIELD];
+                } elseif (isset($result[0][LDAP_USERNAME_FIELD][0])) {
+                    $user = $result[0][LDAP_USERNAME_FIELD][0];
+                } else {
+                    @trigger_error(__('ldapno03') . ' "' . LDAP_USERNAME_FIELD . '" ' . __('ldapresults03'));
+
+                    return null;
+                }
+
+                // Determine bind DN / identity (distinguished from search filter and raw username)
+                if (defined('LDAP_BIND_PREFIX') || defined('LDAP_BIND_SUFFIX')) {
+                    $bind_user = (defined('LDAP_BIND_PREFIX') ? LDAP_BIND_PREFIX : '') .
+                                 $user .
+                                 (defined('LDAP_BIND_SUFFIX') ? LDAP_BIND_SUFFIX : '');
+                } else {
+                    // Bind using the distinguished name (DN) directly from directory entry
+                    $bind_user = $result[0]['dn'];
+                }
+
+                if (!isset($result[0][LDAP_EMAIL_FIELD])) {
+                    @trigger_error(__('ldapno03') . ' "' . LDAP_EMAIL_FIELD . '" ' . __('ldapresults03'));
+
+                    return null;
+                }
+
+                $bindResult = @$do_bind($ds, $bind_user, $password);
+                if (false !== $bindResult) {
+                    $email = null;
+                    if (is_array($result[0][LDAP_EMAIL_FIELD])) {
+                        foreach ($result[0][LDAP_EMAIL_FIELD] as $k => $val) {
+                            if ('count' === (string)$k) {
+                                continue;
+                            }
+                            if (is_string($val) && 0 === strpos($val, 'SMTP:')) {
+                                $email = strtolower(substr($val, 5));
+                                break;
+                            }
+                        }
+                        if (null === $email) {
+                            if (isset($result[0][LDAP_EMAIL_FIELD][0]) && is_string($result[0][LDAP_EMAIL_FIELD][0])) {
+                                $email = strtolower($result[0][LDAP_EMAIL_FIELD][0]);
+                            } else {
+                                foreach ($result[0][LDAP_EMAIL_FIELD] as $k => $val) {
+                                    if ('count' === (string)$k) {
+                                        continue;
+                                    }
+                                    if (is_string($val) && filter_var($val, FILTER_VALIDATE_EMAIL)) {
+                                        $email = strtolower($val);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    } elseif (is_string($result[0][LDAP_EMAIL_FIELD])) {
+                        $email = strtolower($result[0][LDAP_EMAIL_FIELD]);
+                    }
+
+                    if (!isset($email)) {
+                        // user has no mail but it is required for mailwatch
+                        return null;
+                    }
+
+                    $sql = sprintf('SELECT username FROM users WHERE username = %s', quote_smart($email));
+                    $sth = dbquery($sql);
+                    if (0 === $sth->num_rows) {
+                        $cn = isset($result[0]['cn'][0]) ? $result[0]['cn'][0] : (isset($result[0]['cn']) ? $result[0]['cn'] : $email);
+                        $sql = sprintf(
+                            "REPLACE INTO users (username, fullname, type, password) VALUES (%s, %s,'U',NULL)",
+                            quote_smart($email),
+                            quote_smart($cn)
+                        );
+                        dbquery($sql);
+                    }
+
+                    return $email;
+                }
+
+                $err = @$do_errno($ds);
+                if (49 === $err) {
+                    // LDAP_INVALID_CREDENTIALS
+                    return null;
+                }
+                exit(ldap_print_error($ds));
+            }
+        }
+    }
+
+    return null;
+}
+
+/**
+ * @param \LDAP\Connection|resource|null $ds
+ *
+ * @return string
+ */
+function ldap_print_error($ds = null)
+{
+    $errno = ($ds && function_exists('ldap_errno')) ? @ldap_errno($ds) : 0;
+    $error = ($ds && function_exists('ldap_error')) ? @ldap_error($ds) : '';
+
+    return sprintf(
+        __('ldapnobind03'),
+        defined('LDAP_HOST') ? LDAP_HOST : '',
+        $errno,
+        $error
+    );
 }
 
 /**

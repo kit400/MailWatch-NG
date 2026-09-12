@@ -66,7 +66,7 @@ if (false === $bindResult) {
 echo 'authentication for searching the account was successful' . PHP_EOL;
 
 echo "search for $username in LDAP directory" . PHP_EOL;
-$ldap_search_results = ldap_search($ds, LDAP_DN, sprintf(LDAP_FILTER, $username));
+$ldap_search_results = ldap_search($ds, LDAP_DN, ldap_build_filter(LDAP_FILTER, $username));
 echo 'search done' . PHP_EOL;
 if (false === $ldap_search_results) {
     exit('no valid result while searching for acccounts');
@@ -105,6 +105,9 @@ if ($ldap_search_results) {
         }
         if (defined('LDAP_BIND_SUFFIX')) {
             $user .= LDAP_BIND_SUFFIX;
+        }
+        if (!defined('LDAP_BIND_PREFIX') && !defined('LDAP_BIND_SUFFIX')) {
+            $user = $result[0]['dn'];
         }
 
         if (!isset($result[0][LDAP_EMAIL_FIELD])) {

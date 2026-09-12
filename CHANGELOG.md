@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+### Fixed
+- Fix LDAP search filter escaping: apply RFC 4515 LDAP_ESCAPE_FILTER when constructing search filter, preserving raw username for error logs and separating DN bind identity (MW-14)
 
 ## 1.2.27
 ### Security
