@@ -133,6 +133,13 @@ class MockResult {
     }
 }
 
+if (!class_exists('mysqli')) {
+    class mysqli {}
+}
+if (!defined('MYSQLI_STORE_RESULT')) {
+    define('MYSQLI_STORE_RESULT', 0);
+}
+
 class MockDbLink extends mysqli {
     public $users = [];
     public $queries = [];
@@ -147,7 +154,7 @@ class MockDbLink extends mysqli {
         return addslashes($string);
     }
 
-    public function query($sql, $resultmode = MYSQLI_STORE_RESULT): mixed {
+    public function query($sql, $resultmode = MYSQLI_STORE_RESULT) {
         $this->queries[] = $sql;
         if (preg_match("/SELECT .* FROM users WHERE username='([^']+)'/i", $sql, $m)) {
             $username = $m[1];
@@ -267,6 +274,12 @@ function run_sub_test($scenario, array $env, $expectedStatus, $expectedBodyRegex
     require_once "' . addslashes(__DIR__ . '/../mailscanner/SessionGuard.php') . '";
 
     // Setup mock DB
+    if (!class_exists(\'mysqli\')) {
+        class mysqli {}
+    }
+    if (!defined(\'MYSQLI_STORE_RESULT\')) {
+        define(\'MYSQLI_STORE_RESULT\', 0);
+    }
     class SubMockResult {
         public $num_rows;
         private $rows;
@@ -287,7 +300,7 @@ function run_sub_test($scenario, array $env, $expectedStatus, $expectedBodyRegex
         public function escape_string(string $string): string {
             return addslashes($string);
         }
-        public function query($sql, $resultmode = MYSQLI_STORE_RESULT): mixed {
+        public function query($sql, $resultmode = MYSQLI_STORE_RESULT) {
             if (preg_match("/SELECT .* FROM users WHERE username=\'([^\']+)\'/i", $sql, $m)) {
                 $u = $m[1];
                 if (isset($this->users[$u])) {

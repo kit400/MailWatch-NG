@@ -26,11 +26,13 @@
  */
 
 // Set error level (some distro's have php.ini set to E_ALL)
-if (PHP_VERSION_ID < 50300) {
-    error_reporting(E_ALL);
-} else {
+if (PHP_VERSION_ID >= 80400) {
+    error_reporting(E_ALL ^ E_DEPRECATED);
+} elseif (PHP_VERSION_ID >= 50300) {
     // E_DEPRECATED added in PHP 5.3
     error_reporting(E_ALL ^ E_DEPRECATED ^ E_STRICT);
+} else {
+    error_reporting(E_ALL);
 }
 
 if (extension_loaded('uopz') && !(ini_get('uopz.disable') || ini_get('uopz.exit'))) {
@@ -1771,7 +1773,7 @@ function dbquery($sql, $printError = true)
     if (DEBUG && headers_sent() && preg_match('/\bselect\b/i', $sql)) {
         dbquerydebug($link, $sql);
     }
-    if ($link instanceof mysqli) {
+    if ($link instanceof mysqli && function_exists('mysqli_report')) {
         mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     }
     try {
