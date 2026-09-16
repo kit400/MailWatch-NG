@@ -2038,7 +2038,7 @@ function safe_value($value)
     if (!is_string($value)) {
         $value = (string)$value;
     }
-    if (function_exists('get_magic_quotes_gpc') && get_magic_quotes_gpc()) {
+    if (PHP_VERSION_ID < 70400 && function_exists('get_magic_quotes_gpc') && get_magic_quotes_gpc()) {
         $value = stripslashes($value);
     }
 
