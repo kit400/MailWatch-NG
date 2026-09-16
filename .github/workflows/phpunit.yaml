@@ -43,5 +43,10 @@ jobs:
       - name: Install Composer dependencies
         uses: "ramsey/composer-install@v4"
 
+      - name: Prepare MailWatch configuration for CI
+        run: |
+          cp mailscanner/conf.php.example mailscanner/conf.php
+          sed -i "s|define('MAILWATCH_HOME', '/var/www/html/mailscanner')|define('MAILWATCH_HOME', __DIR__)|" mailscanner/conf.php
+
       - name: Run tests
         run: ./vendor/bin/phpunit

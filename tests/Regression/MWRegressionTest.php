@@ -6,6 +6,21 @@ use PHPUnit\Framework\TestCase;
 
 class MWRegressionTest extends TestCase
 {
+    public static function setUpBeforeClass(): void
+    {
+        $conf = dirname(__DIR__, 2) . '/mailscanner/conf.php';
+        $example = dirname(__DIR__, 2) . '/mailscanner/conf.php.example';
+        if (!file_exists($conf) && file_exists($example)) {
+            $content = file_get_contents($example);
+            $content = str_replace(
+                "define('MAILWATCH_HOME', '/var/www/html/mailscanner');",
+                "define('MAILWATCH_HOME', __DIR__);",
+                $content
+            );
+            file_put_contents($conf, $content);
+        }
+    }
+
     /**
      * @dataProvider regressionScriptsProvider
      */
