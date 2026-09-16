@@ -1906,6 +1906,22 @@ function sanitizeInput($string)
     return $purifier->purify($string);
 }
 
+if (!class_exists('HTMLPurifier_URIScheme_cid', false)) {
+    class HTMLPurifier_URIScheme_cid extends HTMLPurifier_URIScheme
+    {
+        public $browsable = true;
+        public $may_omit_host = true;
+
+        public function doValidate(&$uri, $config, $context)
+        {
+            $uri->userinfo = null;
+            $uri->host = null;
+            $uri->port = null;
+            return true;
+        }
+    }
+}
+
 /**
  * Sanitize email HTML content using HTMLPurifier allowlist.
  * Removes all scripts, event handlers, javascript: URIs, active SVG, and other XSS vectors
@@ -1953,21 +1969,6 @@ function sanitizeEmailHtml($html, $stripHtml = true, $allowedTags = null)
 
     $allowedSchemes = ['http' => true, 'https' => true, 'mailto' => true, 'ftp' => true, 'data' => true];
     if (class_exists('HTMLPurifier_URISchemeRegistry')) {
-        if (!class_exists('HTMLPurifier_URIScheme_cid', false)) {
-            class HTMLPurifier_URIScheme_cid extends HTMLPurifier_URIScheme
-            {
-                public $browsable = true;
-                public $may_omit_host = true;
-
-                public function doValidate(&$uri, $config, $context)
-                {
-                    $uri->userinfo = null;
-                    $uri->host = null;
-                    $uri->port = null;
-                    return true;
-                }
-            }
-        }
         HTMLPurifier_URISchemeRegistry::instance()->register('cid', new HTMLPurifier_URIScheme_cid());
         $allowedSchemes['cid'] = true;
     }

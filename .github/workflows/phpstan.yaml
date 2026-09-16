@@ -4,7 +4,7 @@ on:
   # Run on all pushes and on all pull requests.
   # Prevent the build from running when there are only irrelevant changes.
   push:
-    branches: [ "1.2" ]
+    branches: [ "main", "1.2" ]
     paths-ignore:
       - '**/*.md'
       - 'data/**'
@@ -12,7 +12,7 @@ on:
       - 'tools/MailScanner_config/**'
       - 'tools/sudo/**'
   pull_request:
-    branches: [ "1.2" ]
+    branches: [ "main", "1.2" ]
     paths-ignore:
       - '**/*.md'
       - 'data/**'
@@ -48,4 +48,4 @@ jobs:
         run: sed -i "s|define('MAILWATCH_HOME', '/var/www/html/mailscanner')|define('MAILWATCH_HOME', __DIR__)|" mailscanner/conf.php.example
 
       - name: Run PHPStan
-        run: ./vendor/bin/phpstan analyse --configuration=phpstan.dist.neon --error-format=github
+        run: ./vendor/bin/phpstan analyse --configuration=phpstan.dist.neon --error-format=github --memory-limit=1G

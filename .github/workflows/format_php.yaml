@@ -2,7 +2,7 @@ name: Format (PHP)
 
 on:
   pull_request:
-    branches: [ "1.2" ]
+    branches: [ "main", "1.2" ]
     paths:
       - '**/*.php'
   # Allow manually triggering the workflow.

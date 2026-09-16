@@ -5,16 +5,12 @@
  * Address characters (_ and %) turning into SQL LIKE wildcards in access filters.
  */
 
+require_once __DIR__ . '/../mailscanner/functions.php';
+
 // Mock DB constants if needed
 if (!defined('FILTER_TO_ONLY')) {
     define('FILTER_TO_ONLY', false);
 }
-
-// Minimal dbconn mock if running standalone without live MySQL
-if (!function_exists('dbconn')) {
-}
-
-require_once __DIR__ . '/../mailscanner/functions.php';
 
 function run_test($name, callable $fn) {
     try {

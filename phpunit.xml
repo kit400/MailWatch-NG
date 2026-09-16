@@ -11,8 +11,11 @@
          failOnWarning="true"
          verbose="true">
     <testsuites>
-        <testsuite name="default">
-            <directory>tests</directory>
+        <testsuite name="tickets">
+            <directory suffix="Test.php">tests/Tickets</directory>
+        </testsuite>
+        <testsuite name="regression">
+            <directory suffix="Test.php">tests/Regression</directory>
         </testsuite>
     </testsuites>
 
