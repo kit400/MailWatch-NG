@@ -96,6 +96,10 @@
             var line = [];
             for (var j = 0; j < maxCols; j++) {
                 var val = (grid[i][j] !== undefined) ? String(grid[i][j]) : '';
+                // Prevent CSV formula injection (prepend single quote if starting with formula triggers)
+                if (/^[=+\-@\t\r]/.test(val)) {
+                    val = "'" + val;
+                }
                 // Escape double quotes
                 val = val.replace(/"/g, '""');
                 line.push('"' + val + '"');

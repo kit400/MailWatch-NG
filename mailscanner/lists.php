@@ -1748,10 +1748,17 @@ input[type="text"].search-input:focus,
             alert('No entries to export.');
             return;
         }
-        var csv = 'Type,Sender (From),Recipient (To),Domain,ID\n';
+        var escapeCsv = function(str) {
+            str = (str !== null && str !== undefined) ? String(str) : '';
+            if (/^[=+\-@\t\r]/.test(str)) {
+                str = "'" + str;
+            }
+            return '"' + str.replace(/"/g, '""') + '"';
+        };
+        var csv = '\uFEFFType,Sender (From),Recipient (To),Domain,ID\r\n';
         filtered.forEach(function(r) {
             var typeName = (r.type === 'w') ? 'Allowlist' : 'Blocklist';
-            csv += '"' + typeName + '","' + r.from.replace(/"/g, '""') + '","' + r.to.replace(/"/g, '""') + '","' + r.domain.replace(/"/g, '""') + '",' + r.id + '\n';
+            csv += escapeCsv(typeName) + ',' + escapeCsv(r.from) + ',' + escapeCsv(r.to) + ',' + escapeCsv(r.domain) + ',' + r.id + '\r\n';
         });
 
         var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });

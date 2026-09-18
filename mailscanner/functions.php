@@ -54,25 +54,28 @@ require_once __DIR__ . '/filter.inc.php';
 require_once __DIR__ . '/notifications.inc.php';
 require_once __DIR__ . '/MessagePolicy.php';
 require_once __DIR__ . '/SessionGuard.php';
+require_once __DIR__ . '/QueueParser.php';
 
 // more secure session cookies
-ini_set('session.use_cookies', '1');
-ini_set('session.cookie_httponly', '1');
-ini_set('session.use_only_cookies', '1');
-ini_set('session.use_trans_sid', '0');
+if (!headers_sent()) {
+    @ini_set('session.use_cookies', '1');
+    @ini_set('session.cookie_httponly', '1');
+    @ini_set('session.use_only_cookies', '1');
+    @ini_set('session.use_trans_sid', '0');
 
-$session_cookie_secure = false;
-if (SSL_ONLY === true) {
-    ini_set('session.cookie_secure', '1');
-    $session_cookie_secure = true;
-}
+    $session_cookie_secure = false;
+    if (SSL_ONLY === true) {
+        @ini_set('session.cookie_secure', '1');
+        $session_cookie_secure = true;
+    }
 
-// enforce session cookie security
-$params = session_get_cookie_params();
-if (defined('SESSION_NAME')) {
-    session_name(SESSION_NAME);
+    // enforce session cookie security
+    $params = session_get_cookie_params();
+    if (defined('SESSION_NAME')) {
+        session_name(SESSION_NAME);
+    }
+    @session_set_cookie_params(0, $params['path'], $params['domain'], $session_cookie_secure, true);
 }
-session_set_cookie_params(0, $params['path'], $params['domain'], $session_cookie_secure, true);
 
 // Load Language File
 // If the translation file indicated at conf.php doesn´t exists, the system will load the English version.
@@ -84,8 +87,9 @@ $langCode = LANG;
 if (defined('USER_SELECTABLE_LANG')) {
     if (isset($_COOKIE['MW_LANG']) && checkLangCode($_COOKIE['MW_LANG'])) {
         $langCode = $_COOKIE['MW_LANG'];
-    } else {
-        setcookie('MW_LANG', LANG, 0, $params['path'], $params['domain'], $session_cookie_secure, false);
+    } elseif (!headers_sent()) {
+        $params = session_get_cookie_params();
+        setcookie('MW_LANG', LANG, 0, $params['path'], $params['domain'], $session_cookie_secure ?? false, false);
     }
 }
 
@@ -2495,6 +2499,77 @@ AND
 }
 
 /**
+ * Parse lines from /proc/mounts to extract disk devices and mountpoints.
+ *
+ * @param array<int, string> $lines
+ * @param array<int, string>|null $disksToShow
+ * @return array<int, array{device: string, mountpoint: string}>
+ */
+function parse_proc_mounts(array $lines, ?array $disksToShow = null)
+{
+    $disks = [];
+    $filterDisks = (is_array($disksToShow) && !empty($disksToShow) && !in_array('*', $disksToShow, true));
+    foreach ($lines as $fs_row) {
+        $drive = preg_split("/[\s]+/", (string)$fs_row);
+        if (
+            isset($drive[0], $drive[1])
+            && (0 === strpos($drive[0], '/dev/'))
+            && (
+                false === stripos($drive[1], '/chroot/')
+                && false === stripos($drive[1], '/snap/')
+            )
+        ) {
+            $mp = $drive[1];
+            if (!$filterDisks || in_array($mp, $disksToShow, true)) {
+                $disks[] = [
+                    'device' => $drive[0],
+                    'mountpoint' => $mp,
+                ];
+            }
+        }
+    }
+    return $disks;
+}
+
+/**
+ * Parse output from `mount` command to extract disk devices and mountpoints.
+ *
+ * @param array<int, string>|string $data
+ * @param array<int, string>|null $disksToShow
+ * @return array<int, array{device: string, mountpoint: string}>
+ */
+function parse_mount_output($data, ?array $disksToShow = null)
+{
+    $disks = [];
+    $filterDisks = (is_array($disksToShow) && !empty($disksToShow) && !in_array('*', $disksToShow, true));
+    if (is_array($data)) {
+        $lines = $data;
+    } else {
+        $lines = explode("\n", (string)$data);
+    }
+    foreach ($lines as $disk) {
+        $drive = preg_split("/[\s]+/", (string)$disk);
+        if (
+            isset($drive[0], $drive[2])
+            && (0 === strpos($drive[0], '/dev/'))
+            && (
+                false === stripos($drive[2], '/chroot/')
+                && false === stripos($drive[2], '/snapd/')
+            )
+        ) {
+            $mp = $drive[2];
+            if (!$filterDisks || in_array($mp, $disksToShow, true)) {
+                $disks[] = [
+                    'device' => $drive[0],
+                    'mountpoint' => $mp,
+                ];
+            }
+        }
+    }
+    return $disks;
+}
+
+/**
  * @return array
  */
 function get_disks()
@@ -2523,48 +2598,12 @@ function get_disks()
     } else {
         // unix
         if (is_file('/proc/mounts')) {
-            $mounted_fs = file('/proc/mounts');
-            foreach ($mounted_fs as $fs_row) {
-                $drive = preg_split("/[\s]+/", $fs_row);
-                if (
-                    (0 === strpos($drive[0], '/dev/'))
-                    && (
-                        false === stripos($drive[1], '/chroot/')
-                        && false === stripos($drive[1], '/snap/')
-                    )
-                ) {
-                    $mp = $drive[1];
-                    if (!$filterDisks || in_array($mp, $disksToShow, true)) {
-                        $disks[] = [
-                            'device' => $drive[0],
-                            'mountpoint' => $mp,
-                        ];
-                    }
-                }
-            }
+            $mounted_fs = (array)@file('/proc/mounts');
+            $disks = parse_proc_mounts($mounted_fs, $filterDisks ? $disksToShow : null);
         } else {
             // fallback to mount command
-            $data = shell_exec('mount');
-            $data = explode("\n", (string)$data);
-            foreach ($data as $disk) {
-                $drive = preg_split("/[\s]+/", $disk);
-                if (
-                    isset($drive[0], $drive[2])
-                    && (0 === strpos($drive[0], '/dev/'))
-                    && (
-                        false === stripos($drive[2], '/chroot/')
-                        && false === stripos($drive[2], '/snapd/')
-                    )
-                ) {
-                    $mp = $drive[2];
-                    if (!$filterDisks || in_array($mp, $disksToShow, true)) {
-                        $disks[] = [
-                            'device' => $drive[0],
-                            'mountpoint' => $mp,
-                        ];
-                    }
-                }
-            }
+            $data = (string)@shell_exec('mount');
+            $disks = parse_mount_output($data, $filterDisks ? $disksToShow : null);
         }
 
         // If filtering is enabled and specific mount points were not matched via /dev/ (e.g. rootfs on virtio, zfs, etc)
@@ -7480,5 +7519,40 @@ function mailwatch_cache_dir($sub = '')
     return $baseDir;
 }
 
+if (!defined('CSV_UTF8_BOM')) {
+    define('CSV_UTF8_BOM', "\xEF\xBB\xBF");
+}
 
+/**
+ * Sanitize a cell value for safe CSV export to prevent CSV formula injection.
+ * Prepends a single quote if the string begins with =, +, -, @, \t, or \r.
+ *
+ * @param mixed $val
+ * @return string
+ */
+function sanitize_csv_cell($val)
+{
+    $str = (string)$val;
+    if ($str !== '' && preg_match('/^[=+\-@\t\r]/', $str)) {
+        return "'" . $str;
+    }
+    return $str;
+}
 
+/**
+ * Format an array of cell values as a safe CSV line with RFC 4180 quoting and formula escaping.
+ *
+ * @param array<int, mixed> $row
+ * @param string $delimiter
+ * @param string $enclosure
+ * @return string
+ */
+function format_safe_csv_row(array $row, $delimiter = ',', $enclosure = '"')
+{
+    $escaped = [];
+    foreach ($row as $cell) {
+        $clean = sanitize_csv_cell($cell);
+        $escaped[] = $enclosure . str_replace($enclosure, $enclosure . $enclosure, $clean) . $enclosure;
+    }
+    return implode($delimiter, $escaped);
+}

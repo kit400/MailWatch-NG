@@ -1,0 +1,146 @@
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Variable \\$error in isset\\(\\) always exists and is not nullable\\.$#"
+			count: 1
+			path: mailscanner/detail.php
+
+		-
+			message: "#^Variable \\$to might not be defined\\.$#"
+			count: 1
+			path: mailscanner/detail.php
+
+		-
+			message: "#^Variable \\$_POST in isset\\(\\) always exists and is not nullable\\.$#"
+			count: 1
+			path: mailscanner/do_message_ops.php
+
+		-
+			message: "#^Constant EXIM_QUEUE_IN not found\\.$#"
+			count: 1
+			path: mailscanner/functions.php
+
+		-
+			message: "#^Constant EXIM_QUEUE_OUT not found\\.$#"
+			count: 1
+			path: mailscanner/functions.php
+
+		-
+			message: "#^Constant MCRYPT_DEV_URANDOM not found\\.$#"
+			count: 1
+			path: mailscanner/functions.php
+
+		-
+			message: "#^Constant SENDMAIL_QUEUE_IN not found\\.$#"
+			count: 1
+			path: mailscanner/functions.php
+
+		-
+			message: "#^Constant SENDMAIL_QUEUE_OUT not found\\.$#"
+			count: 1
+			path: mailscanner/functions.php
+
+		-
+			message: "#^Variable \\$disksToShow in empty\\(\\) always exists and is not falsy\\.$#"
+			count: 1
+			path: mailscanner/functions.php
+
+		-
+			message: "#^Variable \\$learn_type might not be defined\\.$#"
+			count: 6
+			path: mailscanner/functions.php
+
+		-
+			message: "#^Variable \\$session_cookie_secure on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: mailscanner/functions.php
+
+		-
+			message: "#^Variable \\$table_heading in isset\\(\\) always exists and is not nullable\\.$#"
+			count: 1
+			path: mailscanner/functions.php
+
+		-
+			message: "#^Variable \\$loginerror might not be defined\\.$#"
+			count: 1
+			path: mailscanner/login.php
+
+		-
+			message: "#^Variable \\$var might not be defined\\.$#"
+			count: 1
+			path: mailscanner/msconfig.php
+
+		-
+			message: "#^Variable \\$email might not be defined\\.$#"
+			count: 1
+			path: mailscanner/password_reset.php
+
+		-
+			message: "#^Variable \\$uid might not be defined\\.$#"
+			count: 1
+			path: mailscanner/password_reset.php
+
+		-
+			message: "#^Variable \\$count might not be defined\\.$#"
+			count: 1
+			path: mailscanner/rep_mcp_rule_hits.php
+
+		-
+			message: "#^Variable \\$score might not be defined\\.$#"
+			count: 1
+			path: mailscanner/rep_sa_rule_hits.php
+
+		-
+			message: "#^Variable \\$data_labels might not be defined\\.$#"
+			count: 3
+			path: mailscanner/rep_total_mail_by_date.php
+
+		-
+			message: "#^Variable \\$data_total_blocked might not be defined\\.$#"
+			count: 4
+			path: mailscanner/rep_total_mail_by_date.php
+
+		-
+			message: "#^Variable \\$data_total_clean might not be defined\\.$#"
+			count: 4
+			path: mailscanner/rep_total_mail_by_date.php
+
+		-
+			message: "#^Variable \\$data_total_highspam might not be defined\\.$#"
+			count: 4
+			path: mailscanner/rep_total_mail_by_date.php
+
+		-
+			message: "#^Variable \\$data_total_lowspam might not be defined\\.$#"
+			count: 4
+			path: mailscanner/rep_total_mail_by_date.php
+
+		-
+			message: "#^Variable \\$data_total_mcp might not be defined\\.$#"
+			count: 4
+			path: mailscanner/rep_total_mail_by_date.php
+
+		-
+			message: "#^Variable \\$data_total_virii might not be defined\\.$#"
+			count: 4
+			path: mailscanner/rep_total_mail_by_date.php
+
+		-
+			message: "#^Variable \\$data might not be defined\\.$#"
+			count: 1
+			path: mailscanner/rep_viruses.php
+
+		-
+			message: "#^Variable \\$data_first_seen might not be defined\\.$#"
+			count: 1
+			path: mailscanner/rep_viruses.php
+
+		-
+			message: "#^Variable \\$data_scanner might not be defined\\.$#"
+			count: 1
+			path: mailscanner/rep_viruses.php
+
+		-
+			message: "#^Variable \\$n_password might not be defined\\.$#"
+			count: 1
+			path: mailscanner/user_manager.php

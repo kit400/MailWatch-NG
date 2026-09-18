@@ -6,8 +6,10 @@ use PHPUnit\Framework\TestCase;
 
 class Ticket1290Test extends TestCase
 {
-    private $eximPattern = '/^([-=+.\w]+@[-.\w]+)$/';
-    private $sendmailPattern = '/^R[^:]*:(.+)$/';
+    public static function setUpBeforeClass(): void
+    {
+        require_once dirname(__DIR__, 2) . '/mailscanner/QueueParser.php';
+    }
 
     /**
      * @dataProvider provideValidEmailsForEximQueue
@@ -15,9 +17,14 @@ class Ticket1290Test extends TestCase
     public function testValidEmailsForEximQueue($email)
     {
         $this->assertMatchesRegularExpression(
-            $this->eximPattern,
+            \MailWatchQueueParser::EXIM_RECIPIENT_REGEX,
             $email,
             "The email '{$email}' should be considered valid."
+        );
+        $this->assertSame(
+            $email,
+            \MailWatchQueueParser::parseEximRecipient($email),
+            "MailWatchQueueParser::parseEximRecipient() should extract '{$email}'"
         );
     }
 
@@ -26,9 +33,14 @@ class Ticket1290Test extends TestCase
      */
     public function testSendmailQueuePattern($line, $expectedEmail)
     {
-        preg_match($this->sendmailPattern, $line, $matches);
+        preg_match(\MailWatchQueueParser::SENDMAIL_RECIPIENT_REGEX, $line, $matches);
         $this->assertNotEmpty($matches, "The pattern should match the line: $line");
         $this->assertEquals($expectedEmail, $matches[1], "The extracted email should be $expectedEmail");
+        $this->assertSame(
+            $expectedEmail,
+            \MailWatchQueueParser::parseSendmailRecipient($line),
+            "MailWatchQueueParser::parseSendmailRecipient() should extract '{$expectedEmail}'"
+        );
     }
 
     public function provideValidEmailsForEximQueue()
