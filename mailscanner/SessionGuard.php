@@ -98,7 +98,7 @@ class SessionGuard
             return null;
         }
 
-        $safeUser = safe_value($username);
+        $safeUser = safe_value(stripslashes((string)$username));
         $sql = "SELECT id, username, type, login_expiry, login_timeout FROM users WHERE username='$safeUser'";
 
         try {
@@ -174,7 +174,7 @@ class SessionGuard
         // Administratively invalidate the session in DB if username is known
         if (isset($_SESSION['myusername']) && class_exists('database', false)) {
             try {
-                $safeUser = safe_value($_SESSION['myusername']);
+                $safeUser = safe_value(stripslashes((string)$_SESSION['myusername']));
                 @dbquery("UPDATE users SET login_expiry='-1' WHERE username='$safeUser'", false);
             } catch (\Throwable $e) {
             }
@@ -255,7 +255,12 @@ class SessionGuard
     {
         $loginTimeout = $user['login_timeout'] ?? '-1';
         if ('-1' === (string)$loginTimeout) {
-            $timeoutVal = (defined('SESSION_TIMEOUT') && SESSION_TIMEOUT > 0) ? (int)SESSION_TIMEOUT : 600;
+            $defaultTimeout = (defined('SESSION_TIMEOUT') && SESSION_TIMEOUT > 0) ? (int)SESSION_TIMEOUT : 600;
+            if (function_exists('get_system_setting')) {
+                $timeoutVal = (int)get_system_setting('SESSION_TIMEOUT', $defaultTimeout);
+            } else {
+                $timeoutVal = $defaultTimeout;
+            }
         } elseif ('0' === (string)$loginTimeout) {
             $timeoutVal = 0;
         } else {
@@ -263,9 +268,26 @@ class SessionGuard
         }
 
         $expiryVal = ($timeoutVal === 0) ? 0 : (time() + $timeoutVal);
-        $safeUser = safe_value($username);
+        $safeUser = safe_value(stripslashes((string)$username));
         $now = time();
         @dbquery("UPDATE users SET login_expiry='$expiryVal', last_login='$now' WHERE username='$safeUser'", false);
+
+        // Sliding cookie expiration so browser PHPSESSID lifetime matches DB login_expiry
+        if ($timeoutVal > 0 && session_status() === PHP_SESSION_ACTIVE && ini_get('session.use_cookies') && !headers_sent()) {
+            $params = session_get_cookie_params();
+            setcookie(
+                session_name(),
+                session_id(),
+                [
+                    'expires' => $expiryVal,
+                    'path' => $params['path'],
+                    'domain' => $params['domain'],
+                    'secure' => (bool)$params['secure'],
+                    'httponly' => true,
+                    'samesite' => $params['samesite'] ?: 'Lax',
+                ]
+            );
+        }
 
         $key = (string)$username;
         if (isset(self::$cachedUsers[$key]) && is_array(self::$cachedUsers[$key])) {

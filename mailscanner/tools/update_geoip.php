@@ -7,6 +7,11 @@
  *   php update_geoip.php
  */
 
+if (PHP_SAPI !== 'cli') {
+    http_response_code(403);
+    exit("This script can only be run from the command line.\n");
+}
+
 require_once __DIR__ . '/../functions.php';
 
 $sourceUrl = 'https://github.com/strato-do/ip-geo/releases/latest/download/ip-geo.mmdb';

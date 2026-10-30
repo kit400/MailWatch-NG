@@ -21,71 +21,76 @@ if ('A' !== $_SESSION['user_type']) {
     exit;
 }
 
-$action = $_POST['action'] ?? $_GET['action'] ?? '';
+$action = $_POST['action'] ?? '';
 $message = '';
 $messageType = 'success';
 
-// Handle Actions
-if ('create' === $action && 'POST' === $_SERVER['REQUEST_METHOD']) {
-    if (false === checkFormToken('/system_notifications.php create token', $_POST['formtoken'] ?? '')) {
+// Handle Actions (POST only with CSRF token validation)
+if ('POST' === $_SERVER['REQUEST_METHOD'] && !empty($action)) {
+    if (false === checkFormToken('/system_notifications.php action token', $_POST['formtoken'] ?? '')
+        && false === checkFormToken('/system_notifications.php create token', $_POST['formtoken'] ?? '')) {
         header('Location: login.php?error=pagetimeout');
         exit;
     }
 
-    $title = sanitizeInput($_POST['title'] ?? '');
-    $shortDesc = sanitizeInput($_POST['short_description'] ?? '');
-    $type = sanitizeInput($_POST['type'] ?? 'info');
-    $version = sanitizeInput($_POST['version'] ?? '');
-    $changelogUrl = sanitizeInput($_POST['changelog_url'] ?? '');
-    $targetRole = sanitizeInput($_POST['target_role'] ?? 'ALL');
-    $isBanner = isset($_POST['is_banner']) ? 1 : 0;
-    $isActive = 1;
+    if ('create' === $action) {
+        $title = sanitizeInput($_POST['title'] ?? '');
+        $shortDesc = sanitizeInput($_POST['short_description'] ?? '');
+        $type = sanitizeInput($_POST['type'] ?? 'info');
+        $version = sanitizeInput($_POST['version'] ?? '');
+        $changelogUrl = sanitizeInput($_POST['changelog_url'] ?? '');
+        $targetRole = sanitizeInput($_POST['target_role'] ?? 'ALL');
+        $isBanner = isset($_POST['is_banner']) ? 1 : 0;
+        $isActive = 1;
 
-    if (!empty($title) && !empty($shortDesc)) {
-        $newId = SystemNotifications::createNotification([
-            'type' => $type,
-            'title' => $title,
-            'version' => $version,
-            'short_description' => $shortDesc,
-            'changelog_url' => $changelogUrl,
-            'target_role' => $targetRole,
-            'is_banner' => $isBanner,
-            'is_active' => $isActive,
-        ]);
+        if (!empty($title) && !empty($shortDesc)) {
+            $newId = SystemNotifications::createNotification([
+                'type' => $type,
+                'title' => $title,
+                'version' => $version,
+                'short_description' => $shortDesc,
+                'changelog_url' => $changelogUrl,
+                'target_role' => $targetRole,
+                'is_banner' => $isBanner,
+                'is_active' => $isActive,
+            ]);
 
-        $message = "Notification #" . $newId . " created successfully.";
+            $message = "Notification #" . $newId . " created successfully.";
 
-        // Check if broadcast email requested
-        if (isset($_POST['send_email']) && $_POST['send_email'] == '1') {
-            $sent = SystemNotifications::broadcastNotificationEmail($newId);
-            $message .= " Email broadcast sent to " . $sent . " user(s).";
+            // Check if broadcast email requested
+            if (isset($_POST['send_email']) && $_POST['send_email'] == '1') {
+                $sent = SystemNotifications::broadcastNotificationEmail($newId);
+                $message .= " Email broadcast sent to " . $sent . " user(s).";
+            }
+        } else {
+            $message = "Please provide both title and short description.";
+            $messageType = 'error';
         }
-    } else {
-        $message = "Please provide both title and short description.";
-        $messageType = 'error';
-    }
-} elseif ('delete' === $action) {
-    $id = (int)($_GET['id'] ?? 0);
-    if ($id > 0) {
-        dbconn();
-        dbquery("DELETE FROM system_notifications WHERE id = $id");
-        dbquery("DELETE FROM user_notifications_read WHERE notification_id = $id");
-        $message = "Notification #$id deleted successfully.";
-    }
-} elseif ('toggle' === $action) {
-    $id = (int)($_GET['id'] ?? 0);
-    if ($id > 0) {
-        dbconn();
-        dbquery("UPDATE system_notifications SET is_active = IF(is_active=1, 0, 1) WHERE id = $id");
-        $message = "Notification status updated.";
-    }
-} elseif ('broadcast' === $action) {
-    $id = (int)($_GET['id'] ?? 0);
-    if ($id > 0) {
-        $sent = SystemNotifications::broadcastNotificationEmail($id);
-        $message = "Email broadcast sent to " . $sent . " recipient(s).";
+    } elseif ('delete' === $action) {
+        $id = (int)($_POST['id'] ?? 0);
+        if ($id > 0) {
+            dbconn();
+            dbquery("DELETE FROM system_notifications WHERE id = $id");
+            dbquery("DELETE FROM user_notifications_read WHERE notification_id = $id");
+            $message = "Notification #$id deleted successfully.";
+        }
+    } elseif ('toggle' === $action) {
+        $id = (int)($_POST['id'] ?? 0);
+        if ($id > 0) {
+            dbconn();
+            dbquery("UPDATE system_notifications SET is_active = IF(is_active=1, 0, 1) WHERE id = $id");
+            $message = "Notification status updated.";
+        }
+    } elseif ('broadcast' === $action) {
+        $id = (int)($_POST['id'] ?? 0);
+        if ($id > 0) {
+            $sent = SystemNotifications::broadcastNotificationEmail($id);
+            $message = "Email broadcast sent to " . $sent . " recipient(s).";
+        }
     }
 }
+
+$notifActionToken = generateFormToken('/system_notifications.php action token');
 
 html_start('System Notifications & Announcements', 0, false, false);
 ?>
@@ -230,17 +235,32 @@ html_start('System Notifications & Announcements', 0, false, false);
                   </td>
                   <td><span class="audience-badge"><?php echo htmlspecialchars($row['target_role']); ?></span></td>
                   <td>
-                    <?php if ($row['is_active']): ?>
-                      <a href="system_notifications.php?action=toggle&amp;id=<?php echo $row['id']; ?>" class="status-btn active" title="Click to disable">Active</a>
-                    <?php else: ?>
-                      <a href="system_notifications.php?action=toggle&amp;id=<?php echo $row['id']; ?>" class="status-btn inactive" title="Click to enable">Disabled</a>
-                    <?php endif; ?>
+                    <form method="POST" action="system_notifications.php" style="display:inline;">
+                      <input type="hidden" name="action" value="toggle">
+                      <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                      <input type="hidden" name="formtoken" value="<?php echo $notifActionToken; ?>">
+                      <?php if ($row['is_active']): ?>
+                        <button type="submit" class="status-btn active" title="Click to disable">Active</button>
+                      <?php else: ?>
+                        <button type="submit" class="status-btn inactive" title="Click to enable">Disabled</button>
+                      <?php endif; ?>
+                    </form>
                   </td>
                   <td><span class="read-count-pill"><?php echo (int)$row['read_count']; ?></span></td>
                   <td>
                     <div class="action-btn-group">
-                      <a href="system_notifications.php?action=broadcast&amp;id=<?php echo $row['id']; ?>" class="row-btn btn-broadcast" onclick="return confirm('Send email broadcast to target users for this announcement?');" title="Send email broadcast">✉️ Email</a>
-                      <a href="system_notifications.php?action=delete&amp;id=<?php echo $row['id']; ?>" class="row-btn btn-delete" onclick="return confirm('Delete this notification?');" title="Delete">🗑️</a>
+                      <form method="POST" action="system_notifications.php" style="display:inline;" onsubmit="return confirm('Send email broadcast to target users for this announcement?');">
+                        <input type="hidden" name="action" value="broadcast">
+                        <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                        <input type="hidden" name="formtoken" value="<?php echo $notifActionToken; ?>">
+                        <button type="submit" class="row-btn btn-broadcast" title="Send email broadcast">✉️ Email</button>
+                      </form>
+                      <form method="POST" action="system_notifications.php" style="display:inline;" onsubmit="return confirm('Delete this notification?');">
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
+                        <input type="hidden" name="formtoken" value="<?php echo $notifActionToken; ?>">
+                        <button type="submit" class="row-btn btn-delete" title="Delete">🗑️</button>
+                      </form>
                     </div>
                   </td>
                 </tr>

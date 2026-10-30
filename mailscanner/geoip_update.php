@@ -144,7 +144,7 @@ if (!isset($_POST['run'])) {
             // Sample Lookups
             echo '<h4 style="margin-top:16px;">Sample Geolocation &amp; AS Verification Lookups:</h4>';
             echo '<ul>';
-            $sampleIps = ['8.8.8.8', '1.1.1.1', '195.230.150.68'];
+            $sampleIps = ['8.8.8.8', '1.1.1.1', '9.9.9.9'];
             foreach ($sampleIps as $testIp) {
                 $rec = return_geoip_data($testIp);
                 if ($rec) {

@@ -26,43 +26,54 @@ $messageType = 'success';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
-    if ($action === 'save_settings') {
+    if ($action === 'save_settings' || $action === 'save_security_settings' || $action === 'save_general_settings') {
         if (false === checkFormToken('/settings.php save token', $_POST['formtoken'] ?? '')) {
             $message = 'Security token invalid or expired. Please try again.';
             $messageType = 'error';
         } else {
-            // Process Security settings
-            $loginProtection = isset($_POST['LOGIN_PROTECTION_ENABLED']) ? '1' : '0';
-            set_system_setting('LOGIN_PROTECTION_ENABLED', $loginProtection);
+            $section = $_POST['settings_section'] ?? '';
+            if ($action === 'save_security_settings') {
+                $section = 'security';
+            } elseif ($action === 'save_general_settings') {
+                $section = 'general';
+            }
 
-            $captchaAttempts = max(1, (int)($_POST['LOGIN_MAX_FAILURES_BEFORE_CAPTCHA'] ?? 2));
-            set_system_setting('LOGIN_MAX_FAILURES_BEFORE_CAPTCHA', $captchaAttempts);
+            if ($section === 'security' || ($section === '' && isset($_POST['LOGIN_MAX_FAILURES_BEFORE_CAPTCHA']))) {
+                // Process Security settings
+                $loginProtection = isset($_POST['LOGIN_PROTECTION_ENABLED']) ? '1' : '0';
+                set_system_setting('LOGIN_PROTECTION_ENABLED', $loginProtection);
 
-            $banAttempts = max(1, (int)($_POST['LOGIN_MAX_FAILURES_BEFORE_BAN'] ?? 3));
-            set_system_setting('LOGIN_MAX_FAILURES_BEFORE_BAN', $banAttempts);
+                $captchaAttempts = max(1, (int)($_POST['LOGIN_MAX_FAILURES_BEFORE_CAPTCHA'] ?? 2));
+                set_system_setting('LOGIN_MAX_FAILURES_BEFORE_CAPTCHA', $captchaAttempts);
 
-            $banDuration = max(1, (int)($_POST['LOGIN_BAN_DURATION_MINUTES'] ?? 30));
-            set_system_setting('LOGIN_BAN_DURATION_MINUTES', $banDuration);
+                $banAttempts = max(1, (int)($_POST['LOGIN_MAX_FAILURES_BEFORE_BAN'] ?? 3));
+                set_system_setting('LOGIN_MAX_FAILURES_BEFORE_BAN', $banAttempts);
 
-            $windowMinutes = max(1, (int)($_POST['LOGIN_FAILURES_WINDOW_MINUTES'] ?? 15));
-            set_system_setting('LOGIN_FAILURES_WINDOW_MINUTES', $windowMinutes);
+                $banDuration = max(1, (int)($_POST['LOGIN_BAN_DURATION_MINUTES'] ?? 30));
+                set_system_setting('LOGIN_BAN_DURATION_MINUTES', $banDuration);
 
-            // Clean & normalize whitelist
-            $rawWhitelist = trim($_POST['LOGIN_WHITELIST_IPS'] ?? '');
-            $cleanWhitelist = preg_replace('/[\r\n]+/', ', ', $rawWhitelist);
-            $cleanWhitelist = preg_replace('/\s*,\s*/', ', ', $cleanWhitelist);
-            $cleanWhitelist = trim($cleanWhitelist, ', ');
-            set_system_setting('LOGIN_WHITELIST_IPS', $cleanWhitelist);
+                $windowMinutes = max(1, (int)($_POST['LOGIN_FAILURES_WINDOW_MINUTES'] ?? 15));
+                set_system_setting('LOGIN_FAILURES_WINDOW_MINUTES', $windowMinutes);
 
-            // Process General settings
-            $sessionTimeout = max(60, (int)($_POST['SESSION_TIMEOUT'] ?? 259200));
-            set_system_setting('SESSION_TIMEOUT', $sessionTimeout);
+                // Clean & normalize whitelist
+                $rawWhitelist = trim($_POST['LOGIN_WHITELIST_IPS'] ?? '');
+                $cleanWhitelist = preg_replace('/[\r\n]+/', ', ', $rawWhitelist);
+                $cleanWhitelist = preg_replace('/\s*,\s*/', ', ', $cleanWhitelist);
+                $cleanWhitelist = trim($cleanWhitelist, ', ');
+                set_system_setting('LOGIN_WHITELIST_IPS', $cleanWhitelist);
+            }
 
-            $maxResults = max(10, (int)($_POST['MAX_RESULTS'] ?? 50));
-            set_system_setting('MAX_RESULTS', $maxResults);
+            if ($section === 'general' || ($section === '' && isset($_POST['SESSION_TIMEOUT']))) {
+                // Process General settings
+                $sessionTimeout = max(60, (int)($_POST['SESSION_TIMEOUT'] ?? 259200));
+                set_system_setting('SESSION_TIMEOUT', $sessionTimeout);
 
-            $statusRefresh = max(5, (int)($_POST['STATUS_REFRESH'] ?? 30));
-            set_system_setting('STATUS_REFRESH', $statusRefresh);
+                $maxResults = max(10, (int)($_POST['MAX_RESULTS'] ?? 50));
+                set_system_setting('MAX_RESULTS', $maxResults);
+
+                $statusRefresh = max(5, (int)($_POST['STATUS_REFRESH'] ?? 30));
+                set_system_setting('STATUS_REFRESH', $statusRefresh);
+            }
 
             audit_log('Updated system settings', $_SESSION['myusername']);
             $message = 'Settings have been updated and saved to database successfully.';
@@ -135,7 +146,8 @@ html_start('System Settings & Security', 0, false, false);
     <!-- TAB 1: SECURITY -->
     <div id="tab-security" class="settings-tab-content active">
         <form method="POST" action="settings.php" class="settings-form">
-            <input type="hidden" name="action" value="save_settings">
+            <input type="hidden" name="action" value="save_security_settings">
+            <input type="hidden" name="settings_section" value="security">
             <input type="hidden" name="formtoken" value="<?php echo generateFormToken('/settings.php save token'); ?>">
 
             <div class="settings-card">
@@ -227,10 +239,10 @@ html_start('System Settings & Security', 0, false, false);
 
                     <div class="whitelist-input-box">
                         <label for="whitelist_ips" class="setting-label">Whitelisted IPs and Subnets (Comma-separated or one per line):</label>
-                        <textarea id="whitelist_ips" name="LOGIN_WHITELIST_IPS" rows="4" class="form-textarea-code" placeholder="127.0.0.1, ::1, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 195.230.150.0/27"><?php echo htmlspecialchars(get_system_setting('LOGIN_WHITELIST_IPS', '127.0.0.1, ::1, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16')); ?></textarea>
+                        <textarea id="whitelist_ips" name="LOGIN_WHITELIST_IPS" rows="4" class="form-textarea-code" placeholder="127.0.0.1, ::1, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 203.0.113.0/24"><?php echo htmlspecialchars(get_system_setting('LOGIN_WHITELIST_IPS', '127.0.0.1, ::1, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16')); ?></textarea>
                         <div class="whitelist-quick-examples">
                             <span>Supported Formats:</span>
-                            <code>127.0.0.1</code> <code>::1</code> <code>10.0.0.0/8</code> <code>172.16.0.0/12</code> <code>192.168.0.0/16</code> <code>195.230.150.68/32</code>
+                            <code>127.0.0.1</code> <code>::1</code> <code>10.0.0.0/8</code> <code>172.16.0.0/12</code> <code>192.168.0.0/16</code> <code>203.0.113.10/32</code>
                         </div>
                     </div>
                 </div>
@@ -245,7 +257,8 @@ html_start('System Settings & Security', 0, false, false);
     <!-- TAB 2: GENERAL -->
     <div id="tab-general" class="settings-tab-content">
         <form method="POST" action="settings.php" class="settings-form">
-            <input type="hidden" name="action" value="save_settings">
+            <input type="hidden" name="action" value="save_general_settings">
+            <input type="hidden" name="settings_section" value="general">
             <input type="hidden" name="formtoken" value="<?php echo generateFormToken('/settings.php save token'); ?>">
 
             <div class="settings-card">

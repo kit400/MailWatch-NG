@@ -367,12 +367,15 @@ sub GetFailedEventsDir {
 sub _escape_json_str {
     my ($s) = @_;
     $s //= '';
+    eval { $s = fix_latin($s); };
+    utf8::upgrade($s) unless utf8::is_utf8($s);
     $s =~ s/\\/\\\\/g;
     $s =~ s/"/\\"/g;
     $s =~ s/\n/\\n/g;
     $s =~ s/\r/\\r/g;
     $s =~ s/\t/\\t/g;
-    $s =~ s/([\x00-\x1f])/sprintf("\\u%04x", ord($1))/ge;
+    $s =~ s/([\x00-\x1f\x{007f}-\x{ffff}])/sprintf("\\u%04x", ord($1))/ge;
+    $s =~ s/([^\x20-\x7e])/sprintf("\\u%04x", ord($1) <= 0xFFFF ? ord($1) : 0xFFFD)/ge;
     return $s;
 }
 
@@ -427,7 +430,7 @@ sub SaveFailedEvent {
         fields      => $msg,
     );
 
-    if (open(my $fh, '>', $filename)) {
+    if (open(my $fh, '>:raw', $filename)) {
         print $fh FormatJSON(\%record);
         close($fh);
         LogMessage('warn', "$msg_id: Saved failed event to dead-letter queue: $filename");

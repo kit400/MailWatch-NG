@@ -8,6 +8,11 @@
  *   php generate_test_traffic.php [--minutes=60] [--count=60]
  */
 
+if (PHP_SAPI !== 'cli') {
+    http_response_code(403);
+    exit("This script can only be run from the command line.\n");
+}
+
 require_once __DIR__ . '/../functions.php';
 
 // Parse CLI options

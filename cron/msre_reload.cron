@@ -1,1 +1,3 @@
 */5 * * * *   root    /usr/bin/mailwatch/tools/MailScanner_rule_editor/msre_reload.sh
+*/5 * * * *   root    /usr/bin/php /usr/bin/mailwatch/tools/mailwatch_replay_failed_events.php >/dev/null 2>&1
+

@@ -120,6 +120,7 @@ switch ($url_type) {
 $myusername = safe_value(stripslashes($_SESSION['myusername']));
 
 // Validate user permissions and build domain/user filters
+$user_filter = [];
 $to_user_filter = [];
 $to_domain_filter = [];
 $to_address = '';
@@ -226,6 +227,25 @@ if ('add' === $url_submit) {
     }
 
     $to_domain = strtolower($url_domain);
+    if ('U' === $_SESSION['user_type']) {
+        $allowed_users = array_map('strtolower', $user_filter);
+        if (!in_array(strtolower($to_address), $allowed_users, true)) {
+            $errors[] = __('error071');
+        }
+    } elseif ('D' === $_SESSION['user_type']) {
+        $allowed_domains = array_map('strtolower', $to_domain_filter);
+        $check_domain = $to_domain;
+        if (empty($check_domain) && strpos($to_address, '@') !== false) {
+            $parts = explode('@', $to_address, 2);
+            $check_domain = strtolower($parts[1]);
+        } elseif (empty($check_domain)) {
+            $check_domain = strtolower($to_address);
+        }
+        if (empty($check_domain) || !in_array($check_domain, $allowed_domains, true)) {
+            $errors[] = __('error071');
+        }
+    }
+
     if (empty($errors)) {
         $list = ('w' === $url_list) ? 'whitelist' : 'blacklist';
         $listi18 = ('w' === $url_list) ? __('wl07') : __('bl07');
@@ -259,29 +279,43 @@ if ('delete' === $url_submit) {
     $list = ('w' === $url_list) ? 'whitelist' : 'blacklist';
     $listi18 = ('w' === $url_list) ? __('wl07') : __('bl07');
 
-    $sqlfrom = "SELECT from_address, to_address, to_domain FROM $list WHERE id='$id'";
+    $scope_cond = ('A' === $_SESSION['user_type']) ? '1=1' : '(' . $_SESSION['global_list'] . ')';
+    $sqlfrom = "SELECT from_address, to_address, to_domain FROM $list WHERE id='$id' AND $scope_cond";
     $result = dbquery($sqlfrom);
     if ($result && $row = $result->fetch_assoc()) {
         $from_address = $row['from_address'];
         $del_to = $row['to_address'];
+        $del_domain = $row['to_domain'];
+        $safe_del_to = safe_value($del_to);
+        $safe_del_domain = safe_value($del_domain);
+        $authorized = false;
 
         switch ($_SESSION['user_type']) {
             case 'U':
-                $sql = "DELETE FROM $list WHERE id='$id' AND to_address='$del_to'";
+                $allowed_users = array_map('strtolower', $user_filter);
+                if (in_array(strtolower($del_to), $allowed_users, true)) {
+                    $sql = "DELETE FROM $list WHERE id='$id' AND to_address='$safe_del_to' AND (" . $_SESSION['global_list'] . ")";
+                    $authorized = true;
+                }
                 break;
             case 'D':
-                $del_domain = $row['to_domain'];
-                $sql = "DELETE FROM $list WHERE id='$id' AND to_domain='$del_domain'";
+                $allowed_domains = array_map('strtolower', $to_domain_filter);
+                if (in_array(strtolower($del_domain), $allowed_domains, true) || in_array(strtolower($del_to), $allowed_domains, true)) {
+                    $sql = "DELETE FROM $list WHERE id='$id' AND to_domain='$safe_del_domain' AND (" . $_SESSION['global_list'] . ")";
+                    $authorized = true;
+                }
                 break;
             case 'A':
-            default:
                 $sql = "DELETE FROM $list WHERE id='$id'";
+                $authorized = true;
                 break;
         }
 
-        dbquery($sql);
-        audit_log(sprintf(__('auditlogremoved07', true), $from_address, $del_to, $listi18));
-        $flash_success = sprintf(__('auditlogremoved07', true), htmlspecialchars($from_address), htmlspecialchars($del_to), $listi18);
+        if ($authorized && isset($sql)) {
+            dbquery($sql);
+            audit_log(sprintf(__('auditlogremoved07', true), $from_address, $del_to, $listi18));
+            $flash_success = sprintf(__('auditlogremoved07', true), htmlspecialchars($from_address), htmlspecialchars($del_to), $listi18);
+        }
     }
     $to_domain = '';
     $touser = '';
@@ -1382,9 +1416,9 @@ input[type="text"].search-input:focus,
 (function() {
     'use strict';
 
-    var CSRF_TOKEN = <?= json_encode($_SESSION['token']) ?>;
-    var rawWhitelist = <?= json_encode($whitelists) ?>;
-    var rawBlacklist = <?= json_encode($blacklists) ?>;
+    var CSRF_TOKEN = <?= json_encode($_SESSION['token'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+    var rawWhitelist = <?= json_encode($whitelists, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+    var rawBlacklist = <?= json_encode($blacklists, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 
     function classifyRule(item) {
         var from = item.from_address || '';
@@ -1547,17 +1581,17 @@ input[type="text"].search-input:focus,
                 + '&amp;listid=' + r.id
                 + '&amp;to=' + encodeURIComponent(r.to);
 
-            rowsHtml += '<tr data-key="' + r.key + '">'
-                + '<td style="text-align: center;"><input type="checkbox" class="row-checkbox" value="' + r.key + '" ' + (isChecked ? 'checked' : '') + ' onchange="window.handleRowCheck(\'' + r.key + '\', this.checked)"></td>'
+            rowsHtml += '<tr data-key="' + escapeHtml(r.key) + '">'
+                + '<td style="text-align: center;"><input type="checkbox" class="row-checkbox" data-key="' + escapeHtml(r.key) + '" value="' + escapeHtml(r.key) + '" ' + (isChecked ? 'checked' : '') + '></td>'
                 + '<td>' + typeBadge + '</td>'
                 + '<td>'
-                    + '<span style="margin-right: 5px;" title="' + r.patternType + '">' + patternIcon + '</span>'
+                    + '<span style="margin-right: 5px;" title="' + escapeHtml(r.patternType) + '">' + patternIcon + '</span>'
                     + '<span class="sender-text">' + escapeHtml(r.from) + '</span>'
-                    + '<button type="button" class="btn-row-copy" onclick="window.copyToClipboard(\'' + escapeJs(r.from) + '\')" title="Copy sender to clipboard">📋</button>'
+                    + '<button type="button" class="btn-row-copy" data-sender="' + escapeHtml(r.from) + '" title="Copy sender to clipboard">📋</button>'
                 + '</td>'
                 + '<td>' + scopeBadge + '</td>'
                 + '<td style="text-align: right;">'
-                    + '<a href="' + delLink + '" class="btn-row-delete" onclick="return confirm(\'Delete rule for ' + escapeJs(r.from) + '?\');" title="Delete rule">🗑 Delete</a>'
+                    + '<a href="' + delLink + '" class="btn-row-delete" data-sender="' + escapeHtml(r.from) + '" title="Delete rule">🗑 Delete</a>'
                 + '</td>'
                 + '</tr>';
         });
@@ -1829,11 +1863,42 @@ input[type="text"].search-input:focus,
         window.updateAdminScopeFields();
     };
 
+    function bindTableDelegatedEvents() {
+        var tbody = document.getElementById('rulesTableBody');
+        if (!tbody || tbody.dataset.eventsBound === '1') return;
+        tbody.dataset.eventsBound = '1';
+
+        tbody.addEventListener('change', function(e) {
+            var cb = e.target.closest('.row-checkbox');
+            if (cb && cb.dataset.key) {
+                window.handleRowCheck(cb.dataset.key, cb.checked);
+            }
+        });
+
+        tbody.addEventListener('click', function(e) {
+            var copyBtn = e.target.closest('.btn-row-copy');
+            if (copyBtn) {
+                e.preventDefault();
+                window.copyToClipboard(copyBtn.getAttribute('data-sender') || '');
+                return;
+            }
+            var delBtn = e.target.closest('.btn-row-delete');
+            if (delBtn) {
+                var sender = delBtn.getAttribute('data-sender') || '';
+                if (!confirm('Delete rule for ' + sender + '?')) {
+                    e.preventDefault();
+                }
+            }
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
+        bindTableDelegatedEvents();
         renderTable();
     });
 
     if (document.readyState !== 'loading') {
+        bindTableDelegatedEvents();
         renderTable();
     }
 })();

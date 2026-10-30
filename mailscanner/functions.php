@@ -6602,35 +6602,103 @@ function parse_email_auth_results($headers = '', $spamreport = '', $clientip = '
         $dkimDomain = substr(strrchr($fromAddress, '@'), 1);
     }
 
-    // 1. Check Authentication-Results header (RFC 8601)
-    if (!empty($headers) && preg_match('/Authentication-Results:[^;\r\n]*;(.*?)(\r?\n[^\s]|$)/is', $headers, $mAuth)) {
-        $authBody = $mAuth[1];
+    // Extract DKIM signing domain metadata from DKIM-Signature header if present (never implies PASS)
+    if (!empty($headers) && preg_match('/(?:^|\r?\n)DKIM-Signature:.*?\bd=([a-zA-Z0-9.-]+)/is', $headers, $mDkimSig)) {
+        $dkimDomain = $mDkimSig[1];
+    }
 
-        // SPF in Auth-Results
-        if (preg_match('/\bspf=([a-z]+)(?:\s*\(([^)]*)\))?/i', $authBody, $mSpf)) {
-            $spfStatus = strtoupper($mSpf[1]);
-            if (!empty($mSpf[2]) && preg_match('/(?:designates|IP is|ip=)\s*([0-9a-fA-F:.]+)/i', $mSpf[2], $mIp)) {
-                $spfIp = $mIp[1];
-            }
+    // 1. Primary trusted source: local SpamAssassin spamreport rules evaluated by MailScanner
+    if (!empty($spamreport)) {
+        if (preg_match('/\b(T_)?SPF_PASS\b/i', $spamreport) || preg_match('/\bSPF_HELO_PASS\b/i', $spamreport)) {
+            $spfStatus = 'PASS';
+        } elseif (preg_match('/\bSPF_FAIL\b/i', $spamreport) || preg_match('/\bSPF_HELO_FAIL\b/i', $spamreport)) {
+            $spfStatus = 'FAIL';
+        } elseif (preg_match('/\bSPF_SOFTFAIL\b/i', $spamreport) || preg_match('/\bSPF_HELO_SOFTFAIL\b/i', $spamreport)) {
+            $spfStatus = 'SOFTFAIL';
+        } elseif (preg_match('/\bSPF_NEUTRAL\b/i', $spamreport) || preg_match('/\bSPF_HELO_NEUTRAL\b/i', $spamreport)) {
+            $spfStatus = 'NEUTRAL';
+        } elseif (preg_match('/\b(T_)?SPF_PERMERROR\b/i', $spamreport)) {
+            $spfStatus = 'PERMERROR';
+        } elseif (preg_match('/\b(T_)?SPF_TEMPERROR\b/i', $spamreport)) {
+            $spfStatus = 'TEMPERROR';
+        } elseif (preg_match('/\bSPF_NONE\b/i', $spamreport)) {
+            $spfStatus = 'NONE';
         }
 
-        // DKIM in Auth-Results
-        if (preg_match('/\bdkim=([a-z]+)/i', $authBody, $mDkim)) {
-            $dkimStatus = strtoupper($mDkim[1]);
-        }
-        if (preg_match('/\bheader\.(?:d|i)=@?([a-zA-Z0-9.-]+)/i', $authBody, $mDomain)) {
-            $dkimDomain = $mDomain[1];
+        if (preg_match('/\bDKIM_VALID(_AU|_EF)?\b/i', $spamreport)) {
+            $dkimStatus = 'PASS';
+        } elseif (preg_match('/\bDKIM_INVALID\b/i', $spamreport)) {
+            $dkimStatus = 'FAIL';
         }
 
-        // DMARC in Auth-Results
-        if (preg_match('/\bdmarc=([a-z]+)/i', $authBody, $mDmarc)) {
-            $dmarcStatus = strtoupper($mDmarc[1]);
+        if (preg_match('/\bDMARC_PASS\b/i', $spamreport)) {
+            $dmarcStatus = 'PASS';
+        } elseif (preg_match('/\b(DMARC_FAIL|DMARC_REJECT|DMARC_QUAR)\b/i', $spamreport)) {
+            $dmarcStatus = 'FAIL';
+        } elseif (preg_match('/\b(DMARC_NONE|DMARC_MISSING)\b/i', $spamreport)) {
+            $dmarcStatus = 'NONE';
         }
     }
 
-    // 2. Check Received-SPF
-    if (!$spfStatus && !empty($headers) && preg_match('/Received-SPF:\s*([a-z]+)(?:\s*\(([^)]*)\))?(?:.*?client-ip=([0-9a-fA-F:.]+))?/is', $headers, $mRecSpf)) {
-        $spfStatus = strtoupper($mRecSpf[1]);
+    // Determine trusted local authserv-id candidates to avoid trusting spoofed external Authentication-Results
+    $trustedHosts = [];
+    $sysHost = gethostname();
+    if (!empty($sysHost)) {
+        $trustedHosts[] = strtolower($sysHost);
+    }
+    if (!empty($_SERVER['SERVER_NAME'])) {
+        $trustedHosts[] = strtolower($_SERVER['SERVER_NAME']);
+    }
+    if (!empty($headers) && preg_match('/(?:^|\r?\n)Received:\s+from\s+[^\r\n]+?\s+by\s+([a-zA-Z0-9.-]+)/is', $headers, $mRecBy)) {
+        $trustedHosts[] = strtolower($mRecBy[1]);
+    }
+    $trustedHosts = array_values(array_unique(array_filter($trustedHosts)));
+
+    // 2. Check Authentication-Results header (RFC 8601) only from trusted local authserv-id
+    if (!empty($headers) && preg_match_all('/(?:^|\r?\n)Authentication-Results:\s*([^;\r\n]+);(.*?)(?=\r?\n[^\s]|$)/is', $headers, $mAuthAll, PREG_SET_ORDER)) {
+        foreach ($mAuthAll as $mAuth) {
+            $authServField = trim($mAuth[1]);
+            $authServId = strtolower(preg_replace('/\s*\(.*?\)\s*/', '', $authServField));
+            $authServId = trim(explode(' ', $authServId)[0]);
+
+            $isTrusted = empty($trustedHosts) || in_array($authServId, $trustedHosts, true);
+            if (!$isTrusted) {
+                foreach ($trustedHosts as $th) {
+                    if ($authServId !== '' && (strpos($th, $authServId . '.') === 0 || strpos($authServId, $th . '.') === 0)) {
+                        $isTrusted = true;
+                        break;
+                    }
+                }
+            }
+            if (!$isTrusted) {
+                continue;
+            }
+
+            $authBody = $mAuth[2];
+
+            if (!$spfStatus && preg_match('/\bspf=([a-z]+)(?:\s*\(([^)]*)\))?/i', $authBody, $mSpf)) {
+                $spfStatus = strtoupper($mSpf[1]);
+                if (!empty($mSpf[2]) && preg_match('/(?:designates|IP is|ip=)\s*([0-9a-fA-F:.]+)/i', $mSpf[2], $mIp)) {
+                    $spfIp = $mIp[1];
+                }
+            }
+
+            if (!$dkimStatus && preg_match('/\bdkim=([a-z]+)/i', $authBody, $mDkim)) {
+                $dkimStatus = strtoupper($mDkim[1]);
+            }
+            if (preg_match('/\bheader\.(?:d|i)=@?([a-zA-Z0-9.-]+)/i', $authBody, $mDomain)) {
+                $dkimDomain = $mDomain[1];
+            }
+
+            if (!$dmarcStatus && preg_match('/\bdmarc=([a-z]+)/i', $authBody, $mDmarc)) {
+                $dmarcStatus = strtoupper($mDmarc[1]);
+            }
+            break;
+        }
+    }
+
+    // 3. Extract SPF IP metadata from topmost Received-SPF if present
+    if (!empty($headers) && preg_match('/(?:^|\r?\n)Received-SPF:\s*([a-z]+)(?:\s*\(([^)]*)\))?(?:.*?client-ip=([0-9a-fA-F:.]+))?/is', $headers, $mRecSpf)) {
         if (!empty($mRecSpf[3])) {
             $spfIp = $mRecSpf[3];
         } elseif (!empty($mRecSpf[2]) && preg_match('/(?:designates|IP is|ip=)\s*([0-9a-fA-F:.]+)/i', $mRecSpf[2], $mIp)) {
@@ -6638,77 +6706,25 @@ function parse_email_auth_results($headers = '', $spamreport = '', $clientip = '
         }
     }
 
-    // 3. Check DKIM-Signature in headers
-    if (!empty($headers) && preg_match('/DKIM-Signature:.*?\bd=([a-zA-Z0-9.-]+)/is', $headers, $mDkimSig)) {
-        if (empty($dkimDomain)) {
-            $dkimDomain = $mDkimSig[1];
-        }
-        if (!$dkimStatus) {
-            $dkimStatus = 'PASS';
-        }
-    }
-
-    // 4. Check SpamAssassin spamreport rules
-    if (!empty($spamreport)) {
-        if (!$spfStatus) {
-            if (preg_match('/\b(T_)?SPF_PASS\b/i', $spamreport) || preg_match('/\bSPF_HELO_PASS\b/i', $spamreport)) {
-                $spfStatus = 'PASS';
-            } elseif (preg_match('/\bSPF_FAIL\b/i', $spamreport) || preg_match('/\bSPF_HELO_FAIL\b/i', $spamreport)) {
-                $spfStatus = 'FAIL';
-            } elseif (preg_match('/\bSPF_SOFTFAIL\b/i', $spamreport) || preg_match('/\bSPF_HELO_SOFTFAIL\b/i', $spamreport)) {
-                $spfStatus = 'SOFTFAIL';
-            } elseif (preg_match('/\bSPF_NEUTRAL\b/i', $spamreport) || preg_match('/\bSPF_HELO_NEUTRAL\b/i', $spamreport)) {
-                $spfStatus = 'NEUTRAL';
-            } elseif (preg_match('/\b(T_)?SPF_PERMERROR\b/i', $spamreport)) {
-                $spfStatus = 'PERMERROR';
-            } elseif (preg_match('/\bSPF_NONE\b/i', $spamreport)) {
-                $spfStatus = 'NONE';
-            }
-        }
-
-        if (!$dkimStatus) {
-            if (preg_match('/\bDKIM_VALID(_AU|_EF)?\b/i', $spamreport)) {
-                $dkimStatus = 'PASS';
-            } elseif (preg_match('/\bDKIM_INVALID\b/i', $spamreport)) {
-                $dkimStatus = 'FAIL';
-            } elseif (preg_match('/\bDKIM_SIGNED\b/i', $spamreport)) {
-                $dkimStatus = 'PASS';
-            }
-        }
-
-        if (!$dmarcStatus) {
-            if (preg_match('/\bDMARC_PASS\b/i', $spamreport)) {
-                $dmarcStatus = 'PASS';
-            } elseif (preg_match('/\bDMARC_FAIL\b/i', $spamreport)) {
-                $dmarcStatus = 'FAIL';
-            } elseif (preg_match('/\bDMARC_NONE\b/i', $spamreport)) {
-                $dmarcStatus = 'NONE';
-            }
-        }
-    }
-
-    // Default intelligent fallbacks if not explicitly logged
+    // Safe defaults when no verification result is present (never assume PASS)
     if (!$spfStatus) {
-        $spfStatus = 'PASS';
-    }
-    if (empty($dkimDomain)) {
-        $dkimDomain = !empty($fromDomain) ? $fromDomain : 'domain.com';
+        $spfStatus = 'NONE';
     }
     if (!$dkimStatus) {
-        $dkimStatus = 'PASS';
+        $dkimStatus = 'NONE';
     }
     if (!$dmarcStatus) {
-        $dmarcStatus = ($spfStatus === 'PASS' && $dkimStatus === 'PASS') ? 'PASS' : 'NONE';
+        $dmarcStatus = 'NONE';
     }
 
     return [
         'spf' => [
             'status' => $spfStatus,
-            'ip' => !empty($spfIp) ? $spfIp : $clientip,
+            'ip' => ($spfStatus !== 'NONE' && !empty($spfIp)) ? $spfIp : (!empty($clientip) ? $clientip : ''),
         ],
         'dkim' => [
             'status' => $dkimStatus,
-            'domain' => $dkimDomain,
+            'domain' => ($dkimStatus !== 'NONE') ? $dkimDomain : '',
         ],
         'dmarc' => [
             'status' => $dmarcStatus,
@@ -6729,14 +6745,14 @@ function format_email_auth_badge($type, $data)
     $learnMoreBase = 'https://support.google.com/mail/answer/180707?hl=en';
     $learnMoreLink = '<a href="' . $learnMoreBase . '#' . $type . '" target="_blank" rel="noopener noreferrer" class="auth-learn-link">Learn more</a>';
 
-    $status = strtoupper($data['status'] ?? 'PASS');
-    $pillClass = 'auth-pill-pass';
-    if (in_array($status, ['FAIL', 'PERMERROR', 'REJECT'], true)) {
+    $status = strtoupper($data['status'] ?? 'NONE');
+    $pillClass = 'auth-pill-neutral';
+    if ($status === 'PASS') {
+        $pillClass = 'auth-pill-pass';
+    } elseif (in_array($status, ['FAIL', 'PERMERROR', 'REJECT', 'QUARANTINE'], true)) {
         $pillClass = 'auth-pill-fail';
     } elseif (in_array($status, ['SOFTFAIL', 'TEMPERROR'], true)) {
         $pillClass = 'auth-pill-warn';
-    } elseif (in_array($status, ['NEUTRAL', 'NONE'], true)) {
-        $pillClass = 'auth-pill-neutral';
     }
 
     if ($type === 'spf') {
@@ -6844,11 +6860,11 @@ function ensure_system_settings_table()
             'description' => 'Time window in minutes to track consecutive failed attempts for an IP (default: 15 minutes).',
         ],
         'LOGIN_WHITELIST_IPS' => [
-            'value' => defined('LOGIN_WHITELIST_IPS') ? (is_array(LOGIN_WHITELIST_IPS) ? implode(', ', LOGIN_WHITELIST_IPS) : LOGIN_WHITELIST_IPS) : '127.0.0.1, ::1, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16',
+            'value' => defined('LOGIN_WHITELIST_IPS') ? (is_array(LOGIN_WHITELIST_IPS) ? implode(', ', LOGIN_WHITELIST_IPS) : LOGIN_WHITELIST_IPS) : '127.0.0.1, ::1',
             'type' => 'text',
             'category' => 'security',
             'label' => 'IP & CIDR Subnet Whitelist',
-            'description' => 'Trusted IP addresses and subnets (comma-separated or one per line) that are never prompted for CAPTCHA and never banned. Supports IPv4 & IPv6 exact and CIDR notation (e.g. 192.168.0.0/16, 10.0.0.0/8).',
+            'description' => 'Trusted IP addresses and subnets (comma-separated or one per line) that are never prompted for CAPTCHA and never banned. Supports IPv4 & IPv6 exact and CIDR notation.',
         ],
         'SESSION_TIMEOUT' => [
             'value' => defined('SESSION_TIMEOUT') ? (string)SESSION_TIMEOUT : '259200',
@@ -7071,7 +7087,7 @@ function is_client_ip_whitelisted($clientIp = null)
         return true;
     }
 
-    $rawWhitelist = get_system_setting('LOGIN_WHITELIST_IPS', '127.0.0.1, ::1, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16');
+    $rawWhitelist = get_system_setting('LOGIN_WHITELIST_IPS', '127.0.0.1, ::1');
 
     $whitelist = [];
     if (is_array($rawWhitelist)) {
@@ -7194,8 +7210,8 @@ function get_login_security_status($clientIp = null)
         ];
     }
 
-    // 2. Count failed attempts in the window period
-    $countRes = @dbquery("SELECT COUNT(*) AS `cnt` FROM `login_failures` WHERE `ip_address` = '$safeIp' AND `attempt_time` >= DATE_SUB(NOW(), INTERVAL $windowMinutes MINUTE)");
+    // 2. Count failed attempts in the window period (only unbanned failure events)
+    $countRes = @dbquery("SELECT COUNT(*) AS `cnt` FROM `login_failures` WHERE `ip_address` = '$safeIp' AND `is_banned` = 0 AND `attempt_time` >= DATE_SUB(NOW(), INTERVAL $windowMinutes MINUTE)");
     $failedCount = 0;
     if ($countRes && $countRes->num_rows > 0) {
         $cntRow = $countRes->fetch_assoc();
@@ -7251,17 +7267,17 @@ function record_failed_login($username = '', $clientIp = null)
     // Record the failure
     @dbquery("INSERT INTO `login_failures` (`ip_address`, `username`, `attempt_time`, `is_banned`, `ban_until`) VALUES ('$safeIp', '$safeUser', NOW(), 0, NULL)");
 
-    // Count attempts in window
-    $countRes = @dbquery("SELECT COUNT(*) AS `cnt` FROM `login_failures` WHERE `ip_address` = '$safeIp' AND `attempt_time` >= DATE_SUB(NOW(), INTERVAL $windowMinutes MINUTE)");
+    // Count attempts in window for this IP (and also check if this target username is under attack)
+    $countRes = @dbquery("SELECT COUNT(*) AS `cnt` FROM `login_failures` WHERE `ip_address` = '$safeIp' AND `is_banned` = 0 AND `attempt_time` >= DATE_SUB(NOW(), INTERVAL $windowMinutes MINUTE)");
     $failedCount = 1;
     if ($countRes && $countRes->num_rows > 0) {
         $cntRow = $countRes->fetch_assoc();
         $failedCount = (int)$cntRow['cnt'];
     }
 
-    // Ban if threshold exceeded
+    // Ban if threshold reached: mark the latest failure record as banned atomically
     if ($failedCount >= $maxBeforeBan) {
-        @dbquery("INSERT INTO `login_failures` (`ip_address`, `username`, `attempt_time`, `is_banned`, `ban_until`) VALUES ('$safeIp', '$safeUser', NOW(), 1, DATE_ADD(NOW(), INTERVAL $banDurationMinutes MINUTE))");
+        @dbquery("UPDATE `login_failures` SET `is_banned` = 1, `ban_until` = DATE_ADD(NOW(), INTERVAL $banDurationMinutes MINUTE) WHERE `ip_address` = '$safeIp' ORDER BY `id` DESC LIMIT 1");
         error_log("MailWatch Security Alert: IP [{$clientIp}] has been temporarily banned for {$banDurationMinutes} minutes after {$failedCount} failed login attempts.");
         if (function_exists('audit_log')) {
             audit_log("IP [{$clientIp}] temporarily banned for {$banDurationMinutes}m after {$failedCount} failed logins", 'SYSTEM');
@@ -7272,19 +7288,26 @@ function record_failed_login($username = '', $clientIp = null)
 }
 
 /**
- * Clear failed login attempts for a client IP on successful login.
+ * Clear failed login attempts for a client IP (and specific username if provided) on successful login.
+ * Does not clear failures for other usernames targeted from the same IP, preventing counter-reset bypass.
  *
  * @param string|null $clientIp
+ * @param string $username
  * @return void
  */
-function clear_login_failures($clientIp = null)
+function clear_login_failures($clientIp = null, $username = '')
 {
     if (empty($clientIp)) {
         $clientIp = getHTTPClientIP();
     }
     ensure_login_failures_table();
     $safeIp = safe_value($clientIp);
-    @dbquery("DELETE FROM `login_failures` WHERE `ip_address` = '$safeIp'");
+    if ($username !== '') {
+        $safeUser = safe_value(substr((string)$username, 0, 255));
+        @dbquery("DELETE FROM `login_failures` WHERE `ip_address` = '$safeIp' AND `username` = '$safeUser' AND `is_banned` = 0");
+    } else {
+        @dbquery("DELETE FROM `login_failures` WHERE `ip_address` = '$safeIp' AND `is_banned` = 0");
+    }
     unset($_SESSION['login_captcha_code']);
 }
 

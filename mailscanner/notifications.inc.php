@@ -297,8 +297,12 @@ class SystemNotifications
             $subject .= " (v" . $notif['version'] . ")";
         }
 
-        $headers = "From: EFA-NG System <postmaster@efa-test.localdomain>\r\n" .
-                   "Reply-To: postmaster@efa-test.localdomain\r\n" .
+        $mailFrom = (defined('MAILWATCH_FROM_ADDR') && '' !== trim((string)MAILWATCH_FROM_ADDR))
+            ? trim((string)MAILWATCH_FROM_ADDR)
+            : ('postmaster@' . (gethostname() ?: 'localhost.localdomain'));
+
+        $headers = "From: EFA-NG System <" . $mailFrom . ">\r\n" .
+                   "Reply-To: " . $mailFrom . "\r\n" .
                    "MIME-Version: 1.0\r\n" .
                    "Content-Type: text/html; charset=UTF-8\r\n" .
                    "X-Mailer: PHP/" . phpversion();

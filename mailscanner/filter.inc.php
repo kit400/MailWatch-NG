@@ -840,21 +840,35 @@ WHERE
     private static function getConditionClause($val)
     {
         $valCopy = $val;
+        $rawVal = stripslashes((string)($valCopy[2] ?? ''));
         // If LIKE selected - place wildcards either side of the query string
         if ('LIKE' === $valCopy[1] || 'NOT LIKE' === $valCopy[1]) {
-            $valCopy[2] = '%' . $valCopy[2] . '%';
+            $safeVal = safe_value('%' . $rawVal . '%');
+            return "$valCopy[0] $valCopy[1] '$safeVal'";
         }
-        if (is_numeric($valCopy[2])) {
-            return "$valCopy[0] $valCopy[1] $valCopy[2]";
+        if (is_numeric($rawVal)) {
+            return "$valCopy[0] $valCopy[1] $rawVal";
         } elseif ('IS NULL' === $valCopy[1] || 'IS NOT NULL' === $valCopy[1]) {
             // Handle NULL and NOT NULL's
             return "$valCopy[0] $valCopy[1]";
-        } elseif ('' !== $valCopy[2] && '!' === $valCopy[2][0]) {
-            // Allow !<sql_function>
-            return "$valCopy[0] $valCopy[1] " . substr($valCopy[2], 1);
+        } elseif ('' !== $rawVal && '!' === $rawVal[0]) {
+            // Only allow safe whitelisted SQL date functions or column references after '!'
+            $expr = trim(substr($rawVal, 1));
+            $allowedCols = [
+                'date', 'headers', 'id', 'size', 'from_address', 'from_domain',
+                'to_address', 'to_domain', 'subject', 'clientip', 'hostname'
+            ];
+            if (preg_match('/^(?:CURRENT_DATE(?:\(\))?|CURDATE\(\)|NOW\(\))$/i', $expr)
+                || preg_match('/^DATE_(?:SUB|ADD)\(\s*(?:CURRENT_DATE(?:\(\))?|CURDATE\(\)|NOW\(\))\s*,\s*INTERVAL\s+\d+\s+(?:DAY|HOUR|MINUTE|MONTH|YEAR)\s*\)$/i', $expr)
+                || in_array(strtolower($expr), $allowedCols, true)) {
+                return "$valCopy[0] $valCopy[1] " . $expr;
+            }
+            $safeVal = safe_value($rawVal);
+            return "$valCopy[0] $valCopy[1] '$safeVal'";
         } else {
             // Regular string
-            return "$valCopy[0] $valCopy[1] '$valCopy[2]'";
+            $safeVal = safe_value($rawVal);
+            return "$valCopy[0] $valCopy[1] '$safeVal'";
         }
     }
 
@@ -1086,6 +1100,9 @@ WHERE
         $sth = dbquery($sql);
         if ($sth) {
             while ($row = $sth->fetch_row()) {
+                if (!$this->ValidateColumn($row[0]) || !$this->ValidateOperator($row[1])) {
+                    continue;
+                }
                 if (count($row) >= 4) {
                     $this->item[] = [$row[0], $row[1], $row[2], (strtoupper($row[3]) === 'OR') ? 'OR' : 'AND'];
                 } else {

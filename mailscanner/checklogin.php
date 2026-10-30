@@ -219,8 +219,8 @@ switch ($usertype) {
 
 // If result matched $myusername and $mypassword, table row must be 1 row
 if (1 === $usercount) {
-    // Clear failed login attempts for this IP on successful login
-    clear_login_failures();
+    // Clear failed login attempts for this (IP, username) pair on successful login
+    clear_login_failures(null, $myusername);
 
     session_regenerate_id(true);
     // Register $myusername, $mypassword and redirect to file "login_success.php"

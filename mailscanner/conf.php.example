@@ -71,7 +71,7 @@ define('LOGIN_FAILURES_WINDOW_MINUTES', 15);
 
 // Whitelist of IP addresses or CIDR subnets that are NEVER banned or prompted for CAPTCHA
 // Supports exact IPs and CIDR ranges (IPv4 & IPv6). Multiple entries can be comma-separated or array.
-// Example: '127.0.0.1, ::1, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 195.230.150.0/27'
+// Example: '127.0.0.1, ::1, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16'
 define('LOGIN_WHITELIST_IPS', '127.0.0.1, ::1, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16');
 
 // MaxMind License key
