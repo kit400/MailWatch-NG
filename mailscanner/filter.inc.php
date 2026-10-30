@@ -1032,7 +1032,7 @@ WHERE
 
         dbconn();
         if (count($this->item) > 0) {
-            $user = safe_value(stripslashes($_SESSION['myusername']));
+            $user = isset($_SESSION['myusername']) ? safe_value(stripslashes($_SESSION['myusername'])) : '';
             // Delete the existing first
             $dsql = "DELETE FROM `saved_filters` WHERE `username`='$user' AND `name`='$name'";
             dbquery($dsql);
@@ -1071,7 +1071,7 @@ WHERE
         }
 
         dbconn();
-        $user = safe_value(stripslashes($_SESSION['myusername']));
+        $user = isset($_SESSION['myusername']) ? safe_value(stripslashes($_SESSION['myusername'])) : '';
         $hasLogicCol = false;
         $colRes = dbquery("SHOW COLUMNS FROM `saved_filters` LIKE 'logic'");
         if ($colRes && $colRes->num_rows > 0) {
@@ -1110,13 +1110,15 @@ WHERE
         }
 
         dbconn();
-        $sql = "DELETE FROM `saved_filters` WHERE `username`='" . safe_value(stripslashes($_SESSION['myusername'])) . "' AND `name`='$name'";
+        $user = isset($_SESSION['myusername']) ? safe_value(stripslashes($_SESSION['myusername'])) : '';
+        $sql = "DELETE FROM `saved_filters` WHERE `username`='$user' AND `name`='$name'";
         dbquery($sql);
     }
 
     public function ListSaved()
     {
-        $sql = "SELECT DISTINCT `name` FROM `saved_filters` WHERE `username`='" . safe_value(stripslashes($_SESSION['myusername'])) . "'";
+        $user = isset($_SESSION['myusername']) ? safe_value(stripslashes($_SESSION['myusername'])) : '';
+        $sql = "SELECT DISTINCT `name` FROM `saved_filters` WHERE `username`='$user'";
         $sth = dbquery($sql);
         $return = '<select name="filter" class="filter-select filter-select-sm">' . "\n";
         $return .= ' <option value="_none_">' . __('none09') . '</option>' . "\n";
