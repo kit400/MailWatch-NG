@@ -424,7 +424,7 @@ function html_start($title, $refresh = 0, $cacheable = true, $report = false)
     } else {
         echo '<title>' . __('mwforms03') . $title . '</title>' . "\n";
     }
-    echo '<link rel="stylesheet" type="text/css" href="./style.css">' . "\n";
+    echo '<link rel="stylesheet" type="text/css" href="./style.css?v=' . (file_exists(__DIR__ . '/style.css') ? filemtime(__DIR__ . '/style.css') : '1') . '">' . "\n";
     if (is_file(__DIR__ . '/skin.css')) {
         echo '<link rel="stylesheet" href="./skin.css" type="text/css">';
     }
