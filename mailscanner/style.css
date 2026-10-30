@@ -2265,6 +2265,85 @@ p.footer {
     color: #b91c1c;
 }
 
+.filter-logic-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    text-decoration: none;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.filter-logic-and {
+    background: #e2e8f0;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+}
+
+.filter-logic-and:hover {
+    background: #cbd5e1;
+    color: #1e293b;
+}
+
+.filter-logic-or {
+    background: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fde68a;
+}
+
+.filter-logic-or:hover {
+    background: #fde68a;
+    color: #92400e;
+}
+
+.filter-logic-switcher {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 1px 4px;
+    font-size: 10.5px;
+    margin-left: 4px;
+}
+
+.filter-logic-switcher .switcher-label {
+    font-size: 10px;
+    color: #64748b;
+    font-weight: 600;
+    padding-left: 2px;
+}
+
+.filter-logic-switcher .switcher-btn {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #475569;
+    text-decoration: none;
+    background: transparent;
+    transition: all 0.12s;
+}
+
+.filter-logic-switcher .switcher-btn:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+.filter-logic-switcher .switcher-btn.is-active {
+    background: #1f6cb0;
+    color: #ffffff;
+}
+
 .filter-bar-clear-btn {
     display: inline-flex;
     align-items: center;
@@ -2746,6 +2825,15 @@ p.footer {
     display: flex;
     flex-direction: column;
     gap: 3px;
+}
+
+.filter-col-logic {
+    flex: 0 1 85px;
+    min-width: 75px;
+}
+
+.filter-select-logic {
+    font-weight: 700;
 }
 
 .filter-col-field {

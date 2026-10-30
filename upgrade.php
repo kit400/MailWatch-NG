@@ -794,6 +794,14 @@ if ($link) {
         executeQuery($sql);
     }
 
+    echo pad(' - Add logic field to `saved_filters` table');
+    if (true === check_column_exists('saved_filters', 'logic')) {
+        echo color(' ALREADY DONE', 'lightgreen') . PHP_EOL;
+    } else {
+        $sql = "ALTER TABLE saved_filters ADD logic VARCHAR(10) NOT NULL DEFAULT 'AND' AFTER value";
+        executeQuery($sql);
+    }
+
     // Add new column and index to user_filters table
     echo pad(' - Add mtalog_id field and primary key to `user_filters` table');
     if (true === check_column_exists('user_filters', 'id')) {

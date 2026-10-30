@@ -66,10 +66,21 @@ if (isset($_POST['action']) || isset($_GET['action'])) {
                 header('Location: login.php?error=pagetimeout');
                 exit;
             }
-            $filter->Add(sanitizeInput($_POST['column']), $_POST['operator'], sanitizeInput($_POST['value']));
+            $logic = isset($_POST['logic']) ? sanitizeInput($_POST['logic']) : 'AND';
+            $filter->Add(sanitizeInput($_POST['column']), $_POST['operator'], sanitizeInput($_POST['value']), $logic);
             break;
         case 'remove':
             $filter->Remove(sanitizeInput($_GET['column']));
+            break;
+        case 'toggle_logic':
+            if (isset($_GET['column'])) {
+                $filter->ToggleLogic((int)$_GET['column']);
+            }
+            break;
+        case 'set_all_logic':
+            if (isset($_GET['logic'])) {
+                $filter->SetAllLogic(sanitizeInput($_GET['logic']));
+            }
             break;
         case 'clear':
             $filter->item = [];

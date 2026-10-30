@@ -231,6 +231,7 @@ CREATE TABLE IF NOT EXISTS `saved_filters` (
   `col` mediumtext COLLATE utf8mb4_unicode_ci NOT NULL,
   `operator` mediumtext COLLATE utf8mb4_unicode_ci NOT NULL,
   `value` mediumtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `logic` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'AND',
   `username` mediumtext COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_filters` (`name`(20),`col`(20),`operator`(20),`value`(20),`username`(20))

@@ -37,6 +37,7 @@ class Filter
     public $last_operator;
     public $last_column;
     public $last_value;
+    public $last_logic = 'AND';
     public $display_last = 0;
 
     /**
@@ -98,8 +99,10 @@ class Filter
      * @param string $column
      * @param string $operator
      * @param string $value
+     * @param string $logic
+     * @return void
      */
-    public function Add($column, $operator, $value)
+    public function Add($column, $operator, $value, $logic = 'AND')
     {
         // Don't show the last column, operator, and value now
         $value = deepSanitizeInput($value, 'string');
@@ -109,29 +112,83 @@ class Filter
         }
         $this->display_last = 0;
 
-        //  Make sure this is not a duplicate
-        foreach ($this->item as $val) {
+        $logic = (strtoupper((string)$logic) === 'OR') ? 'OR' : 'AND';
+        $this->last_logic = $logic;
+
+        // Make sure this is not a duplicate; if exists, update logic connective
+        foreach ($this->item as $k => &$val) {
             if (($val[0] === $column) && ($val[1] === $operator) && ($val[2] === $value)) {
+                $val[3] = (0 === $k) ? 'AND' : $logic;
+                $this->RecordHistory();
                 return;
             }
         }
+        unset($val);
 
-        $this->item[] = [$column, $operator, $value];
+        $newItem = [$column, $operator, $value, (0 === count($this->item)) ? 'AND' : $logic];
+        $this->item[] = $newItem;
         $this->RecordHistory();
     }
 
     /**
-     * @param string $item
+     * @param int|string $item
+     * @return void
      */
     public function Remove($item)
     {
+        $item = (int)$item;
+        if (!isset($this->item[$item])) {
+            return;
+        }
+
         // Store the last column, operator, and value, and force the form to default to them
         $this->last_column = $this->item[$item][0];
         $this->last_operator = $this->item[$item][1];
         $this->last_value = $this->item[$item][2];
+        $this->last_logic = isset($this->item[$item][3]) ? $this->item[$item][3] : 'AND';
         $this->display_last = 1;
         unset($this->item[$item]);
+        $this->item = array_values($this->item);
         if (count($this->item) > 0) {
+            $this->item[0][3] = 'AND';
+            $this->RecordHistory();
+        }
+    }
+
+    /**
+     * Toggle connective logic between AND and OR for a specific filter item
+     *
+     * @param int|string $item
+     * @return void
+     */
+    public function ToggleLogic($item)
+    {
+        $item = (int)$item;
+        if (isset($this->item[$item]) && $item > 0) {
+            $current = isset($this->item[$item][3]) ? strtoupper($this->item[$item][3]) : 'AND';
+            $this->item[$item][3] = ('OR' === $current) ? 'AND' : 'OR';
+            $this->RecordHistory();
+        }
+    }
+
+    /**
+     * Set connective logic for all non-first filter items (Match ALL vs Match ANY)
+     *
+     * @param string $logic
+     * @return void
+     */
+    public function SetAllLogic($logic)
+    {
+        $logic = (strtoupper((string)$logic) === 'OR') ? 'OR' : 'AND';
+        $this->last_logic = $logic;
+        foreach ($this->item as $k => &$val) {
+            if ($k > 0) {
+                $val[3] = $logic;
+            }
+        }
+        unset($val);
+        if (count($this->item) > 0) {
+            $this->item[0][3] = 'AND';
             $this->RecordHistory();
         }
     }
@@ -152,12 +209,18 @@ class Filter
 
         // Build human readable summary
         $summaryParts = [];
-        foreach ($this->item as $val) {
+        foreach ($this->item as $k => $val) {
             $col = $this->TranslateColumn($val[0]);
             $op = $this->TranslateOperator($val[1]);
-            $summaryParts[] = $col . ' ' . $op . ' "' . stripslashes($val[2]) . '"';
+            $clause = $col . ' ' . $op . ' "' . stripslashes($val[2]) . '"';
+            if (0 === $k) {
+                $summaryParts[] = $clause;
+            } else {
+                $logic = (isset($val[3]) && strtoupper($val[3]) === 'OR') ? 'OR' : 'AND';
+                $summaryParts[] = $logic . ' ' . $clause;
+            }
         }
-        $summary = implode(' AND ', $summaryParts);
+        $summary = implode(' ', $summaryParts);
 
         // Remove if already in history so we move it to top
         foreach ($_SESSION['filter_history'] as $k => $h) {
@@ -201,6 +264,14 @@ class Filter
         if ($hasFilters) {
             $html .= '      <div class="filter-chips-list">' . "\n";
             foreach ($this->item as $key => $val) {
+                if ($key > 0) {
+                    $logic = (isset($val[3]) && strtoupper($val[3]) === 'OR') ? 'OR' : 'AND';
+                    $logicClass = ('OR' === $logic) ? 'filter-logic-badge filter-logic-or' : 'filter-logic-badge filter-logic-and';
+                    $toggleUrl = 'reports.php?token=' . $tokenStr . '&amp;action=toggle_logic&amp;column=' . $key . $returnToParam;
+                    $toggleTitle = (__('togglelogic09', false) ?: 'Click to toggle AND / OR logic') . ' (' . $logic . ')';
+                    $html .= '        <a href="' . $toggleUrl . '" class="' . $logicClass . '" title="' . htmlspecialchars($toggleTitle) . '">' . $logic . '</a>' . "\n";
+                }
+
                 $colName = $this->TranslateColumn($val[0]);
                 $opName = $this->TranslateOperator($val[1]);
                 $valStr = htmlspecialchars(stripslashes($val[2]));
@@ -214,6 +285,27 @@ class Filter
                 $html .= '</span>' . "\n";
             }
             $html .= '      </div>' . "\n";
+
+            if (count($this->item) > 1) {
+                $allAnd = true;
+                $allOr = true;
+                for ($i = 1; $i < count($this->item); $i++) {
+                    $l = (isset($this->item[$i][3]) && strtoupper($this->item[$i][3]) === 'OR') ? 'OR' : 'AND';
+                    if ('OR' === $l) {
+                        $allAnd = false;
+                    } else {
+                        $allOr = false;
+                    }
+                }
+                $allAndUrl = 'reports.php?token=' . $tokenStr . '&amp;action=set_all_logic&amp;logic=AND' . $returnToParam;
+                $allOrUrl  = 'reports.php?token=' . $tokenStr . '&amp;action=set_all_logic&amp;logic=OR' . $returnToParam;
+                $html .= '      <div class="filter-logic-switcher">' . "\n";
+                $html .= '        <span class="switcher-label">' . (__('match09', false) ?: 'Match') . ':</span>' . "\n";
+                $html .= '        <a href="' . $allAndUrl . '" class="switcher-btn' . ($allAnd ? ' is-active' : '') . '" title="' . (__('matchall09', false) ?: 'Match ALL conditions (AND)') . '">' . (__('and09', false) ?: 'ALL (AND)') . '</a>' . "\n";
+                $html .= '        <a href="' . $allOrUrl . '" class="switcher-btn' . ($allOr ? ' is-active' : '') . '" title="' . (__('matchany09', false) ?: 'Match ANY condition (OR)') . '">' . (__('or09', false) ?: 'ANY (OR)') . '</a>' . "\n";
+                $html .= '      </div>' . "\n";
+            }
+
             $clearUrl = 'reports.php?token=' . $tokenStr . '&amp;action=clear' . $returnToParam;
             $html .= '      <a href="' . $clearUrl . '" class="filter-bar-clear-btn" title="Reset all filters">🗑️ ' . __('reset07') . '</a>' . "\n";
         } else {
@@ -677,49 +769,103 @@ WHERE
         return $html;
     }
 
+    /**
+     * @return string
+     */
     public function CreateMtalogSQL()
     {
-        $sql = '';
+        $conditions = [];
         foreach ($this->item as $key => $val) {
             if ('date' === $val[0]) {
                 // Change field from timestamp to date format
-                $val[0] = "DATE_FORMAT(timestamp,'%Y-%m-%d')";
-
-                $sql .= self::getSqlCondition($val);
+                $itemCopy = $val;
+                $itemCopy[0] = "DATE_FORMAT(timestamp,'%Y-%m-%d')";
+                $conditions[] = [
+                    'clause' => self::getConditionClause($itemCopy),
+                    'logic' => (isset($val[3]) && strtoupper($val[3]) === 'OR') ? 'OR' : 'AND',
+                ];
             }
         }
 
+        if (0 === count($conditions)) {
+            return '';
+        }
+
+        $sql = "AND (\n";
+        foreach ($conditions as $i => $cond) {
+            if (0 === $i) {
+                $sql .= ' ' . $cond['clause'] . "\n";
+            } else {
+                $sql .= ' ' . $cond['logic'] . "\n " . $cond['clause'] . "\n";
+            }
+        }
+        $sql .= ")\n";
+
         return $sql;
     }
 
+    /**
+     * @return string
+     */
     public function CreateSQL()
     {
-        $sql = 'AND ' . $_SESSION['global_filter'] . "\n";
-        foreach ($this->item as $key => $val) {
-            $sql .= self::getSqlCondition($val);
+        $sql = '';
+        if (isset($_SESSION['global_filter']) && '' !== $_SESSION['global_filter']) {
+            $sql = 'AND ' . $_SESSION['global_filter'] . "\n";
         }
+
+        if (!is_array($this->item) || 0 === count($this->item)) {
+            return $sql;
+        }
+
+        $sql .= "AND (\n";
+        foreach ($this->item as $key => $val) {
+            $logic = (isset($val[3]) && strtoupper($val[3]) === 'OR') ? 'OR' : 'AND';
+            $cond = self::getConditionClause($val);
+            if (0 === $key) {
+                $sql .= " $cond\n";
+            } else {
+                $sql .= " $logic\n $cond\n";
+            }
+        }
+        $sql .= ")\n";
 
         return $sql;
     }
 
-    private static function getSqlCondition($val)
+    /**
+     * @param array<int, mixed> $val
+     * @return string
+     */
+    private static function getConditionClause($val)
     {
+        $valCopy = $val;
         // If LIKE selected - place wildcards either side of the query string
-        if ('LIKE' === $val[1] || 'NOT LIKE' === $val[1]) {
-            $val[2] = '%' . $val[2] . '%';
+        if ('LIKE' === $valCopy[1] || 'NOT LIKE' === $valCopy[1]) {
+            $valCopy[2] = '%' . $valCopy[2] . '%';
         }
-        if (is_numeric($val[2])) {
-            return "AND\n $val[0] $val[1] $val[2]\n";
-        } elseif ('IS NULL' === $val[1] || 'IS NOT NULL' === $val[1]) {
+        if (is_numeric($valCopy[2])) {
+            return "$valCopy[0] $valCopy[1] $valCopy[2]";
+        } elseif ('IS NULL' === $valCopy[1] || 'IS NOT NULL' === $valCopy[1]) {
             // Handle NULL and NOT NULL's
-            return "AND\n $val[0] $val[1]\n";
-        } elseif ('' !== $val[2] && '!' === $val[2][0]) {
+            return "$valCopy[0] $valCopy[1]";
+        } elseif ('' !== $valCopy[2] && '!' === $valCopy[2][0]) {
             // Allow !<sql_function>
-            return "AND\n $val[0] $val[1] " . substr($val[2], 1) . "\n";
+            return "$valCopy[0] $valCopy[1] " . substr($valCopy[2], 1);
         } else {
             // Regular string
-            return "AND\n $val[0] $val[1] '$val[2]'\n";
+            return "$valCopy[0] $valCopy[1] '$valCopy[2]'";
         }
+    }
+
+    /**
+     * @param array<int, mixed> $val
+     * @param string $logic
+     * @return string
+     */
+    private static function getSqlCondition($val, $logic = 'AND')
+    {
+        return "$logic\n " . self::getConditionClause($val) . "\n";
     }
 
     /**
@@ -752,6 +898,16 @@ WHERE
 
         // Main Criteria Row
         $return .= '<div class="filter-form-main-row">' . "\n";
+
+        // Logic dropdown (AND / OR)
+        $selectedLogic = ('OR' === $this->last_logic) ? 'OR' : 'AND';
+        $return .= '  <div class="filter-field-col filter-col-logic">' . "\n";
+        $return .= '    <label class="filter-label">' . (__('logic09', false) ?: 'Logic') . ':</label>' . "\n";
+        $return .= '    <select name="logic" class="filter-select filter-select-logic">' . "\n";
+        $return .= '      <option value="AND"' . ('AND' === $selectedLogic ? ' SELECTED' : '') . '>' . (__('and09', false) ?: 'AND') . '</option>' . "\n";
+        $return .= '      <option value="OR"' . ('OR' === $selectedLogic ? ' SELECTED' : '') . '>' . (__('or09', false) ?: 'OR') . '</option>' . "\n";
+        $return .= '    </select>' . "\n";
+        $return .= '  </div>' . "\n";
 
         // Field / Column
         $return .= '  <div class="filter-field-col filter-col-field">' . "\n";
@@ -865,6 +1021,7 @@ WHERE
 
     /**
      * @param string $name
+     * @return void
      */
     public function Save($name)
     {
@@ -875,15 +1032,28 @@ WHERE
 
         dbconn();
         if (count($this->item) > 0) {
+            $user = safe_value(stripslashes($_SESSION['myusername']));
             // Delete the existing first
-            $dsql = "DELETE FROM `saved_filters` WHERE `username`='" . safe_value(stripslashes($_SESSION['myusername'])) . "' AND `name`='$name'";
+            $dsql = "DELETE FROM `saved_filters` WHERE `username`='$user' AND `name`='$name'";
             dbquery($dsql);
+
+            $hasLogicCol = false;
+            $colRes = dbquery("SHOW COLUMNS FROM `saved_filters` LIKE 'logic'");
+            if ($colRes && $colRes->num_rows > 0) {
+                $hasLogicCol = true;
+            }
+
             foreach ($this->item as $key => $val) {
-                $sql = "REPLACE INTO `saved_filters` (`name`, `col`, `operator`, `value`, `username`)  VALUES ('$name',";
-                foreach ($val as $value) {
-                    $sql .= "'" . safe_value($value) . "',";
+                $col = safe_value($val[0]);
+                $op = safe_value($val[1]);
+                $valStr = safe_value($val[2]);
+                $logic = (isset($val[3]) && strtoupper($val[3]) === 'OR') ? 'OR' : 'AND';
+
+                if ($hasLogicCol) {
+                    $sql = "REPLACE INTO `saved_filters` (`name`, `col`, `operator`, `value`, `logic`, `username`) VALUES ('$name', '$col', '$op', '$valStr', '$logic', '$user')";
+                } else {
+                    $sql = "REPLACE INTO `saved_filters` (`name`, `col`, `operator`, `value`, `username`) VALUES ('$name', '$col', '$op', '$valStr', '$user')";
                 }
-                $sql .= "'" . safe_value(stripslashes($_SESSION['myusername'])) . "')";
                 dbquery($sql);
             }
         }
@@ -891,6 +1061,7 @@ WHERE
 
     /**
      * @param string $name
+     * @return void
      */
     public function Load($name)
     {
@@ -900,12 +1071,30 @@ WHERE
         }
 
         dbconn();
-        $sql = "SELECT `col`, `operator`, `value` FROM `saved_filters` WHERE `name`='$name' AND username='" . safe_value(stripslashes($_SESSION['myusername'])) . "'";
+        $user = safe_value(stripslashes($_SESSION['myusername']));
+        $hasLogicCol = false;
+        $colRes = dbquery("SHOW COLUMNS FROM `saved_filters` LIKE 'logic'");
+        if ($colRes && $colRes->num_rows > 0) {
+            $hasLogicCol = true;
+        }
+
+        if ($hasLogicCol) {
+            $sql = "SELECT `col`, `operator`, `value`, `logic` FROM `saved_filters` WHERE `name`='$name' AND `username`='$user'";
+        } else {
+            $sql = "SELECT `col`, `operator`, `value` FROM `saved_filters` WHERE `name`='$name' AND `username`='$user'";
+        }
         $sth = dbquery($sql);
-        while ($row = $sth->fetch_row()) {
-            $this->item[] = $row;
+        if ($sth) {
+            while ($row = $sth->fetch_row()) {
+                if (count($row) >= 4) {
+                    $this->item[] = [$row[0], $row[1], $row[2], (strtoupper($row[3]) === 'OR') ? 'OR' : 'AND'];
+                } else {
+                    $this->item[] = [$row[0], $row[1], $row[2], 'AND'];
+                }
+            }
         }
         if (count($this->item) > 0) {
+            $this->item[0][3] = 'AND';
             $this->RecordHistory();
         }
     }
@@ -931,8 +1120,10 @@ WHERE
         $sth = dbquery($sql);
         $return = '<select name="filter" class="filter-select filter-select-sm">' . "\n";
         $return .= ' <option value="_none_">' . __('none09') . '</option>' . "\n";
-        while ($row = $sth->fetch_array()) {
-            $return .= ' <option value="' . $row[0] . '">' . $row[0] . '</option>' . "\n";
+        if ($sth) {
+            while ($row = $sth->fetch_array()) {
+                $return .= ' <option value="' . $row[0] . '">' . $row[0] . '</option>' . "\n";
+            }
         }
         $return .= '</select>' . "\n";
 
