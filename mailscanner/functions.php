@@ -6609,7 +6609,7 @@ function parse_email_auth_results($headers = '', $spamreport = '', $clientip = '
 
     // 1. Primary trusted source: local SpamAssassin spamreport rules evaluated by MailScanner
     if (!empty($spamreport)) {
-        if (preg_match('/\b(T_)?SPF_PASS\b/i', $spamreport) || preg_match('/\bSPF_HELO_PASS\b/i', $spamreport)) {
+        if (preg_match('/\b(T_)?SPF_PASS\b/i', $spamreport)) {
             $spfStatus = 'PASS';
         } elseif (preg_match('/\bSPF_FAIL\b/i', $spamreport) || preg_match('/\bSPF_HELO_FAIL\b/i', $spamreport)) {
             $spfStatus = 'FAIL';
@@ -6629,6 +6629,8 @@ function parse_email_auth_results($headers = '', $spamreport = '', $clientip = '
             $dkimStatus = 'PASS';
         } elseif (preg_match('/\bDKIM_INVALID\b/i', $spamreport)) {
             $dkimStatus = 'FAIL';
+        } elseif (preg_match('/\bDKIM_SIGNED\b/i', $spamreport)) {
+            $dkimStatus = 'NEUTRAL';
         }
 
         if (preg_match('/\bDMARC_PASS\b/i', $spamreport)) {
@@ -6642,6 +6644,14 @@ function parse_email_auth_results($headers = '', $spamreport = '', $clientip = '
 
     // Determine trusted local authserv-id candidates to avoid trusting spoofed external Authentication-Results
     $trustedHosts = [];
+    if (defined('AUTHSERV_ID') && trim((string)AUTHSERV_ID) !== '') {
+        foreach (explode(',', (string)AUTHSERV_ID) as $cfgHost) {
+            $cfgHost = strtolower(trim($cfgHost));
+            if ($cfgHost !== '') {
+                $trustedHosts[] = $cfgHost;
+            }
+        }
+    }
     $sysHost = gethostname();
     if (!empty($sysHost)) {
         $trustedHosts[] = strtolower($sysHost);
@@ -7288,23 +7298,38 @@ function record_failed_login($username = '', $clientIp = null)
 }
 
 /**
- * Clear failed login attempts for a client IP (and specific username if provided) on successful login.
+ * Clear failed login attempts for a client IP (and specific username(s) if provided) on successful login.
  * Does not clear failures for other usernames targeted from the same IP, preventing counter-reset bypass.
  *
- * @param string|null $clientIp
- * @param string $username
+ * @param string|array|null $clientIp
+ * @param string|array $username
  * @return void
  */
 function clear_login_failures($clientIp = null, $username = '')
 {
+    if (is_array($clientIp)) {
+        // Support legacy signature clear_login_failures($usernamesArray, $clientIp)
+        $tmpUsers = $clientIp;
+        $clientIp = is_string($username) && $username !== '' ? $username : null;
+        $username = $tmpUsers;
+    }
     if (empty($clientIp)) {
         $clientIp = getHTTPClientIP();
     }
     ensure_login_failures_table();
     $safeIp = safe_value($clientIp);
-    if ($username !== '') {
-        $safeUser = safe_value(substr((string)$username, 0, 255));
-        @dbquery("DELETE FROM `login_failures` WHERE `ip_address` = '$safeIp' AND `username` = '$safeUser' AND `is_banned` = 0");
+    $usernames = is_array($username) ? $username : ($username !== '' ? [$username] : []);
+    $safeUsers = [];
+    foreach ($usernames as $u) {
+        $u = trim((string)$u);
+        if ($u !== '') {
+            $safeUsers[] = "'" . safe_value(substr($u, 0, 255)) . "'";
+        }
+    }
+    $safeUsers = array_values(array_unique($safeUsers));
+    if (!empty($safeUsers)) {
+        $inList = implode(', ', $safeUsers);
+        @dbquery("DELETE FROM `login_failures` WHERE `ip_address` = '$safeIp' AND `username` IN ($inList) AND `is_banned` = 0");
     } else {
         @dbquery("DELETE FROM `login_failures` WHERE `ip_address` = '$safeIp' AND `is_banned` = 0");
     }

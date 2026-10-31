@@ -44,6 +44,13 @@ if (isset($_POST['token'])) {
 }
 $_SESSION['token'] = generateToken();
 
+// Serialize concurrent login attempts from the same IP using a per-IP MySQL lock
+$loginLockName = safe_value('mw_login_' . md5(getHTTPClientIP()));
+@dbquery("SELECT GET_LOCK('$loginLockName', 10)");
+register_shutdown_function(function () use ($loginLockName) {
+    @dbquery("DO RELEASE_LOCK('$loginLockName')");
+});
+
 // Brute-force protection: check client IP status before processing credentials
 $secStatus = get_login_security_status();
 if ($secStatus['is_banned']) {
@@ -220,7 +227,7 @@ switch ($usertype) {
 // If result matched $myusername and $mypassword, table row must be 1 row
 if (1 === $usercount) {
     // Clear failed login attempts for this (IP, username) pair on successful login
-    clear_login_failures(null, $myusername);
+    clear_login_failures(null, [$myusername, isset($_POST['myusername']) ? $_POST['myusername'] : '']);
 
     session_regenerate_id(true);
     // Register $myusername, $mypassword and redirect to file "login_success.php"

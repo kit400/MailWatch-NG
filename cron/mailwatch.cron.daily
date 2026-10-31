@@ -11,3 +11,4 @@ if [ -d /var/cache/mailwatch ]; then
     find /var/cache/mailwatch -type f -name "*.cache" -mtime +1 -delete >/dev/null 2>&1
     find /var/cache/mailwatch -type f -name "*.tmp" -mtime +1 -delete >/dev/null 2>&1
 fi
+/usr/bin/php /usr/bin/mailwatch/tools/mailwatch_replay_failed_events.php >/dev/null 2>&1

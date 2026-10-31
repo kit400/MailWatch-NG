@@ -150,6 +150,9 @@ define('PROXY_PASS', '');
 define('TRUSTED_PROXIES', array());
 define('PROXY_HEADER', 'HTTP_X_FORWARDED_FOR'); //X-Forwarded-For Header
 
+// Trusted local authserv-id hostname(s) for Authentication-Results header verification (comma-separated if multiple)
+//define('AUTHSERV_ID', 'mx1.example.com');
+
 // Paths
 define('MAILWATCH_HOME', '/var/www/html/mailscanner');
 define('MS_CONFIG_DIR', '/etc/MailScanner/');
