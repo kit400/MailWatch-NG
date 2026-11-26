@@ -4684,6 +4684,15 @@ function return_geoip_data($ip)
 
     try {
         if ($reader === null) {
+            if (!class_exists('\MaxMind\Db\Reader', false)) {
+                $autoload = __DIR__ . '/lib/maxmind-db/reader/autoload.php';
+                if (is_readable($autoload)) {
+                    require_once $autoload;
+                }
+            }
+            if (!class_exists('\MaxMind\Db\Reader')) {
+                return false;
+            }
             $reader = new \MaxMind\Db\Reader($dbFile);
         }
         $record = $reader->get($ip);
