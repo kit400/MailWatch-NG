@@ -6817,6 +6817,653 @@ function ip_in_cidr_ipv4($ip, $range)
 }
 
 /**
+ * Unfolds and parses raw RFC 5322 email headers into structured format.
+ *
+ * @param string $rawHeaders
+ * @return array{headers: array<int, array{name: string, value: string}>, map: array<string, array<int, string>>}
+ */
+function parse_rfc_headers($rawHeaders)
+{
+    $headers = [];
+    $map = [];
+    if (empty($rawHeaders)) {
+        return ['headers' => $headers, 'map' => $map];
+    }
+
+    $lines = preg_split("/\r?\n/", trim($rawHeaders));
+    $unfolded = [];
+    foreach ($lines as $line) {
+        if (preg_match('/^\s+/', $line) && count($unfolded) > 0) {
+            $unfolded[count($unfolded) - 1] .= ' ' . trim($line);
+        } else {
+            $unfolded[] = trim($line);
+        }
+    }
+
+    foreach ($unfolded as $h) {
+        if (preg_match('/^([A-Za-z0-9_-]+):\s*(.*)$/', $h, $m)) {
+            $name = $m[1];
+            $value = $m[2];
+            if (function_exists('decode_header')) {
+                $decodedVal = decode_header($value);
+            } elseif (function_exists('mb_decode_mimeheader')) {
+                $decodedVal = mb_decode_mimeheader($value);
+            } else {
+                $decodedVal = $value;
+            }
+            $headers[] = ['name' => $name, 'value' => $decodedVal];
+            $map[strtolower($name)][] = $decodedVal;
+        }
+    }
+
+    return ['headers' => $headers, 'map' => $map];
+}
+
+/**
+ * Parse Received: headers into chronological hops (from sender/client to destination gateway).
+ *
+ * @param array<int, string> $receivedList Received headers as they appeared in raw email (reverse chronological)
+ * @return array<int, array>
+ */
+function parse_received_hops(array $receivedList)
+{
+    $chrono = array_reverse($receivedList);
+    $hops = [];
+    $prevTs = null;
+
+    foreach ($chrono as $idx => $rawHop) {
+        $hop = trim(preg_replace('/\s+/', ' ', $rawHop));
+
+        // 1. Date-Time after last ';'
+        $dateStr = '';
+        $pos = strrpos($hop, ';');
+        if ($pos !== false) {
+            $datePart = trim(substr($hop, $pos + 1));
+            $dateClean = trim(preg_replace('/\s*\([^)]*\)\s*/', ' ', $datePart));
+            $ts = strtotime($dateClean);
+            if ($ts !== false && $ts > 0) {
+                $dateStr = date('Y-m-d H:i:s', $ts) . ' UTC';
+            } else {
+                $dateStr = $datePart;
+                $ts = null;
+            }
+        } else {
+            $ts = null;
+        }
+
+        // 2. Transit Delay
+        $delaySec = null;
+        $delayFormatted = '';
+        if ($ts !== null && $prevTs !== null) {
+            $delaySec = $ts - $prevTs;
+            if ($delaySec >= 0) {
+                if ($delaySec < 1) {
+                    $delayFormatted = '< 1s';
+                } elseif ($delaySec < 60) {
+                    $delayFormatted = "+{$delaySec}s";
+                } elseif ($delaySec < 3600) {
+                    $m = floor($delaySec / 60);
+                    $s = $delaySec % 60;
+                    $delayFormatted = "+{$m}m {$s}s";
+                } else {
+                    $h = floor($delaySec / 3600);
+                    $m = floor(($delaySec % 3600) / 60);
+                    $delayFormatted = "+{$h}h {$m}m";
+                }
+            } else {
+                $delayFormatted = '±0s (skew)';
+            }
+        }
+        if ($ts !== null) {
+            $prevTs = $ts;
+        }
+
+        // 3. From Host & IP
+        $fromHost = '';
+        $fromIp = '';
+        if (preg_match('/\bfrom\s+([^\s;()]+)(?:\s+\(([^)]*)\))?/i', $hop, $mFrom)) {
+            $fromHost = trim($mFrom[1], '[]');
+            $extra = $mFrom[2] ?? '';
+            if (preg_match('/\[([0-9a-fA-F:.]+)\]/', $extra . ' ' . $mFrom[1], $mIp)) {
+                $fromIp = $mIp[1];
+            } elseif (filter_var($fromHost, FILTER_VALIDATE_IP)) {
+                $fromIp = $fromHost;
+            }
+        }
+
+        // 4. By Host & MTA
+        $byHost = '';
+        $byMta = '';
+        if (preg_match('/\bby\s+([^\s;()]+)(?:\s+\(([^)]*)\))?/i', $hop, $mBy)) {
+            $byHost = trim($mBy[1], '[]');
+            $byMta = trim($mBy[2] ?? '');
+        }
+
+        // 5. With Protocol
+        $protocol = '';
+        if (preg_match('/\bwith\s+([A-Za-z0-9_-]+)/i', $hop, $mWith)) {
+            $protocol = strtoupper($mWith[1]);
+        }
+
+        // 6. TLS & Cipher
+        $tls = '';
+        $cipher = '';
+        if (preg_match('/(?:using|version=)\s*(TLSv?[0-9._]+|SSLv?[0-9._]+)/i', $hop, $mTLS)) {
+            $rawTls = $mTLS[1];
+            if (preg_match('/TLS(?:v|_)?([0-9]+)[._]([0-9]+)/i', $rawTls, $mT)) {
+                $tls = 'TLS ' . $mT[1] . '.' . $mT[2];
+            } elseif (preg_match('/SSL(?:v|_)?([0-9]+)[._]([0-9]+)/i', $rawTls, $mS)) {
+                $tls = 'SSL ' . $mS[1] . '.' . $mS[2];
+            } else {
+                $tls = strtoupper(str_replace('_', '.', $rawTls));
+            }
+        }
+        if (preg_match('/(?:cipher[= ]\s*|with cipher\s+)([A-Za-z0-9_-]+)/i', $hop, $mCiph)) {
+            $cipher = $mCiph[1];
+        }
+
+        // 7. GeoIP
+        $geo = null;
+        if (!empty($fromIp)) {
+            $geo = return_geoip_data($fromIp);
+        }
+
+        $hops[] = [
+            'hop_number' => $idx + 1,
+            'from_host' => $fromHost,
+            'from_ip' => $fromIp,
+            'by_host' => $byHost,
+            'by_mta' => $byMta,
+            'protocol' => $protocol,
+            'tls' => $tls,
+            'cipher' => $cipher,
+            'timestamp' => $ts,
+            'date_str' => $dateStr,
+            'delay_sec' => $delaySec,
+            'delay_formatted' => $delayFormatted,
+            'geo' => $geo,
+            'raw' => $hop,
+        ];
+    }
+
+    return $hops;
+}
+
+/**
+ * Detect client MUA name, icon, and origin IP from headers and hops.
+ *
+ * @param array $map Lowercase header map
+ * @param array $hops Chronological hops
+ * @param string $fallbackIp Optional fallback client IP
+ * @return array
+ */
+function detect_originating_client(array $map, array $hops = [], $fallbackIp = '')
+{
+    $userAgent = $map['user-agent'][0] ?? '';
+    $xMailer = $map['x-mailer'][0] ?? '';
+    $originIp = $map['x-originating-ip'][0] ?? ($map['x-sender-ip'][0] ?? ($map['x-client-ip'][0] ?? ''));
+    if (!empty($originIp)) {
+        $originIp = trim($originIp, "[] \t\r\n");
+    }
+
+    if (empty($originIp) && !empty($hops[0]['from_ip'])) {
+        $originIp = $hops[0]['from_ip'];
+    }
+    if (empty($originIp) && !empty($fallbackIp)) {
+        $originIp = $fallbackIp;
+    }
+
+    $clientRaw = !empty($userAgent) ? $userAgent : (!empty($xMailer) ? $xMailer : '');
+    $clientName = '';
+    $clientIcon = '✉️';
+    $clientType = 'Standard MUA';
+
+    if (!empty($clientRaw)) {
+        if (stripos($clientRaw, 'Thunderbird') !== false) {
+            $clientName = 'Mozilla Thunderbird';
+            $clientIcon = '🦊';
+            $clientType = 'Desktop Client';
+        } elseif (stripos($clientRaw, 'Outlook') !== false || stripos($clientRaw, 'Microsoft') !== false) {
+            $clientName = 'Microsoft Outlook';
+            $clientIcon = '📧';
+            $clientType = 'Desktop / Office 365';
+        } elseif (stripos($clientRaw, 'Apple') !== false || stripos($clientRaw, 'iPhone') !== false || stripos($clientRaw, 'iPad') !== false || stripos($clientRaw, 'Mac OS') !== false) {
+            $clientName = 'Apple Mail';
+            $clientIcon = '🍎';
+            $clientType = 'macOS / iOS Client';
+        } elseif (stripos($clientRaw, 'Roundcube') !== false) {
+            $clientName = 'Roundcube Webmail';
+            $clientIcon = '🌐';
+            $clientType = 'Webmail';
+        } elseif (stripos($clientRaw, 'K-9') !== false || stripos($clientRaw, 'Android') !== false) {
+            $clientName = 'Android / Mobile Mail';
+            $clientIcon = '📱';
+            $clientType = 'Mobile Client';
+        } elseif (stripos($clientRaw, 'PHPMailer') !== false || stripos($clientRaw, 'SwiftMailer') !== false || stripos($clientRaw, 'Symfony') !== false || stripos($clientRaw, 'Python') !== false) {
+            $clientName = 'Automated Application / Script';
+            $clientIcon = '🤖';
+            $clientType = 'Bot / API';
+        } else {
+            $clientName = htmlspecialchars(mb_strimwidth($clientRaw, 0, 40, '...'));
+            $clientIcon = '💻';
+            $clientType = 'MUA';
+        }
+    } else {
+        $firstProtocol = $hops[0]['protocol'] ?? '';
+        if (stripos($firstProtocol, 'ESMTPSA') !== false || stripos($firstProtocol, 'SMTPSA') !== false) {
+            $clientName = 'Authenticated SMTP Client';
+            $clientIcon = '👤';
+            $clientType = 'Authenticated MUA';
+        } elseif ($firstProtocol === 'HTTP') {
+            $clientName = 'Webmail Client';
+            $clientIcon = '🌐';
+            $clientType = 'Web Interface';
+        } else {
+            $clientName = 'Direct SMTP MTA';
+            $clientIcon = '🏢';
+            $clientType = 'Mail Server';
+        }
+    }
+
+    $geo = null;
+    if (!empty($originIp)) {
+        $geo = return_geoip_data($originIp);
+    }
+
+    return [
+        'name' => $clientName,
+        'raw' => $clientRaw,
+        'icon' => $clientIcon,
+        'type' => $clientType,
+        'ip' => $originIp,
+        'geo' => $geo,
+    ];
+}
+
+/**
+ * Render Interactive Message Headers with Delivery Flow Diagram and RAW tab.
+ *
+ * @param string $rawHeaders Full RFC 5322 raw headers
+ * @param array $meta Message metadata (clientip, receivedby, from, to, subject, date, id)
+ * @return string HTML
+ */
+function render_message_headers_view($rawHeaders, array $meta = [])
+{
+    $rawHeaders = trim((string)$rawHeaders);
+    if (empty($rawHeaders)) {
+        $synth = "Received: from " . strip_tags($meta['clientip'] ?? 'unknown') . " by " . strip_tags($meta['receivedby'] ?? 'unknown');
+        if (!empty($meta['date'])) {
+            $synth .= "; " . $meta['date'];
+        }
+        $synth .= "\n";
+        $synth .= "From: " . strip_tags($meta['from'] ?? '') . "\n";
+        $synth .= "To: " . strip_tags($meta['to'] ?? '') . "\n";
+        $synth .= "Subject: " . strip_tags($meta['subject'] ?? '') . "\n";
+        if (!empty($meta['date'])) {
+            $synth .= "Date: " . strip_tags($meta['date']) . "\n";
+        }
+        if (!empty($meta['id'])) {
+            $synth .= "Message-ID: <" . strip_tags($meta['id']) . ">\n";
+        }
+        $rawHeaders = $synth;
+    }
+
+    // MIME header decoding for raw view display
+    $lines = explode("\n", $rawHeaders);
+    $decodedLines = [];
+    foreach ($lines as $line) {
+        if (function_exists('decode_header')) {
+            $decodedLines[] = decode_header($line);
+        } elseif (function_exists('mb_decode_mimeheader')) {
+            $decodedLines[] = mb_decode_mimeheader($line);
+        } else {
+            $decodedLines[] = $line;
+        }
+    }
+    $fullDecoded = implode("\n", $decodedLines);
+
+    $parsed = parse_rfc_headers($rawHeaders);
+    $map = $parsed['map'];
+    $hops = parse_received_hops($map['received'] ?? []);
+    $client = detect_originating_client($map, $hops, $meta['clientip'] ?? '');
+
+    // Overall transit time
+    $totalTransitFormatted = '< 1s';
+    if (count($hops) >= 2) {
+        $firstTs = null;
+        $lastTs = null;
+        foreach ($hops as $h) {
+            if ($h['timestamp'] !== null) {
+                if ($firstTs === null) {
+                    $firstTs = $h['timestamp'];
+                }
+                $lastTs = $h['timestamp'];
+            }
+        }
+        if ($firstTs !== null && $lastTs !== null && $lastTs >= $firstTs) {
+            $diff = $lastTs - $firstTs;
+            if ($diff < 1) {
+                $totalTransitFormatted = '< 1s';
+            } elseif ($diff < 60) {
+                $totalTransitFormatted = "{$diff}s";
+            } elseif ($diff < 3600) {
+                $m = floor($diff / 60);
+                $s = $diff % 60;
+                $totalTransitFormatted = "{$m}m {$s}s";
+            } else {
+                $h = floor($diff / 3600);
+                $m = floor(($diff % 3600) / 60);
+                $totalTransitFormatted = "{$h}h {$m}m";
+            }
+        }
+    }
+
+    // Determine security summary
+    $hasTls = false;
+    $primaryTls = 'Plain (No TLS)';
+    foreach ($hops as $h) {
+        if (!empty($h['tls'])) {
+            $hasTls = true;
+            $primaryTls = $h['tls'];
+            break;
+        }
+    }
+
+    ob_start();
+    ?>
+    <div class="msg-header-container">
+        <!-- Header Toolbar & Tabs -->
+        <div class="msg-header-toolbar">
+            <div class="msg-header-tabs">
+                <button type="button" class="msg-header-tab active" onclick="mwSwitchHeaderTab('diagram', this)">
+                    <span class="icon">📊</span> <span>Delivery Flow &amp; Analysis</span>
+                </button>
+                <button type="button" class="msg-header-tab" onclick="mwSwitchHeaderTab('raw', this)">
+                    <span class="icon">📄</span> <span>Raw Headers</span>
+                </button>
+            </div>
+            <div class="msg-header-actions">
+                <button type="button" class="btn-copy-headers" onclick="mwCopyRawHeaders(this)" title="Copy raw headers to clipboard">
+                    <span>📋</span> <span>Copy Headers</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 1. DIAGRAM / FLOW VIEW (ACTIVE BY DEFAULT) -->
+        <div id="msg-header-view-diagram" class="msg-header-view" style="display: block;">
+            <!-- Summary Overview Cards -->
+            <div class="msg-flow-summary-grid">
+                <!-- Client Card -->
+                <div class="msg-summary-card">
+                    <div class="msg-summary-icon"><?php echo $client['icon']; ?></div>
+                    <div class="msg-summary-info">
+                        <div class="msg-summary-label">Sender Client / MUA</div>
+                        <div class="msg-summary-value" title="<?php echo htmlspecialchars($client['name']); ?>">
+                            <?php echo htmlspecialchars($client['name']); ?>
+                        </div>
+                        <div class="msg-summary-sub">
+                            <?php echo htmlspecialchars($client['type']); ?>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Origin IP Card -->
+                <div class="msg-summary-card">
+                    <div class="msg-summary-icon">🌐</div>
+                    <div class="msg-summary-info">
+                        <div class="msg-summary-label">Originating IP</div>
+                        <div class="msg-summary-value" title="<?php echo htmlspecialchars($client['ip'] ?: 'Unknown'); ?>">
+                            <?php echo htmlspecialchars($client['ip'] ?: 'Unknown'); ?>
+                        </div>
+                        <div class="msg-summary-sub">
+                            <?php
+                            if (!empty($client['geo'])) {
+                                echo format_country_flag($client['geo']['country_code'] ?? '', $client['geo']['country_name'] ?? '');
+                                if (!empty($client['geo']['city'])) {
+                                    echo ' (' . htmlspecialchars($client['geo']['city']) . ')';
+                                }
+                            } elseif (!empty($client['ip']) && (ip_in_range($client['ip'], false, 'private') || ip_in_range($client['ip'], false, 'local'))) {
+                                echo '<span class="text-muted">LAN / Private Network</span>';
+                            } else {
+                                echo '<span class="text-muted">-</span>';
+                            }
+                            ?>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Delivery Hops & Transit Time -->
+                <div class="msg-summary-card">
+                    <div class="msg-summary-icon">⏱️</div>
+                    <div class="msg-summary-info">
+                        <div class="msg-summary-label">Transit Time</div>
+                        <div class="msg-summary-value">
+                            <?php echo htmlspecialchars($totalTransitFormatted); ?>
+                        </div>
+                        <div class="msg-summary-sub">
+                            <?php echo count($hops); ?> relay hop<?php echo count($hops) === 1 ? '' : 's'; ?> detected
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Security & Encryption -->
+                <div class="msg-summary-card">
+                    <div class="msg-summary-icon"><?php echo $hasTls ? '🔒' : '🔓'; ?></div>
+                    <div class="msg-summary-info">
+                        <div class="msg-summary-label">Security &amp; TLS</div>
+                        <div class="msg-summary-value" style="color: <?php echo $hasTls ? '#15803d' : '#b45309'; ?>;">
+                            <?php echo htmlspecialchars($primaryTls); ?>
+                        </div>
+                        <div class="msg-summary-sub">
+                            <?php echo $hasTls ? 'Encrypted transmission' : 'Unencrypted hop(s)'; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visual Flow Chain -->
+            <div class="msg-flow-chain-wrap">
+                <div class="msg-flow-chain-title">
+                    <span>⚡ Delivery Path (Chronological Flow)</span>
+                </div>
+
+                <div class="msg-flow-chain">
+                    <!-- Initial Step: Originating Sender -->
+                    <div class="msg-flow-step">
+                        <div class="msg-flow-bullet bullet-origin">1</div>
+                        <div class="msg-flow-card">
+                            <div class="msg-flow-card-header">
+                                <span class="msg-flow-card-title">
+                                    <span style="font-size: 15px;"><?php echo $client['icon']; ?></span>
+                                    <span>Origin: <?php echo htmlspecialchars($client['name']); ?></span>
+                                </span>
+                                <span class="msg-flow-card-meta">
+                                    <span class="msg-proto-badge">Submission</span>
+                                </span>
+                            </div>
+                            <div class="msg-flow-details-grid">
+                                <div class="msg-flow-row">
+                                    <span class="msg-flow-label">Client IP:</span>
+                                    <span class="msg-flow-val">
+                                        <strong><?php echo htmlspecialchars($client['ip'] ?: 'Not recorded'); ?></strong>
+                                        <?php if (!empty($client['geo'])): ?>
+                                            &nbsp;<?php echo format_country_flag($client['geo']['country_code'] ?? '', $client['geo']['country_name'] ?? ''); ?>
+                                            <?php if (!empty($client['geo']['asn_number'])): ?>
+                                                &nbsp;<a href="https://ipinfo.io/AS<?php echo $client['geo']['asn_number']; ?>" target="_blank" rel="noopener noreferrer" class="badge-asn">AS<?php echo $client['geo']['asn_number']; ?></a>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
+                                    </span>
+                                </div>
+                                <?php if (!empty($client['raw']) && $client['raw'] !== $client['name']): ?>
+                                <div class="msg-flow-row">
+                                    <span class="msg-flow-label">User-Agent:</span>
+                                    <span class="msg-flow-val text-muted" style="font-size: 11px;">
+                                        <?php echo htmlspecialchars($client['raw']); ?>
+                                    </span>
+                                </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hop by Hop Cards -->
+                    <?php foreach ($hops as $idx => $h): ?>
+                        <?php
+                        $isLast = ($idx === count($hops) - 1);
+                        $hopNum = $idx + 2;
+                        $stepTitle = $isLast ? 'Local Delivery Gateway (eFa / MailScanner)' : ('Relay Hop #' . ($idx + 1));
+                        if (!$isLast && !empty($h['by_host'])) {
+                            $stepTitle .= ' &rarr; ' . htmlspecialchars($h['by_host']);
+                        }
+                        ?>
+                        <div class="msg-flow-step">
+                            <div class="msg-flow-bullet <?php echo $isLast ? 'bullet-gateway' : ''; ?>">
+                                <?php echo $hopNum; ?>
+                            </div>
+                            <div class="msg-flow-card">
+                                <div class="msg-flow-card-header">
+                                    <span class="msg-flow-card-title">
+                                        <span><?php echo $isLast ? '🛡️' : '🏢'; ?></span>
+                                        <span><?php echo $stepTitle; ?></span>
+                                    </span>
+                                    <span class="msg-flow-card-meta">
+                                        <?php if (!empty($h['delay_formatted'])): ?>
+                                            <span class="msg-flow-transit-badge <?php echo (isset($h['delay_sec']) && $h['delay_sec'] > 60) ? 'delay-warn' : 'delay-fast'; ?>">
+                                                ⏱ <?php echo htmlspecialchars($h['delay_formatted']); ?>
+                                            </span>
+                                        <?php endif; ?>
+                                        <?php if (!empty($h['date_str'])): ?>
+                                            <span class="msg-flow-time"><?php echo htmlspecialchars($h['date_str']); ?></span>
+                                        <?php endif; ?>
+                                    </span>
+                                </div>
+
+                                <div class="msg-flow-details-grid">
+                                    <?php if (!empty($h['from_host']) || !empty($h['from_ip'])): ?>
+                                    <div class="msg-flow-row">
+                                        <span class="msg-flow-label">From:</span>
+                                        <span class="msg-flow-val">
+                                            <?php echo htmlspecialchars($h['from_host'] ?: '-'); ?>
+                                            <?php if (!empty($h['from_ip'])): ?>
+                                                <code style="background: #f1f5f9; padding: 1px 4px; border-radius: 3px; font-size: 11px;">[<?php echo htmlspecialchars($h['from_ip']); ?>]</code>
+                                                <?php if (!empty($h['geo'])): ?>
+                                                    &nbsp;<?php echo format_country_flag($h['geo']['country_code'] ?? '', $h['geo']['country_name'] ?? ''); ?>
+                                                    <?php if (!empty($h['geo']['city'])): ?>
+                                                        <span style="font-size: 10.5px; color: #64748b;">(<?php echo htmlspecialchars($h['geo']['city']); ?>)</span>
+                                                    <?php endif; ?>
+                                                    <?php if (!empty($h['geo']['asn_number'])): ?>
+                                                        &nbsp;<a href="https://ipinfo.io/AS<?php echo $h['geo']['asn_number']; ?>" target="_blank" rel="noopener noreferrer" class="badge-asn">AS<?php echo $h['geo']['asn_number']; ?></a>
+                                                    <?php endif; ?>
+                                                <?php endif; ?>
+                                            <?php endif; ?>
+                                        </span>
+                                    </div>
+                                    <?php endif; ?>
+
+                                    <?php if (!empty($h['by_host'])): ?>
+                                    <div class="msg-flow-row">
+                                        <span class="msg-flow-label">By:</span>
+                                        <span class="msg-flow-val">
+                                            <strong><?php echo htmlspecialchars($h['by_host']); ?></strong>
+                                            <?php if (!empty($h['by_mta'])): ?>
+                                                <span class="text-muted" style="font-size: 11px;">(<?php echo htmlspecialchars($h['by_mta']); ?>)</span>
+                                            <?php endif; ?>
+                                        </span>
+                                    </div>
+                                    <?php endif; ?>
+
+                                    <div class="msg-flow-row">
+                                        <span class="msg-flow-label">Protocol:</span>
+                                        <span class="msg-flow-val">
+                                            <?php if (!empty($h['protocol'])): ?>
+                                                <span class="msg-proto-badge"><?php echo htmlspecialchars($h['protocol']); ?></span>
+                                            <?php else: ?>
+                                                <span class="msg-proto-badge">SMTP</span>
+                                            <?php endif; ?>
+                                            <?php if (!empty($h['tls'])): ?>
+                                                &nbsp;<span class="msg-tls-badge">🔒 <?php echo htmlspecialchars($h['tls']); ?><?php echo !empty($h['cipher']) ? ' (' . htmlspecialchars($h['cipher']) . ')' : ''; ?></span>
+                                            <?php else: ?>
+                                                &nbsp;<span class="msg-proto-badge" style="color: #64748b;">🔓 Unencrypted</span>
+                                            <?php endif; ?>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. RAW HEADERS VIEW (ACCESSIBLE VIA TAB) -->
+        <div id="msg-header-view-raw" class="msg-header-view" style="display: none;">
+            <div class="msg-flow-raw-wrap" data-raw="<?php echo htmlspecialchars($fullDecoded, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($fullDecoded, ENT_QUOTES, 'UTF-8'); ?></div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+    if (typeof mwSwitchHeaderTab === 'undefined') {
+        function mwSwitchHeaderTab(tabName, btn) {
+            var container = btn.closest('.msg-header-container');
+            if (!container) return;
+            var tabs = container.querySelectorAll('.msg-header-tab');
+            tabs.forEach(function(t) { t.classList.remove('active'); });
+            btn.classList.add('active');
+            var views = container.querySelectorAll('.msg-header-view');
+            views.forEach(function(v) { v.style.display = 'none'; });
+            var targetView = container.querySelector('#msg-header-view-' + tabName);
+            if (targetView) {
+                targetView.style.display = 'block';
+            }
+        }
+    }
+    if (typeof mwCopyRawHeaders === 'undefined') {
+        function mwCopyRawHeaders(btn) {
+            var container = btn.closest('.msg-header-container');
+            if (!container) return;
+            var rawBlock = container.querySelector('.msg-flow-raw-wrap');
+            if (!rawBlock) return;
+            var text = rawBlock.getAttribute('data-raw') || rawBlock.innerText || rawBlock.textContent;
+            var oldHtml = btn.innerHTML;
+            var onSuccess = function() {
+                btn.innerHTML = '<span>✔</span> <span>Copied!</span>';
+                btn.style.borderColor = '#16a34a';
+                btn.style.color = '#16a34a';
+                setTimeout(function() {
+                    btn.innerHTML = oldHtml;
+                    btn.style.borderColor = '';
+                    btn.style.color = '';
+                }, 2000);
+            };
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(onSuccess).catch(function() {
+                    fallbackCopy(text, onSuccess);
+                });
+            } else {
+                fallbackCopy(text, onSuccess);
+            }
+            function fallbackCopy(val, cb) {
+                var ta = document.createElement('textarea');
+                ta.value = val;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                try {
+                    document.execCommand('copy');
+                    cb();
+                } catch (e) {}
+                document.body.removeChild(ta);
+            }
+        }
+    }
+    </script>
+    <?php
+    return ob_get_clean();
+}
+
+/**
  * Ensure system_settings table exists and default values are seeded.
  *
  * @return void
